@@ -3,39 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="theme-color" content="#ffffff">
-  <title>📖 Ling's Timetable</title>
+  <title>2E3 课表</title>
   <style>
     :root {
-      --primary: #2563eb;
-      --primary-light: #eff6ff;
-      --text-main: #0f172a;
-      --text-muted: #64748b;
-      --bg-page: #f8fafc;
+      --bg: #f7f7f5;
       --card-bg: #ffffff;
-      --border-color: #e2e8f0;
-      
-      --c-math-bg: #eff6ff;
-      --c-math-border: #3b82f6;
-      --c-math-text: #1d4ed8;
-
-      --c-phy-bg: #f5f3ff;
-      --c-phy-border: #8b5cf6;
-      --c-phy-text: #6d28d9;
-
-      --c-prog-bg: #ecfdf5;
-      --c-prog-border: #10b981;
-      --c-prog-text: #047857;
-
-      --c-ecs-bg: #fffbeb;
-      --c-ecs-border: #f59e0b;
-      --c-ecs-text: #b45309;
-
-      --c-eng-bg: #fff1f2;
-      --c-eng-border: #f43f5e;
-      --c-eng-text: #be123c;
+      --ink: #111111;
+      --ink-muted: #555555;
+      --ink-light: #888888;
+      --border: #222222;
+      --border-light: #d8d8d4;
     }
 
     * {
@@ -47,867 +24,501 @@
     }
 
     body {
-      background: var(--bg-page);
-      color: var(--text-main);
-      padding: env(safe-area-inset-top, 12px) 14px calc(env(safe-area-inset-bottom, 20px) + 24px) 14px;
+      background: var(--bg);
+      color: var(--ink);
+      padding: env(safe-area-inset-top, 14px) 14px calc(env(safe-area-inset-bottom, 20px) + 20px) 14px;
       min-height: 100vh;
       display: flex;
       justify-content: center;
     }
 
-    .app-container {
+    .app {
       width: 100%;
-      max-width: 680px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
+      max-width: 520px;
     }
 
-    .top-bar {
+    /* 顶部标题栏 */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 12px;
+    }
+
+    .title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .date-badge {
+      font-size: 13px;
+      color: var(--ink-muted);
+      font-weight: 600;
+    }
+
+    /* 状态条 */
+    .status-bar {
+      border: 1.5px solid var(--border);
+      background: var(--card-bg);
+      border-radius: 6px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px 10px;
+    }
+
+    .status-tag {
+      background: var(--ink);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 3px;
+      letter-spacing: 0.5px;
+    }
+
+    .status-main {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .status-sub {
+      font-size: 12px;
+      color: var(--ink-muted);
+    }
+
+    /* 视图切换与周导航 */
+    .nav-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 6px 2px;
-      gap: 8px;
-    }
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-    }
-    .brand-icon {
-      font-size: 24px;
-    }
-    .brand-title {
-      font-size: 19px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      color: var(--text-main);
-    }
-    .badge-stream {
-      font-size: 11px;
-      font-weight: 700;
-      background: #dcfce7;
-      color: #15803d;
-      padding: 3px 8px;
-      border-radius: 12px;
-      white-space: nowrap;
+      margin-bottom: 10px;
     }
 
-    .select-wrapper {
-      position: relative;
-      flex-shrink: 1;
-      min-width: 0;
+    .view-toggle {
+      display: flex;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      background: var(--card-bg);
     }
-    .cohort-select {
-      appearance: none;
-      -webkit-appearance: none;
-      background: #ffffff;
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 7px 24px 7px 10px;
+
+    .toggle-btn {
+      border: none;
+      background: transparent;
+      padding: 5px 12px;
       font-size: 12px;
       font-weight: 700;
-      color: var(--text-main);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
       cursor: pointer;
-      outline: none;
-      width: 100%;
-      text-overflow: ellipsis;
-      overflow: hidden;
-      white-space: nowrap;
-    }
-    .select-arrow {
-      position: absolute;
-      right: 8px;
-      top: 50%;
-      transform: translateY(-50%);
-      pointer-events: none;
-      font-size: 10px;
-      color: var(--text-muted);
+      color: var(--ink-muted);
     }
 
-    .radar-card {
-      background: #ffffff;
-      border-radius: 18px;
-      padding: 16px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-      border: 1px solid var(--border-color);
+    .toggle-btn.active {
+      background: var(--ink);
+      color: #ffffff;
+    }
+
+    .today-jump-btn {
+      border: 1px solid var(--border-light);
+      background: var(--card-bg);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--ink);
+    }
+
+    /* 星期按钮组 */
+    .day-selector {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 4px;
+      margin-bottom: 14px;
+      width: 100%;
+    }
+
+    .day-btn {
+      min-width: 0;
+      border: 1.5px solid var(--border-light);
+      background: var(--card-bg);
+      border-radius: 6px;
+      padding: 6px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .day-btn .name {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .day-btn .info {
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--ink-light);
+      margin-top: 1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+      padding: 0 1px;
+    }
+
+    .day-btn.active {
+      border-color: var(--border);
+      background: var(--ink);
+      color: #ffffff;
+    }
+
+    .day-btn.active .info {
+      color: #cccccc;
+    }
+
+    .day-btn.is-today:not(.active) {
+      border-color: var(--border);
+      background: #eeeeea;
+    }
+
+    /* 课程卡片 */
+    .timeline {
       display: flex;
       flex-direction: column;
       gap: 10px;
-    }
-    .radar-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-    .live-time {
-      font-variant-numeric: tabular-nums;
-      font-weight: 700;
-      color: var(--primary);
-    }
-    .radar-content {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .radar-badge {
-      width: 44px;
-      height: 44px;
-      border-radius: 14px;
-      background: var(--primary-light);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      flex-shrink: 0;
-    }
-    .radar-info {
-      flex: 1;
-      min-width: 0;
-    }
-    .radar-status-text {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .radar-title {
-      font-size: 16px;
-      font-weight: 800;
-      color: var(--text-main);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-top: 2px;
-    }
-    .radar-sub {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 2px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .mode-nav {
-      display: flex;
-      background: #e2e8f0;
-      padding: 4px;
-      border-radius: 14px;
-      gap: 4px;
-    }
-    .mode-btn {
-      flex: 1;
-      padding: 8px 12px;
-      border: none;
-      background: transparent;
-      border-radius: 10px;
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text-muted);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      transition: all 0.18s ease;
-    }
-    .mode-btn.active {
-      background: #ffffff;
-      color: var(--text-main);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    }
-
-    .day-pills-bar {
-      display: flex;
-      gap: 6px;
-      overflow-x: auto;
-      padding: 2px 2px 4px 2px;
-      scrollbar-width: none;
-    }
-    .day-pills-bar::-webkit-scrollbar {
-      display: none;
-    }
-    .day-pill {
-      flex: 1;
-      min-width: 52px;
-      background: #ffffff;
-      border: 1px solid var(--border-color);
-      border-radius: 14px;
-      padding: 9px 3px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 3px;
-      cursor: pointer;
-      transition: all 0.18s ease;
-      position: relative;
-    }
-    .day-pill:active {
-      transform: scale(0.95);
-    }
-    .day-pill.active {
-      background: var(--text-main);
-      border-color: var(--text-main);
-      color: #ffffff;
-      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.2);
-    }
-    .day-pill .name {
-      font-size: 13px;
-      font-weight: 800;
-    }
-    .day-pill .sub {
-      font-size: 10px;
-      font-weight: 600;
-      opacity: 0.7;
-    }
-    .day-pill.is-today::before {
-      content: '';
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #ef4444;
-    }
-    .day-pill.active.is-today::before {
-      background: #38bdf8;
-    }
-
-    .day-summary-banner {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 4px 6px;
-    }
-    .day-summary-title {
-      font-size: 15px;
-      font-weight: 800;
-      color: var(--text-main);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .day-tag {
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 10px;
-    }
-    .tag-sleep {
-      background: #dcfce7;
-      color: #15803d;
-    }
-    .tag-early {
-      background: #fee2e2;
-      color: #b91c1c;
-    }
-    .tag-free {
-      background: #f1f5f9;
-      color: #475569;
-    }
-
-    .timeline-container {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
     }
 
     .course-card {
-      background: #ffffff;
-      border-radius: 18px;
-      padding: 16px;
-      border: 1px solid var(--border-color);
-      box-shadow: 0 3px 12px rgba(0,0,0,0.03);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      position: relative;
-      overflow: hidden;
-      transition: transform 0.12s ease;
-    }
-    .course-card:active {
-      transform: scale(0.985);
-    }
-    .course-card::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 5px;
+      border: 1.5px solid var(--border);
+      background: var(--card-bg);
+      border-radius: 6px;
+      padding: 12px 14px;
     }
 
-    .card-math::before { background: var(--c-math-border); }
-    .card-phy::before  { background: var(--c-phy-border); }
-    .card-prog::before { background: var(--c-prog-border); }
-    .card-ecs::before  { background: var(--c-ecs-border); }
-    .card-eng::before  { background: var(--c-eng-border); }
-
-    .card-top {
+    .card-head {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-    }
-    .time-slot {
-      display: flex;
       align-items: baseline;
-      gap: 6px;
+      margin-bottom: 6px;
     }
-    .time-range {
-      font-size: 18px;
-      font-weight: 800;
-      color: var(--text-main);
-      font-variant-numeric: tabular-nums;
-    }
-    .duration-pill {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--text-muted);
-      background: #f1f5f9;
-      padding: 2px 6px;
-      border-radius: 6px;
-    }
-    .type-badge {
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 8px;
-    }
-    .card-math .type-badge { background: var(--c-math-bg); color: var(--c-math-text); }
-    .card-phy .type-badge  { background: var(--c-phy-bg);  color: var(--c-phy-text); }
-    .card-prog .type-badge { background: var(--c-prog-bg); color: var(--c-prog-text); }
-    .card-ecs .type-badge  { background: var(--c-ecs-bg);  color: var(--c-ecs-text); }
-    .card-eng .type-badge  { background: var(--c-eng-bg);  color: var(--c-eng-text); }
 
-    .course-title {
+    .time-txt {
       font-size: 16px;
       font-weight: 800;
-      color: var(--text-main);
-      line-height: 1.3;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.3px;
     }
 
-    .card-bottom {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 2px;
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-    .room-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 4px 8px;
-      font-weight: 600;
-      color: #334155;
-    }
-
-    .break-card {
-      background: transparent;
-      border: 1px dashed #cbd5e1;
-      border-radius: 14px;
-      padding: 10px 14px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      color: #64748b;
-      font-size: 12px;
-      font-weight: 600;
-    }
-    .break-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .empty-state {
-      background: #ffffff;
-      border-radius: 20px;
-      padding: 40px 20px;
-      text-align: center;
-      border: 1px solid var(--border-color);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-    }
-    .empty-icon {
-      font-size: 42px;
-    }
-    .empty-title {
-      font-size: 18px;
-      font-weight: 800;
-      color: var(--text-main);
-    }
-    .empty-desc {
-      font-size: 13px;
-      color: var(--text-muted);
-      max-width: 260px;
-      line-height: 1.5;
-    }
-
-    .day-nav-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 10px;
-    }
-    .nav-arrow-btn {
-      background: #ffffff;
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 8px 16px;
-      font-size: 13px;
+    .type-pill {
+      font-size: 11px;
       font-weight: 700;
-      color: var(--text-main);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .nav-arrow-btn:disabled {
-      opacity: 0.35;
-      cursor: not-allowed;
+      border: 1px solid var(--border);
+      padding: 1px 6px;
+      border-radius: 3px;
+      text-transform: uppercase;
     }
 
-    .week-matrix-container {
-      display: none;
-      background: #ffffff;
-      border-radius: 18px;
-      padding: 12px;
-      border: 1px solid var(--border-color);
-      overflow-x: auto;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+    .course-name {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 8px;
     }
+
+    .course-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--ink-muted);
+      border-top: 1px dashed var(--border-light);
+      padding-top: 6px;
+      margin-top: 4px;
+    }
+
+    .loc-txt {
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    /* 课间空档 */
+    .gap-card {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--ink-light);
+      padding: 6px 0;
+      position: relative;
+    }
+
+    .gap-card::before, .gap-card::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 25%;
+      height: 1px;
+      background: var(--border-light);
+    }
+    .gap-card::before { left: 5%; }
+    .gap-card::after { right: 5%; }
+
+    /* 空状态 */
+    .empty-state {
+      border: 1.5px dashed var(--border-light);
+      background: var(--card-bg);
+      border-radius: 6px;
+      padding: 40px 14px;
+      text-align: center;
+      color: var(--ink-muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    /* 全周矩阵表 */
+    .week-view {
+      display: none;
+      background: var(--card-bg);
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+
     .week-table {
       width: 100%;
-      min-width: 620px;
-      border-collapse: separate;
-      border-spacing: 5px;
-    }
-    .week-th {
-      font-size: 12px;
-      font-weight: 800;
-      padding: 8px 4px;
-      text-align: center;
-      color: var(--text-muted);
-      background: #f8fafc;
-      border-radius: 8px;
-    }
-    .week-td {
-      vertical-align: top;
-      width: 20%;
-    }
-    .mini-course-box {
-      border-radius: 8px;
-      padding: 7px 5px;
-      margin-bottom: 5px;
-      font-size: 11px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
-    }
-    .mini-course-box .time {
-      font-weight: 800;
-      font-size: 10px;
-      opacity: 0.85;
-      margin-bottom: 2px;
-    }
-    .mini-course-box .title {
-      font-weight: 800;
-      font-size: 11px;
-      line-height: 1.2;
-    }
-    .mini-course-box .room {
-      font-size: 9px;
-      opacity: 0.9;
-      margin-top: 2px;
+      min-width: 560px;
+      border-collapse: collapse;
     }
 
-    .app-footer {
+    .week-th {
+      border-bottom: 1.5px solid var(--border);
+      border-right: 1px solid var(--border-light);
+      padding: 8px 4px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #f0f0ee;
+      text-align: center;
+    }
+    .week-th:last-child { border-right: none; }
+
+    .week-td {
+      border-right: 1px solid var(--border-light);
+      vertical-align: top;
+      padding: 6px 4px;
+      width: 20%;
+    }
+    .week-td:last-child { border-right: none; }
+
+    .mini-box {
+      border: 1px solid var(--border);
+      background: #ffffff;
+      border-radius: 4px;
+      padding: 5px;
+      margin-bottom: 6px;
+      font-size: 11px;
+    }
+
+    .mini-time {
+      font-weight: 700;
+      font-size: 10px;
+      color: var(--ink-muted);
+      margin-bottom: 2px;
+    }
+
+    .mini-name {
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 2px;
+    }
+
+    .mini-loc {
+      font-size: 9px;
+      color: var(--ink-light);
+    }
+
+    .footer {
       text-align: center;
       font-size: 11px;
-      color: #94a3b8;
-      margin-top: 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
+      color: var(--ink-light);
+      margin-top: 16px;
     }
   </style>
 </head>
 <body>
 
-<div class="app-container">
-  
-  <div class="top-bar">
-    <div class="brand">
-      <span class="brand-icon">📖</span>
-      <div>
-        <div class="brand-title">Ling's Timetable</div>
-      </div>
-      <span class="badge-stream" id="badgeStream">● 2E3 已确认</span>
-    </div>
+<div class="app">
 
-    <div class="select-wrapper">
-      <select class="cohort-select" id="cohortSelect">
-        <option value="关注塔菲喵/5科-2E3统合推荐(最稳·仅周二早八).json">2E3 统合班 (当前锁定)</option>
-        <option value="关注塔菲喵/4科-2E5统合推荐(仅周一早八·睡到自然醒).json">4科-2E5 (仅周一早八)</option>
-        <option value="关注塔菲喵/4科-2E6统合备选(周三全天空白放假).json">4科-2E6 (周三全放假)</option>
-        <option value="关注塔菲喵/5科-2E7统合备选(周一周三四早八).json">5科-2E7 统合班</option>
-        <option value="关注塔菲喵/5科-2E1统合备选(周一二三连早八).json">5科-2E1 统合班</option>
-      </select>
-      <span class="select-arrow">▼</span>
-    </div>
+  <div class="header">
+    <div class="title">2E3 TIMETABLE</div>
+    <div class="date-badge" id="headerDate">--</div>
   </div>
 
-  <div class="radar-card" id="radarCard">
-    <div class="radar-header">
-      <span id="currentDateStr">2026年9月28日 · 星期一</span>
-      <span class="live-time" id="liveClock">13:30:00</span>
-    </div>
-    <div class="radar-content">
-      <div class="radar-badge" id="radarIcon">⏳</div>
-      <div class="radar-info">
-        <div class="radar-status-text" id="radarStatusTag">实时课程雷达</div>
-        <div class="radar-title" id="radarMainTitle">正在检查课程...</div>
-        <div class="radar-sub" id="radarSub">
-          <span id="radarSubText">正在加载教务课表数据...</span>
-        </div>
-      </div>
-    </div>
+  <div class="status-bar" id="statusBar">
+    <span class="status-tag" id="statusTag">RADAR</span>
+    <span class="status-main" id="statusMain">正在检查课程...</span>
+    <span class="status-sub" id="statusSub">--</span>
   </div>
 
-  <div class="mode-nav">
-    <button class="mode-btn active" id="btnModeDay" onclick="switchViewMode('day')">
-      <span>📱 每日卡片流</span>
-    </button>
-    <button class="mode-btn" id="btnModeWeek" onclick="switchViewMode('week')">
-      <span>📊 全周总览矩阵</span>
-    </button>
+  <div class="nav-row">
+    <div class="view-toggle">
+      <button class="toggle-btn active" id="btnDayView" onclick="setViewMode('day')">按日</button>
+      <button class="toggle-btn" id="btnWeekView" onclick="setViewMode('week')">全周</button>
+    </div>
+    <button class="today-jump-btn" onclick="goToday()">回到今天</button>
   </div>
 
   <div id="dayViewContainer">
-    <div class="day-pills-bar">
-      <button class="day-pill active" onclick="selectDay(0)" id="pill-0">
-        <span class="name">周一</span>
-        <span class="sub" id="sub-0">早八</span>
-      </button>
-      <button class="day-pill" onclick="selectDay(1)" id="pill-1">
-        <span class="name">周二</span>
-        <span class="sub" id="sub-1">早八</span>
-      </button>
-      <button class="day-pill" onclick="selectDay(2)" id="pill-2">
-        <span class="name">周三</span>
-        <span class="sub" id="sub-2">11点起</span>
-      </button>
-      <button class="day-pill" onclick="selectDay(3)" id="pill-3">
-        <span class="name">周四</span>
-        <span class="sub" id="sub-3">11点起</span>
-      </button>
-      <button class="day-pill" onclick="selectDay(4)" id="pill-4">
-        <span class="name">周五</span>
-        <span class="sub" id="sub-4">10点起</span>
-      </button>
-      <button class="day-pill" onclick="selectDay(5)" id="pill-5">
-        <span class="name">周六</span>
-        <span class="sub">周末</span>
-      </button>
-      <button class="day-pill" onclick="selectDay(6)" id="pill-6">
-        <span class="name">周日</span>
-        <span class="sub">周末</span>
-      </button>
+    <div class="day-selector">
+      <button class="day-btn" id="d-0" onclick="selectDay(0)"><span class="name">一</span><span class="info">08:00</span></button>
+      <button class="day-btn" id="d-1" onclick="selectDay(1)"><span class="name">二</span><span class="info">08:00</span></button>
+      <button class="day-btn" id="d-2" onclick="selectDay(2)"><span class="name">三</span><span class="info">11:00</span></button>
+      <button class="day-btn" id="d-3" onclick="selectDay(3)"><span class="name">四</span><span class="info">11:00</span></button>
+      <button class="day-btn" id="d-4" onclick="selectDay(4)"><span class="name">五</span><span class="info">10:00</span></button>
+      <button class="day-btn" id="d-5" onclick="selectDay(5)"><span class="name">六</span><span class="info">无课</span></button>
+      <button class="day-btn" id="d-6" onclick="selectDay(6)"><span class="name">日</span><span class="info">无课</span></button>
     </div>
 
-    <div class="day-summary-banner" style="margin-top: 10px; margin-bottom: 8px;">
-      <div class="day-summary-title" id="daySummaryTitle">
-        <span>周一课程安排</span>
-      </div>
-      <div id="dayTagContainer">
-        <span class="day-tag tag-early">早八大课日</span>
-      </div>
-    </div>
-
-    <div class="timeline-container" id="timelineList"></div>
-
-    <div class="day-nav-footer">
-      <button class="nav-arrow-btn" id="btnPrevDay" onclick="navigateDay(-1)">◀ 前一天</button>
-      <button class="nav-arrow-btn" id="btnToday" onclick="goToToday()">回到今天</button>
-      <button class="nav-arrow-btn" id="btnNextDay" onclick="navigateDay(1)">后一天 ▶</button>
-    </div>
+    <div class="timeline" id="timelineList"></div>
   </div>
 
-  <div class="week-matrix-container" id="weekViewContainer">
+  <div class="week-view" id="weekViewContainer">
     <table class="week-table">
       <thead>
         <tr>
-          <th class="week-th">周一 Mon</th>
-          <th class="week-th">周二 Tue</th>
-          <th class="week-th">周三 Wed</th>
-          <th class="week-th">周四 Thu</th>
-          <th class="week-th">周五 Fri</th>
+          <th class="week-th">周一</th>
+          <th class="week-th">周二</th>
+          <th class="week-th">周三</th>
+          <th class="week-th">周四</th>
+          <th class="week-th">周五</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td class="week-td" id="week-col-0"></td>
-          <td class="week-td" id="week-col-1"></td>
-          <td class="week-td" id="week-col-2"></td>
-          <td class="week-td" id="week-col-3"></td>
-          <td class="week-td" id="week-col-4"></td>
+          <td class="week-td" id="w-col-0"></td>
+          <td class="week-td" id="w-col-1"></td>
+          <td class="week-td" id="w-col-2"></td>
+          <td class="week-td" id="w-col-3"></td>
+          <td class="week-td" id="w-col-4"></td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <div class="app-footer">
-    <div>Curtin Foundation in Engineering & Science · Trimester 3F 2026</div>
-    <div>已成功锁定 2E3 班级 · 适配移动端高刷与 PWA 体验</div>
+  <div class="footer">
+    Curtin Foundation · 2E3 已确认 · 墨水极简版
   </div>
 
 </div>
 
 <script>
-  const DEFAULT_2E3_DATA = {
+  const SCHEDULE = {
     "0": [
-      {"start": 480, "end": 600, "subject": "Math 2 (lecture)", "location": "SK3 102 Lecture 1"},
-      {"start": 600, "end": 720, "subject": "Physics 2 (lecture)", "location": "SK3 102 Lecture 1"},
-      {"start": 780, "end": 900, "subject": "Programming (lecture)", "location": "Auditorium"},
-      {"start": 1020, "end": 1200, "subject": "Academic English (seminar)", "location": "LTCL 9 (HL2-109)"}
+      {"start": 480, "end": 600, "name": "Mathematics 2", "type": "Lecture", "loc": "SK3 102"},
+      {"start": 600, "end": 720, "name": "Physics 2", "type": "Lecture", "loc": "SK3 102"},
+      {"start": 780, "end": 900, "name": "Programming", "type": "Lecture", "loc": "Auditorium"},
+      {"start": 1020, "end": 1200, "name": "Academic English", "type": "Seminar", "loc": "LTCL 9 (HL2-109)"}
     ],
     "1": [
-      {"start": 480, "end": 570, "subject": "ECS (seminar)", "location": "LTCL 9 (HL2-109)"}
+      {"start": 480, "end": 570, "name": "Engineering Communication (ECS)", "type": "Seminar", "loc": "LTCL 9 (HL2-109)"}
     ],
     "2": [
-      {"start": 660, "end": 840, "subject": "Programming (laboratory)", "location": "PA3 106 (Computer Lab)"},
-      {"start": 960, "end": 1140, "subject": "Physics 2 (workshop)", "location": "SK2 101 (ME 101) / SK3 205"}
+      {"start": 660, "end": 840, "name": "Programming", "type": "Lab", "loc": "PA3 106 Lab"},
+      {"start": 960, "end": 1140, "name": "Physics 2", "type": "Workshop", "loc": "SK2 101 / SK3 205"}
     ],
     "3": [
-      {"start": 660, "end": 780, "subject": "Physics 2 (clinic)", "location": "Auditorium"},
-      {"start": 930, "end": 1020, "subject": "Math 2 (tutorial)", "location": "PA3 209"},
-      {"start": 1020, "end": 1110, "subject": "ECS (seminar)", "location": "PA3 203"}
+      {"start": 660, "end": 780, "name": "Physics 2", "type": "Clinic", "loc": "Auditorium"},
+      {"start": 930, "end": 1020, "name": "Mathematics 2", "type": "Tutorial", "loc": "PA3 209"},
+      {"start": 1020, "end": 1110, "name": "Engineering Communication (ECS)", "type": "Seminar", "loc": "PA3 203"}
     ],
     "4": [
-      {"start": 600, "end": 690, "subject": "Math 2 (tutorial)", "location": "PA3 210"},
-      {"start": 900, "end": 1080, "subject": "Academic English (seminar)", "location": "LTCL 10 (HL2-110)"}
+      {"start": 600, "end": 690, "name": "Mathematics 2", "type": "Tutorial", "loc": "PA3 210"},
+      {"start": 900, "end": 1080, "name": "Academic English", "type": "Seminar", "loc": "LTCL 10 (HL2-110)"}
     ],
     "5": [],
     "6": []
   };
 
-  let currentScheduleData = DEFAULT_2E3_DATA;
-  let activeDayIndex = (new Date().getDay() + 6) % 7;
-  let currentViewMode = 'day';
+  const DAY_NAMES = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+  let activeDay = (new Date().getDay() + 6) % 7;
 
-  const dayNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
-  const dayFullNames = ['星期一 (Mon)', '星期二 (Tue)', '星期三 (Wed)', '星期四 (Thu)', '星期五 (Fri)', '星期六 (Sat)', '星期日 (Sun)'];
-
-  function getSubjectTheme(subj) {
-    const s = subj.toLowerCase();
-    if (s.includes('math')) return { cls: 'card-math', mini: 'c-math', name: 'Mathematics 2' };
-    if (s.includes('physics')) return { cls: 'card-phy', mini: 'c-phy', name: 'Physics 2' };
-    if (s.includes('prog')) return { cls: 'card-prog', mini: 'c-prog', name: 'Programming' };
-    if (s.includes('communication') || s.includes('ecs')) return { cls: 'card-ecs', mini: 'c-ecs', name: 'ECS 沟通技能' };
-    if (s.includes('english')) return { cls: 'card-eng', mini: 'c-eng', name: 'Academic English' };
-    return { cls: 'card-math', mini: 'c-math', name: subj };
+  function toTime(m) {
+    const h = String(Math.floor(m / 60)).padStart(2, '0');
+    const min = String(m % 60).padStart(2, '0');
+    return `${h}:${min}`;
   }
 
-  function minToTimeStr(m) {
-    const h = Math.floor(m / 60);
-    const min = m % 60;
-    return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-  }
-
-  function durationStr(s, e) {
-    const durM = e - s;
-    const h = durM / 60;
-    return h === 1 ? '1小时' : (h % 1 === 0 ? `${h}小时` : `${h.toFixed(1)}小时`);
-  }
-
-  async function initApp() {
-    try {
-      const resp = await fetch('关注塔菲喵/classes.json?t=' + Date.now());
-      if (resp.ok) {
-        const classes = await resp.json();
-        const select = document.getElementById('cohortSelect');
-        const prevVal = select.value;
-        select.innerHTML = '';
-        classes.forEach(c => {
-          const opt = document.createElement('option');
-          opt.value = c.file;
-          opt.textContent = c.name;
-          select.appendChild(opt);
-        });
-        if (prevVal) select.value = prevVal;
-      }
-    } catch (e) {
-      console.warn('Using default class list', e);
-    }
-  }
-
-  async function loadSelectedSchedule() {
-    const select = document.getElementById('cohortSelect');
-    if (!select || !select.value) return;
-    const file = select.value;
-    try {
-      const resp = await fetch(file + '?t=' + Date.now());
-      if (resp.ok) {
-        currentScheduleData = await resp.json();
-      }
-    } catch (err) {
-      console.warn('Using default fallback data', err);
-    }
-
-    renderDayView();
-    renderWeekView();
-    updateLiveRadar();
-  }
-
-  document.getElementById('cohortSelect').addEventListener('change', () => {
-    loadSelectedSchedule();
-  });
-
-  function renderDayView() {
-    if (!currentScheduleData) return;
-    
-    const realToday = (new Date().getDay() + 6) % 7;
+  function renderDay() {
+    const today = (new Date().getDay() + 6) % 7;
     for (let d = 0; d < 7; d++) {
-      const pill = document.getElementById(`pill-${d}`);
-      if (pill) {
-        pill.classList.toggle('active', d === activeDayIndex);
-        pill.classList.toggle('is-today', d === realToday);
+      const btn = document.getElementById(`d-${d}`);
+      if (btn) {
+        btn.classList.toggle('active', d === activeDay);
+        btn.classList.toggle('is-today', d === today);
       }
     }
 
-    const dayCourses = currentScheduleData[String(activeDayIndex)] || [];
     const container = document.getElementById('timelineList');
     container.innerHTML = '';
+    const list = SCHEDULE[String(activeDay)] || [];
 
-    const titleElem = document.getElementById('daySummaryTitle');
-    const tagElem = document.getElementById('dayTagContainer');
-    
-    let isEarly = dayCourses.some(c => c.start === 480);
-    let startMin = dayCourses.length ? dayCourses[0].start : null;
-
-    if (dayCourses.length === 0) {
-      titleElem.innerHTML = `<span>${dayFullNames[activeDayIndex]}</span>`;
-      tagElem.innerHTML = `<span class="day-tag tag-free">今日全天无课 · 放假</span>`;
-      
-      container.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">☕</div>
-          <div class="empty-title">今天全天没有排课</div>
-          <div class="empty-desc">尽情享受睡到自然醒的惬意时光，打打游戏、刷刷题，或是去喝杯奶茶吧！</div>
-        </div>
-      `;
+    if (list.length === 0) {
+      container.innerHTML = `<div class="empty-state">今日全天无排课</div>`;
       return;
     }
 
-    titleElem.innerHTML = `<span>${dayNames[activeDayIndex]} · 共 ${dayCourses.length} 节课</span>`;
-    if (isEarly) {
-      tagElem.innerHTML = `<span class="day-tag tag-early">⏰ 08:00 早八</span>`;
-    } else if (startMin >= 660) {
-      tagElem.innerHTML = `<span class="day-tag tag-sleep">☀️ 11:00起 睡到自然醒</span>`;
-    } else if (startMin >= 600) {
-      tagElem.innerHTML = `<span class="day-tag tag-sleep">☀️ 10:00起 无早八</span>`;
-    } else {
-      tagElem.innerHTML = `<span class="day-tag tag-free">作息健康</span>`;
-    }
-
-    for (let i = 0; i < dayCourses.length; i++) {
-      const course = dayCourses[i];
-      const theme = getSubjectTheme(course.subject);
-      const dur = durationStr(course.start, course.end);
+    for (let i = 0; i < list.length; i++) {
+      const c = list[i];
+      const durH = (c.end - c.start) / 60;
+      const durStr = durH === 1 ? '1h' : (durH % 1 === 0 ? `${durH}h` : `${durH.toFixed(1)}h`);
 
       const card = document.createElement('div');
-      card.className = `course-card ${theme.cls}`;
+      card.className = 'course-card';
       card.innerHTML = `
-        <div class="card-top">
-          <div class="time-slot">
-            <span class="time-range">${minToTimeStr(course.start)} - ${minToTimeStr(course.end)}</span>
-            <span class="duration-pill">${dur}</span>
-          </div>
-          <span class="type-badge">${course.subject.includes('(') ? course.subject.split('(')[1].replace(')', '') : 'Class'}</span>
+        <div class="card-head">
+          <span class="time-txt">${toTime(c.start)} — ${toTime(c.end)}</span>
+          <span class="type-pill">${c.type}</span>
         </div>
-        <div class="course-title">${course.subject.split('(')[0].trim()}</div>
-        <div class="card-bottom">
-          <span class="room-pill">📍 ${course.location || '待定教室'}</span>
+        <div class="course-name">${c.name}</div>
+        <div class="course-meta">
+          <span class="loc-txt">📍 ${c.loc}</span>
+          <span>${durStr}</span>
         </div>
       `;
       container.appendChild(card);
 
-      if (i < dayCourses.length - 1) {
-        const nextCourse = dayCourses[i + 1];
-        const gapMin = nextCourse.start - course.end;
-        if (gapMin >= 60) {
-          const gapH = (gapMin / 60).toFixed(1).replace('.0', '');
-          const breakCard = document.createElement('div');
-          breakCard.className = 'break-card';
-          let note = '午餐 / 休息自习';
-          if (gapMin >= 180) note = '大午休 · 回家冲凉睡大觉';
-          else if (course.end >= 1020) note = '晚餐 / 散步放松';
-          
-          breakCard.innerHTML = `
-            <div class="break-tag">☕ 课间休息 <strong>${gapH} 小时</strong> (${minToTimeStr(course.end)} - ${minToTimeStr(nextCourse.start)})</div>
-            <div>${note}</div>
-          `;
-          container.appendChild(breakCard);
+      if (i < list.length - 1) {
+        const gap = list[i + 1].start - c.end;
+        if (gap >= 60) {
+          const gapH = (gap / 60).toFixed(1).replace('.0', '');
+          const gapEl = document.createElement('div');
+          gapEl.className = 'gap-card';
+          gapEl.textContent = `课间 ${gapH} 小时 (${toTime(c.end)} - ${toTime(list[i + 1].start)})`;
+          container.appendChild(gapEl);
         }
       }
     }
-
-    if (dayCourses.length === 1 && dayCourses[0].end <= 600) {
-      const earlyFree = document.createElement('div');
-      earlyFree.className = 'break-card';
-      earlyFree.style.background = '#f0fdf4';
-      earlyFree.style.borderColor = '#86efac';
-      earlyFree.style.color = '#15803d';
-      earlyFree.innerHTML = `
-        <div class="break-tag">🎉 <strong>${minToTimeStr(dayCourses[0].end)} 准时下课！</strong></div>
-        <div>全天剩余时间完全放假自由！</div>
-      `;
-      container.appendChild(earlyFree);
-    }
   }
 
-  function renderWeekView() {
-    if (!currentScheduleData) return;
+  function renderWeek() {
     for (let d = 0; d < 5; d++) {
-      const col = document.getElementById(`week-col-${d}`);
+      const col = document.getElementById(`w-col-${d}`);
       col.innerHTML = '';
-      const list = currentScheduleData[String(d)] || [];
+      const list = SCHEDULE[String(d)] || [];
       if (list.length === 0) {
-        col.innerHTML = '<div style="text-align:center; padding: 20px 0; color:#94a3b8; font-size:11px; font-weight:700;">全天无课</div>';
+        col.innerHTML = '<div style="text-align:center; padding:15px 0; color:#888; font-size:10px;">无课</div>';
       } else {
         list.forEach(c => {
-          const theme = getSubjectTheme(c.subject);
           const box = document.createElement('div');
-          box.className = `mini-course-box`;
-          
-          let bg = '#eff6ff', border = '#3b82f6', text = '#1d4ed8';
-          if (theme.cls.includes('phy')) { bg = '#f5f3ff'; border = '#8b5cf6'; text = '#6d28d9'; }
-          else if (theme.cls.includes('prog')) { bg = '#ecfdf5'; border = '#10b981'; text = '#047857'; }
-          else if (theme.cls.includes('ecs')) { bg = '#fffbeb'; border = '#f59e0b'; text = '#b45309'; }
-          else if (theme.cls.includes('eng')) { bg = '#fff1f2'; border = '#f43f5e'; text = '#be123c'; }
-          
-          box.style.background = bg;
-          box.style.borderLeft = `3px solid ${border}`;
-          box.style.color = text;
-
+          box.className = 'mini-box';
           box.innerHTML = `
-            <div class="time">${minToTimeStr(c.start)}-${minToTimeStr(c.end)}</div>
-            <div class="title">${c.subject.split('(')[0]}</div>
-            <div class="room">${c.location ? c.location.split('(')[0] : ''}</div>
+            <div class="mini-time">${toTime(c.start)}-${toTime(c.end)}</div>
+            <div class="mini-name">${c.name}</div>
+            <div class="mini-loc">${c.loc}</div>
           `;
           col.appendChild(box);
         });
@@ -916,117 +527,72 @@
   }
 
   function selectDay(d) {
-    activeDayIndex = d;
-    renderDayView();
+    activeDay = d;
+    renderDay();
   }
 
-  function navigateDay(offset) {
-    activeDayIndex = (activeDayIndex + offset + 7) % 7;
-    selectDay(activeDayIndex);
+  function goToday() {
+    activeDay = (new Date().getDay() + 6) % 7;
+    selectDay(activeDay);
   }
 
-  function goToToday() {
-    const today = (new Date().getDay() + 6) % 7;
-    selectDay(today);
+  function setViewMode(mode) {
+    const isDay = mode === 'day';
+    document.getElementById('btnDayView').classList.toggle('active', isDay);
+    document.getElementById('btnWeekView').classList.toggle('active', !isDay);
+    document.getElementById('dayViewContainer').style.display = isDay ? 'block' : 'none';
+    document.getElementById('weekViewContainer').style.display = isDay ? 'none' : 'block';
   }
 
-  function switchViewMode(mode) {
-    currentViewMode = mode;
-    const btnDay = document.getElementById('btnModeDay');
-    const btnWeek = document.getElementById('btnModeWeek');
-    const dayBox = document.getElementById('dayViewContainer');
-    const weekBox = document.getElementById('weekViewContainer');
-
-    if (mode === 'day') {
-      btnDay.classList.add('active');
-      btnWeek.classList.remove('active');
-      dayBox.style.display = 'block';
-      weekBox.style.display = 'none';
-    } else {
-      btnWeek.classList.add('active');
-      btnDay.classList.remove('active');
-      dayBox.style.display = 'none';
-      weekBox.style.display = 'block';
-    }
-  }
-
-  function setupClock() {
-    setInterval(() => {
-      const now = new Date();
-      const h = String(now.getHours()).padStart(2, '0');
-      const m = String(now.getMinutes()).padStart(2, '0');
-      const s = String(now.getSeconds()).padStart(2, '0');
-      document.getElementById('liveClock').textContent = `${h}:${m}:${s}`;
-      
-      const dayStr = dayNames[(now.getDay() + 6) % 7];
-      document.getElementById('currentDateStr').textContent = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 · ${dayStr}`;
-
-      updateLiveRadar();
-    }, 1000);
-  }
-
-  function updateLiveRadar() {
-    if (!currentScheduleData) return;
+  function updateStatus() {
     const now = new Date();
-    const todayIdx = (now.getDay() + 6) % 7;
-    const currentMin = now.getHours() * 60 + now.getMinutes();
+    const curMin = now.getHours() * 60 + now.getMinutes();
+    const today = (now.getDay() + 6) % 7;
 
-    const tag = document.getElementById('radarStatusTag');
-    const title = document.getElementById('radarMainTitle');
-    const sub = document.getElementById('radarSubText');
-    const icon = document.getElementById('radarIcon');
+    const m = now.getMonth() + 1;
+    const dt = now.getDate();
+    document.getElementById('headerDate').textContent = `${m}月${dt}日 · ${DAY_NAMES[today]}`;
 
-    const todayCourses = currentScheduleData[String(todayIdx)] || [];
-    if (todayCourses.length === 0) {
-      icon.textContent = '☀️';
-      tag.textContent = '今日无课';
-      title.textContent = '今日无排课，好好放松';
-      sub.textContent = '明天也是元气满满的一天！';
+    const tag = document.getElementById('statusTag');
+    const main = document.getElementById('statusMain');
+    const sub = document.getElementById('statusSub');
+
+    const todayList = SCHEDULE[String(today)] || [];
+
+    const ongoing = todayList.find(c => curMin >= c.start && curMin < c.end);
+    if (ongoing) {
+      tag.textContent = '上课中';
+      main.textContent = `${ongoing.name} (${ongoing.type})`;
+      sub.textContent = `剩 ${ongoing.end - curMin} 分钟 · ${ongoing.loc}`;
       return;
     }
 
-    const currentCourse = todayCourses.find(c => currentMin >= c.start && currentMin < c.end);
-    if (currentCourse) {
-      const remain = currentCourse.end - currentMin;
-      icon.textContent = '🟢';
-      tag.textContent = '正在上课中';
-      title.textContent = currentCourse.subject;
-      sub.innerHTML = `<span>📍 ${currentCourse.location}</span> · <span>还剩 <strong>${remain}</strong> 分钟下课</span>`;
+    const next = todayList.find(c => c.start > curMin);
+    if (next) {
+      const wait = next.start - curMin;
+      const waitStr = wait >= 60 ? `${Math.floor(wait / 60)}h ${wait % 60}m` : `${wait}分钟`;
+      tag.textContent = '待命中';
+      main.textContent = `下节: ${next.name}`;
+      sub.textContent = `${toTime(next.start)} · 剩 ${waitStr} · ${next.loc}`;
       return;
     }
 
-    const nextCourse = todayCourses.find(c => c.start > currentMin);
-    if (nextCourse) {
-      const wait = nextCourse.start - currentMin;
-      const waitH = Math.floor(wait / 60);
-      const waitM = wait % 60;
-      const waitStr = waitH > 0 ? `${waitH}小时${waitM}分` : `${waitM}分钟`;
-      
-      icon.textContent = '☕';
-      tag.textContent = '课间待命 / 即将上课';
-      title.textContent = `下一节: ${nextCourse.subject.split('(')[0]}`;
-      sub.innerHTML = `<span>⏰ ${minToTimeStr(nextCourse.start)} 开始</span> · <span>还剩 <strong>${waitStr}</strong></span> · <span>📍 ${nextCourse.location}</span>`;
-      return;
-    }
-
-    icon.textContent = '🎉';
-    tag.textContent = '今日大功告成';
-    title.textContent = '今天的课程全部结束了！';
-    
-    const tomorrowIdx = (todayIdx + 1) % 7;
-    const tomorrowCourses = currentScheduleData[String(tomorrowIdx)] || [];
-    if (tomorrowCourses.length > 0) {
-      sub.textContent = `明天第一节: ${minToTimeStr(tomorrowCourses[0].start)} ${tomorrowCourses[0].subject.split('(')[0]}`;
+    tag.textContent = '已结束';
+    main.textContent = '今日全部课程已完成';
+    const tomorrow = (today + 1) % 7;
+    const tomList = SCHEDULE[String(tomorrow)] || [];
+    if (tomList.length > 0) {
+      sub.textContent = `明日首节: ${toTime(tomList[0].start)} ${tomList[0].name}`;
+    } else {
+      sub.textContent = '明日全天无课';
     }
   }
 
-  renderDayView();
-  renderWeekView();
-  setupClock();
-  updateLiveRadar();
-
-  initApp();
+  // 初始化
+  renderDay();
+  renderWeek();
+  updateStatus();
+  setInterval(updateStatus, 30000);
 </script>
-
 </body>
 </html>
