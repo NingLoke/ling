@@ -678,7 +678,34 @@
 </div>
 
 <script>
-  let currentScheduleData = null;
+  const DEFAULT_2E3_DATA = {
+    "0": [
+      {"start": 480, "end": 600, "subject": "Math 2 (lecture)", "location": "SK3 102 Lecture 1"},
+      {"start": 600, "end": 720, "subject": "Physics 2 (lecture)", "location": "SK3 102 Lecture 1"},
+      {"start": 780, "end": 900, "subject": "Programming (lecture)", "location": "Auditorium"},
+      {"start": 1020, "end": 1200, "subject": "Academic English (seminar)", "location": "LTCL 9 (HL2-109)"}
+    ],
+    "1": [
+      {"start": 480, "end": 570, "subject": "ECS (seminar)", "location": "LTCL 9 (HL2-109)"}
+    ],
+    "2": [
+      {"start": 660, "end": 840, "subject": "Programming (laboratory)", "location": "PA3 106 (Computer Lab)"},
+      {"start": 960, "end": 1140, "subject": "Physics 2 (workshop)", "location": "SK2 101 (ME 101) / SK3 205"}
+    ],
+    "3": [
+      {"start": 660, "end": 780, "subject": "Physics 2 (clinic)", "location": "Auditorium"},
+      {"start": 930, "end": 1020, "subject": "Math 2 (tutorial)", "location": "PA3 209"},
+      {"start": 1020, "end": 1110, "subject": "ECS (seminar)", "location": "PA3 203"}
+    ],
+    "4": [
+      {"start": 600, "end": 690, "subject": "Math 2 (tutorial)", "location": "PA3 210"},
+      {"start": 900, "end": 1080, "subject": "Academic English (seminar)", "location": "LTCL 10 (HL2-110)"}
+    ],
+    "5": [],
+    "6": []
+  };
+
+  let currentScheduleData = DEFAULT_2E3_DATA;
   let activeDayIndex = (new Date().getDay() + 6) % 7;
   let currentViewMode = 'day';
 
@@ -713,6 +740,7 @@
       if (resp.ok) {
         const classes = await resp.json();
         const select = document.getElementById('cohortSelect');
+        const prevVal = select.value;
         select.innerHTML = '';
         classes.forEach(c => {
           const opt = document.createElement('option');
@@ -720,50 +748,24 @@
           opt.textContent = c.name;
           select.appendChild(opt);
         });
+        if (prevVal) select.value = prevVal;
       }
     } catch (e) {
       console.warn('Using default class list', e);
     }
-
-    loadSelectedSchedule();
-    setupClock();
   }
 
   async function loadSelectedSchedule() {
     const select = document.getElementById('cohortSelect');
+    if (!select || !select.value) return;
     const file = select.value;
     try {
       const resp = await fetch(file + '?t=' + Date.now());
-      if (!resp.ok) throw new Error('Fetch failed');
-      currentScheduleData = await resp.json();
+      if (resp.ok) {
+        currentScheduleData = await resp.json();
+      }
     } catch (err) {
-      console.error('Failed to load schedule JSON, using fallback', err);
-      currentScheduleData = {
-        "0": [
-          {"start": 480, "end": 600, "subject": "Math 2 (lecture)", "location": "SK3 102 Lecture 1"},
-          {"start": 600, "end": 720, "subject": "Physics 2 (lecture)", "location": "SK3 102 Lecture 1"},
-          {"start": 780, "end": 900, "subject": "Programming (lecture)", "location": "Auditorium"},
-          {"start": 1020, "end": 1200, "subject": "Academic English (seminar)", "location": "LTCL 9 (HL2-109)"}
-        ],
-        "1": [
-          {"start": 480, "end": 570, "subject": "ECS (seminar)", "location": "LTCL 9 (HL2-109)"}
-        ],
-        "2": [
-          {"start": 660, "end": 840, "subject": "Programming (laboratory)", "location": "PA3 106 (Computer Lab)"},
-          {"start": 960, "end": 1140, "subject": "Physics 2 (workshop)", "location": "ME 101 / SK3 205"}
-        ],
-        "3": [
-          {"start": 660, "end": 780, "subject": "Physics 2 (clinic)", "location": "Auditorium"},
-          {"start": 930, "end": 1020, "subject": "Math 2 (tutorial)", "location": "PA3 209"},
-          {"start": 1020, "end": 1110, "subject": "ECS (seminar)", "location": "PA3 203"}
-        ],
-        "4": [
-          {"start": 600, "end": 690, "subject": "Math 2 (tutorial)", "location": "PA3 210"},
-          {"start": 900, "end": 1080, "subject": "Academic English (seminar)", "location": "LTCL 10 (HL2-110)"}
-        ],
-        "5": [],
-        "6": []
-      };
+      console.warn('Using default fallback data', err);
     }
 
     renderDayView();
@@ -1015,10 +1017,13 @@
     const tomorrowCourses = currentScheduleData[String(tomorrowIdx)] || [];
     if (tomorrowCourses.length > 0) {
       sub.textContent = `明天第一节: ${minToTimeStr(tomorrowCourses[0].start)} ${tomorrowCourses[0].subject.split('(')[0]}`;
-    } else {
-      sub.textContent = '明天全天无课，睡到自然醒！';
     }
   }
+
+  renderDayView();
+  renderWeekView();
+  setupClock();
+  updateLiveRadar();
 
   initApp();
 </script>
