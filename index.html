@@ -37,7 +37,7 @@
       max-width: 520px;
     }
 
-    /* 顶部标题栏 */
+    
     .header {
       display: flex;
       justify-content: space-between;
@@ -59,7 +59,7 @@
       font-weight: 600;
     }
 
-    /* 状态条 */
+    
     .status-bar {
       border: 1.5px solid var(--border);
       background: var(--card-bg);
@@ -92,7 +92,7 @@
       color: var(--ink-muted);
     }
 
-    /* 视图切换与周导航 */
+    
     .nav-row {
       display: flex;
       justify-content: space-between;
@@ -134,7 +134,7 @@
       color: var(--ink);
     }
 
-    /* 星期按钮组 */
+    
     .day-selector {
       display: grid;
       grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -188,7 +188,7 @@
       background: #eeeeea;
     }
 
-    /* 课程卡片 */
+    
     .timeline {
       display: flex;
       flex-direction: column;
@@ -247,7 +247,7 @@
       color: var(--ink);
     }
 
-    /* 课间空档 */
+    
     .gap-card {
       text-align: center;
       font-size: 11px;
@@ -268,7 +268,7 @@
     .gap-card::before { left: 5%; }
     .gap-card::after { right: 5%; }
 
-    /* 空状态 */
+    
     .empty-state {
       border: 1.5px dashed var(--border-light);
       background: var(--card-bg);
@@ -280,7 +280,7 @@
       font-weight: 600;
     }
 
-    /* 全周矩阵表 */
+    
     .week-view {
       display: none;
       background: var(--card-bg);
@@ -340,13 +340,6 @@
       font-size: 9px;
       color: var(--ink-light);
     }
-
-    .footer {
-      text-align: center;
-      font-size: 11px;
-      color: var(--ink-light);
-      margin-top: 16px;
-    }
   </style>
 </head>
 <body>
@@ -359,9 +352,9 @@
   </div>
 
   <div class="status-bar" id="statusBar">
-    <span class="status-tag" id="statusTag">RADAR</span>
-    <span class="status-main" id="statusMain">正在检查课程...</span>
-    <span class="status-sub" id="statusSub">--</span>
+    <span class="status-tag" id="statusTag"></span>
+    <span class="status-main" id="statusMain"></span>
+    <span class="status-sub" id="statusSub"></span>
   </div>
 
   <div class="nav-row">
@@ -407,10 +400,6 @@
         </tr>
       </tbody>
     </table>
-  </div>
-
-  <div class="footer">
-    Curtin Foundation · 2E3 已确认 · 墨水极简版
   </div>
 
 </div>
@@ -588,7 +577,6 @@
     }
   }
 
-  // 初始化
   renderDay();
   renderWeek();
   updateStatus();
