@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Curtin 课表查询 | 四科班级全览</title>
+  <title>CURTIN 3E 课表查询</title>
   <style>
     :root {
       --bg: #f7f7f5;
@@ -13,7 +13,6 @@
       --ink-light: #888888;
       --border: #222222;
       --border-light: #d8d8d4;
-      --accent: #2563eb;
     }
 
     * {
@@ -35,7 +34,7 @@
 
     .app {
       width: 100%;
-      max-width: 540px;
+      max-width: 520px;
     }
 
     /* Header */
@@ -60,7 +59,7 @@
       font-weight: 600;
     }
 
-    /* Class Switcher */
+    /* Class Switcher (3E Only) */
     .class-bar {
       background: var(--card-bg);
       border: 1.5px solid var(--border);
@@ -79,8 +78,8 @@
     }
 
     .class-label {
-      font-size: 12px;
-      font-weight: 700;
+      font-size: 11px;
+      font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: var(--ink-muted);
@@ -95,18 +94,16 @@
     .class-tabs {
       display: flex;
       gap: 6px;
-      flex-wrap: wrap;
     }
 
     .class-btn {
       flex: 1;
-      min-width: 60px;
-      padding: 7px 4px;
+      padding: 8px 4px;
       border: 1.5px solid var(--border-light);
       background: #fafaf8;
       border-radius: 6px;
-      font-size: 13px;
-      font-weight: 700;
+      font-size: 14px;
+      font-weight: 800;
       cursor: pointer;
       text-align: center;
       transition: all 0.15s ease;
@@ -121,27 +118,6 @@
       background: var(--ink);
       color: #ffffff;
       border-color: var(--ink);
-    }
-
-    .class-dropdown-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding-top: 4px;
-      border-top: 1px dashed var(--border-light);
-      font-size: 12px;
-    }
-
-    .class-select {
-      flex: 1;
-      padding: 5px 8px;
-      border: 1px solid var(--border);
-      border-radius: 5px;
-      background: #ffffff;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--ink);
-      outline: none;
     }
 
     /* Live Status Bar */
@@ -273,7 +249,7 @@
       box-shadow: inset 0 0 0 1px var(--border);
     }
 
-    /* Timeline & Course Cards */
+    /* Timeline & Cards */
     .timeline {
       display: flex;
       flex-direction: column;
@@ -285,7 +261,7 @@
       background: var(--card-bg);
       border-radius: 8px;
       padding: 12px 14px;
-      box-shadow: 0 2px 0 rgba(0,0,0,0.05);
+      box-shadow: 0 2px 0 rgba(0,0,0,0.04);
     }
 
     .card-head {
@@ -353,7 +329,7 @@
       background: var(--card-bg);
     }
 
-    /* Week Table View */
+    /* Week View */
     .week-view {
       display: none;
       overflow-x: auto;
@@ -440,35 +416,21 @@
 <div class="app">
 
   <div class="header">
-    <div class="title" id="pageTitle">CURTIN TIMETABLE</div>
+    <div class="title" id="pageTitle">3E1 TIMETABLE</div>
     <div class="date-badge" id="headerDate">--</div>
   </div>
 
-  <!-- Class Selector -->
+  <!-- Class Selector (3E1 ~ 3E4) -->
   <div class="class-bar">
     <div class="class-bar-top">
-      <span class="class-label">选择班级 (Select Cohort)</span>
-      <span class="class-meta" id="classMeta">4门科目完整联动</span>
+      <span class="class-label">3E 班级选择 (Cohort Selection)</span>
+      <span class="class-meta" id="classMeta">4门科目官方数据</span>
     </div>
     <div class="class-tabs">
-      <button class="class-btn active" data-class="3E1" onclick="selectClass('3E1')">3E1 班</button>
-      <button class="class-btn" data-class="3E2" onclick="selectClass('3E2')">3E2 班</button>
-      <button class="class-btn" data-class="3E3" onclick="selectClass('3E3')">3E3 班</button>
-      <button class="class-btn" data-class="3E4" onclick="selectClass('3E4')">3E4 班</button>
-    </div>
-    <div class="class-dropdown-row">
-      <span style="font-weight:600; color:var(--ink-muted); white-space:nowrap;">其他分组:</span>
-      <select class="class-select" id="otherClassSelect" onchange="selectClass(this.value)">
-        <option value="" disabled selected>选择 2E 系列 (Physics 2 专修)...</option>
-        <option value="2E1">2E1 (Physics 2 周三 13:00)</option>
-        <option value="2E2">2E2 (Physics 2 周四 08:00)</option>
-        <option value="2E3">2E3 (Physics 2 周三 16:00)</option>
-        <option value="2E4">2E4 (Physics 2 周二 11:00)</option>
-        <option value="2E5">2E5 (Physics 2 周一 15:00)</option>
-        <option value="2E6">2E6 (Physics 2 周二 08:00)</option>
-        <option value="2E7">2E7 (Physics 2 周三 08:00)</option>
-        <option value="2E8">2E8 (Physics 2 周二 14:00)</option>
-      </select>
+      <button class="class-btn active" data-class="3E1" onclick="selectClass('3E1')">3E1</button>
+      <button class="class-btn" data-class="3E2" onclick="selectClass('3E2')">3E2</button>
+      <button class="class-btn" data-class="3E3" onclick="selectClass('3E3')">3E3</button>
+      <button class="class-btn" data-class="3E4" onclick="selectClass('3E4')">3E4</button>
     </div>
   </div>
 
@@ -536,7 +498,7 @@
 </div>
 
 <script>
-  const ALL_SCHEDULES = {"3E1": {"0": [{"start": 480, "end": 600, "startTime": "8:00", "endTime": "10:00", "name": "Mathematics 3", "type": "Lecture", "loc": "SK3 103 Lecture 2", "group": "3E1-4", "weeks": "41-52", "staff": "Puteri Nurul Fatihah Binti Mohamad Azli;Shubashini Krishnan"}, {"start": 600, "end": 720, "startTime": "10:00", "endTime": "12:00", "name": "Physics 2", "type": "Lecture", "loc": "SK3 102 Lecture 1", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}, {"start": 780, "end": 870, "startTime": "13:00", "endTime": "14:30", "name": "Critical Thinking", "type": "Seminar", "loc": "LTCL 4 (HL2-104)", "group": "3E1", "weeks": "41-52", "staff": "Elia Bit"}], "1": [{"start": 480, "end": 570, "startTime": "8:00", "endTime": "9:30", "name": "Mathematics 3", "type": "Tutorial", "loc": "PA3 204", "group": "3E1", "weeks": "41-52", "staff": "Puteri Nurul Fatihah Binti Mohamad Azli"}, {"start": 720, "end": 810, "startTime": "12:00", "endTime": "13:30", "name": "Critical Thinking", "type": "Seminar", "loc": "LTCL 2 (HL2-102)", "group": "3E1", "weeks": "41-52", "staff": "Elia Bit"}, {"start": 840, "end": 960, "startTime": "14:00", "endTime": "16:00", "name": "Chemistry", "type": "Lecture", "loc": "Auditorium", "group": "3E1-4; D2A1/D1A1", "weeks": "41-52", "staff": "Cynthia Anak Paul Sebli;Nikia William"}], "2": [{"start": 780, "end": 900, "startTime": "13:00", "endTime": "15:00", "name": "Chemistry", "type": "Tutorial", "loc": "LTCL 5 (HL2-105)", "group": "3E1", "weeks": "41-52", "staff": "Hii Kiew Ling"}, {"start": 1020, "end": 1110, "startTime": "17:00", "endTime": "18:30", "name": "Mathematics 3", "type": "Clinic", "loc": "SK3 206 CR 2", "group": "3E1-4", "weeks": "41-52", "staff": "Puteri Nurul Fatihah Binti Mohamad Azli;Shubashini Krishnan"}], "3": [{"start": 480, "end": 600, "startTime": "8:00", "endTime": "10:00", "name": "Chemistry", "type": "Lab", "loc": "SK2 204 (ME 204) Chem Lab 1", "group": "3E1", "weeks": "41-52", "staff": "Cynthia Anak Paul Sebli"}, {"start": 660, "end": 780, "startTime": "11:00", "endTime": "13:00", "name": "Physics 2", "type": "Clinic", "loc": "Auditorium", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}, {"start": 840, "end": 930, "startTime": "14:00", "endTime": "15:30", "name": "Mathematics 3", "type": "Tutorial", "loc": "PA3 205", "group": "3E1", "weeks": "41-52", "staff": "Puteri Nurul Fatihah Binti Mohamad Azli"}], "4": [{"start": 480, "end": 660, "startTime": "8:00", "endTime": "11:00", "name": "Physics 2", "type": "Workshop", "loc": "SK2 101 (ME 101) Physics Lab,SK3 205 CR 1", "group": "3E1", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "5": [], "6": []}, "3E2": {"0": [{"start": 480, "end": 600, "startTime": "8:00", "endTime": "10:00", "name": "Mathematics 3", "type": "Lecture", "loc": "SK3 103 Lecture 2", "group": "3E1-4", "weeks": "41-52", "staff": "Puteri Nurul Fatihah Binti Mohamad Azli;Shubashini Krishnan"}, {"start": 600, "end": 720, "startTime": "10:00", "endTime": "12:00", "name": "Physics 2", "type": "Lecture", "loc": "SK3 102 Lecture 1", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}, {"start": 780, "end": 870, "startTime": "13:00", "endTime": "14:30", "name": "Mathematics 3", "type": "Tutorial", "loc": "LTCL 3 (HL2-103)", "group": "3E2", "weeks": "41-52", "staff": "Shubashini Krishnan"}], "1": [{"start": 840, "end": 960, "startTime": "14:00", "endTime": "16:00", "name": "Chemistry", "type": "Lecture", "loc": "Auditorium", "group": "3E1-4; D2A1/D1A1", "weeks": "41-52", "staff": "Cynthia Anak Paul Sebli;Nikia William"}], "2": [{"start": 780, "end": 900, "startTime": "13:00", "endTime": "15:00", "name": "Chemistry", "type": "Lab", "loc": "SK2 205 (ME 205) Chem Lab 2", "group": "3E2", "weeks": "41-52", "staff": "Cynthia Anak Paul Sebli"}, {"start": 840, "end": 930, "startTime": "14:00", "endTime": "15:30", "name": "Mathematics 3", "type": "Tutorial", "loc": "PA3 206", "group": "3E2", "weeks": "41-52", "staff": "Shubashini Krishnan"}, {"start": 1020, "end": 1110, "startTime": "17:00", "endTime": "18:30", "name": "Mathematics 3", "type": "Clinic", "loc": "SK3 206 CR 2", "group": "3E1-4", "weeks": "41-52", "staff": "Puteri Nurul Fatihah Binti Mohamad Azli;Shubashini Krishnan"}], "3": [{"start": 480, "end": 570, "startTime": "8:00", "endTime": "9:30", "name": "Critical Thinking", "type": "Seminar", "loc": "SK3 104 Lecture 3", "group": "3E2", "weeks": "41-52", "staff": "Grace Abigail"}, {"start": 660, "end": 780, "startTime": "11:00", "endTime": "13:00", "name": "Physics 2", "type": "Clinic", "loc": "Auditorium", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}, {"start": 840, "end": 1020, "startTime": "14:00", "endTime": "17:00", "name": "Physics 2", "type": "Workshop", "loc": "SK3 206 CR 2,SK2 101 (ME 101) Physics Lab", "group": "3E2", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "4": [{"start": 480, "end": 570, "startTime": "8:00", "endTime": "9:30", "name": "Critical Thinking", "type": "Seminar", "loc": "LTCL 2 (HL2-102)", "group": "3E2", "weeks": "41-52", "staff": "Grace Abigail"}, {"start": 600, "end": 720, "startTime": "10:00", "endTime": "12:00", "name": "Chemistry", "type": "Tutorial", "loc": "LTCL 4 (HL2-104)", "group": "3E2", "weeks": "41-52", "staff": "Nikia William"}], "5": [], "6": []}, "3E3": {"0": [{"start": 480, "end": 600, "startTime": "8:00", "endTime": "10:00", "name": "Mathematics 3", "type": "Lecture", "loc": "SK3 103 Lecture 2", "group": "3E1-4", "weeks": "41-52", "staff": "Puteri Nurul Fatihah Binti Mohamad Azli;Shubashini Krishnan"}, {"start": 600, "end": 720, "startTime": "10:00", "endTime": "12:00", "name": "Physics 2", "type": "Lecture", "loc": "SK3 102 Lecture 1", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "1": [{"start": 480, "end": 570, "startTime": "8:00", "endTime": "9:30", "name": "Critical Thinking", "type": "Seminar", "loc": "PA3 211", "group": "3E3", "weeks": "41-52", "staff": "Grace Abigail"}, {"start": 690, "end": 780, "startTime": "11:30", "endTime": "13:00", "name": "Mathematics 3", "type": "Tutorial", "loc": "LTCL 9 (HL2-109)", "group": "3E3", "weeks": "41-52", "staff": "Shubashini Krishnan"}, {"start": 840, "end": 960, "startTime": "14:00", "endTime": "16:00", "name": "Chemistry", "type": "Lecture", "loc": "Auditorium", "group": "3E1-4; D2A1/D1A1", "weeks": "41-52", "staff": "Cynthia Anak Paul Sebli;Nikia William"}], "2": [{"start": 810, "end": 900, "startTime": "13:30", "endTime": "15:00", "name": "Critical Thinking", "type": "Seminar", "loc": "SK3 104 Lecture 3", "group": "3E3", "weeks": "41-52", "staff": "Grace Abigail"}, {"start": 1020, "end": 1110, "startTime": "17:00", "endTime": "18:30", "name": "Mathematics 3", "type": "Clinic", "loc": "SK3 206 CR 2", "group": "3E1-4", "weeks": "41-52", "staff": "Puteri Nurul Fatihah Binti Mohamad Azli;Shubashini Krishnan"}], "3": [{"start": 480, "end": 600, "startTime": "8:00", "endTime": "10:00", "name": "Chemistry", "type": "Lab", "loc": "SK2 205 (ME 205) Chem Lab 2", "group": "3E3", "weeks": "41-52", "staff": "Nikia William"}, {"start": 660, "end": 780, "startTime": "11:00", "endTime": "13:00", "name": "Physics 2", "type": "Clinic", "loc": "Auditorium", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}, {"start": 780, "end": 900, "startTime": "13:00", "endTime": "15:00", "name": "Chemistry", "type": "Tutorial", "loc": "LTCL 4 (HL2-104)", "group": "3E3", "weeks": "41-52", "staff": "Cynthia Anak Paul Sebli"}], "4": [{"start": 480, "end": 570, "startTime": "8:00", "endTime": "9:30", "name": "Mathematics 3", "type": "Tutorial", "loc": "PA3 209", "group": "3E3", "weeks": "41-52", "staff": "Shubashini Krishnan"}, {"start": 840, "end": 1020, "startTime": "14:00", "endTime": "17:00", "name": "Physics 2", "type": "Workshop", "loc": "SK2 101 (ME 101) Physics Lab,SK3 205 CR 1", "group": "3E3", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "5": [], "6": []}, "3E4": {"0": [{"start": 480, "end": 600, "startTime": "8:00", "endTime": "10:00", "name": "Mathematics 3", "type": "Lecture", "loc": "SK3 103 Lecture 2", "group": "3E1-4", "weeks": "41-52", "staff": "Puteri Nurul Fatihah Binti Mohamad Azli;Shubashini Krishnan"}, {"start": 930, "end": 1020, "startTime": "15:30", "endTime": "17:00", "name": "Critical Thinking", "type": "Seminar", "loc": "PA3 211", "group": "3E4", "weeks": "41-52", "staff": "Chai Kang Ming"}], "1": [{"start": 840, "end": 960, "startTime": "14:00", "endTime": "16:00", "name": "Chemistry", "type": "Lecture", "loc": "Auditorium", "group": "3E1-4; D2A1/D1A1", "weeks": "41-52", "staff": "Cynthia Anak Paul Sebli;Nikia William"}, {"start": 930, "end": 1020, "startTime": "15:30", "endTime": "17:00", "name": "Mathematics 3", "type": "Tutorial", "loc": "PA3 207", "group": "3E4", "weeks": "41-52", "staff": "Shubashini Krishnan"}], "2": [{"start": 780, "end": 900, "startTime": "13:00", "endTime": "15:00", "name": "Chemistry", "type": "Tutorial", "loc": "PA3 204", "group": "3E4; D2A1; D1A1", "weeks": "41-52", "staff": "Nikia William"}, {"start": 930, "end": 1020, "startTime": "15:30", "endTime": "17:00", "name": "Critical Thinking", "type": "Seminar", "loc": "PA3 202", "group": "3E4", "weeks": "41-52", "staff": "Chai Kang Ming"}, {"start": 1020, "end": 1110, "startTime": "17:00", "endTime": "18:30", "name": "Mathematics 3", "type": "Clinic", "loc": "SK3 206 CR 2", "group": "3E1-4", "weeks": "41-52", "staff": "Puteri Nurul Fatihah Binti Mohamad Azli;Shubashini Krishnan"}], "3": [{"start": 570, "end": 660, "startTime": "9:30", "endTime": "11:00", "name": "Mathematics 3", "type": "Tutorial", "loc": "PA3 206", "group": "3E4", "weeks": "41-52", "staff": "Shubashini Krishnan"}, {"start": 780, "end": 900, "startTime": "13:00", "endTime": "15:00", "name": "Chemistry", "type": "Lab", "loc": "SK2 205 (ME 205) Chem Lab 2", "group": "3E4; D2A1; D1A1", "weeks": "41-52", "staff": "Nikia William"}], "4": [], "5": [], "6": []}, "2E1": {"0": [{"start": 600, "end": 720, "startTime": "10:00", "endTime": "12:00", "name": "Physics 2", "type": "Lecture", "loc": "SK3 102 Lecture 1", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "1": [], "2": [{"start": 780, "end": 960, "startTime": "13:00", "endTime": "16:00", "name": "Physics 2", "type": "Workshop", "loc": "SK3 205 CR 1,SK2 101 (ME 101) Physics Lab", "group": "2E1", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "3": [{"start": 660, "end": 780, "startTime": "11:00", "endTime": "13:00", "name": "Physics 2", "type": "Clinic", "loc": "Auditorium", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "4": [], "5": [], "6": []}, "2E2": {"0": [{"start": 600, "end": 720, "startTime": "10:00", "endTime": "12:00", "name": "Physics 2", "type": "Lecture", "loc": "SK3 102 Lecture 1", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "1": [], "2": [], "3": [{"start": 480, "end": 660, "startTime": "8:00", "endTime": "11:00", "name": "Physics 2", "type": "Workshop", "loc": "SK3 206 CR 2,SK2 101 (ME 101) Physics Lab", "group": "2E2", "weeks": "41-52", "staff": "Freddie Panau"}, {"start": 660, "end": 780, "startTime": "11:00", "endTime": "13:00", "name": "Physics 2", "type": "Clinic", "loc": "Auditorium", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "4": [], "5": [], "6": []}, "2E3": {"0": [{"start": 600, "end": 720, "startTime": "10:00", "endTime": "12:00", "name": "Physics 2", "type": "Lecture", "loc": "SK3 102 Lecture 1", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "1": [], "2": [{"start": 960, "end": 1140, "startTime": "16:00", "endTime": "19:00", "name": "Physics 2", "type": "Workshop", "loc": "SK2 101 (ME 101) Physics Lab,SK3 205 CR 1", "group": "2E3", "weeks": "41-52", "staff": "Hii Kiew Ling"}], "3": [{"start": 660, "end": 780, "startTime": "11:00", "endTime": "13:00", "name": "Physics 2", "type": "Clinic", "loc": "Auditorium", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "4": [], "5": [], "6": []}, "2E4": {"0": [{"start": 600, "end": 720, "startTime": "10:00", "endTime": "12:00", "name": "Physics 2", "type": "Lecture", "loc": "SK3 102 Lecture 1", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "1": [{"start": 660, "end": 840, "startTime": "11:00", "endTime": "14:00", "name": "Physics 2", "type": "Workshop", "loc": "SK3 206 CR 2,SK2 101 (ME 101) Physics Lab", "group": "2E4", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "2": [], "3": [{"start": 660, "end": 780, "startTime": "11:00", "endTime": "13:00", "name": "Physics 2", "type": "Clinic", "loc": "Auditorium", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "4": [], "5": [], "6": []}, "2E5": {"0": [{"start": 600, "end": 720, "startTime": "10:00", "endTime": "12:00", "name": "Physics 2", "type": "Lecture", "loc": "SK3 102 Lecture 1", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}, {"start": 900, "end": 1080, "startTime": "15:00", "endTime": "18:00", "name": "Physics 2", "type": "Workshop", "loc": "SK2 101 (ME 101) Physics Lab,SK3 205 CR 1", "group": "2E5", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "1": [], "2": [], "3": [{"start": 660, "end": 780, "startTime": "11:00", "endTime": "13:00", "name": "Physics 2", "type": "Clinic", "loc": "Auditorium", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "4": [], "5": [], "6": []}, "2E6": {"0": [{"start": 600, "end": 720, "startTime": "10:00", "endTime": "12:00", "name": "Physics 2", "type": "Lecture", "loc": "SK3 102 Lecture 1", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "1": [{"start": 480, "end": 660, "startTime": "8:00", "endTime": "11:00", "name": "Physics 2", "type": "Workshop", "loc": "SK2 101 (ME 101) Physics Lab", "group": "2E6", "weeks": "41-52", "staff": "Freddie Panau"}], "2": [], "3": [{"start": 660, "end": 780, "startTime": "11:00", "endTime": "13:00", "name": "Physics 2", "type": "Clinic", "loc": "Auditorium", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "4": [], "5": [], "6": []}, "2E7": {"0": [{"start": 600, "end": 720, "startTime": "10:00", "endTime": "12:00", "name": "Physics 2", "type": "Lecture", "loc": "SK3 102 Lecture 1", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "1": [], "2": [{"start": 480, "end": 660, "startTime": "8:00", "endTime": "11:00", "name": "Physics 2", "type": "Workshop", "loc": "SK2 101 (ME 101) Physics Lab,SK3 206 CR 2", "group": "2E7", "weeks": "41-52", "staff": "Nikia William"}], "3": [{"start": 660, "end": 780, "startTime": "11:00", "endTime": "13:00", "name": "Physics 2", "type": "Clinic", "loc": "Auditorium", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "4": [], "5": [], "6": []}, "2E8": {"0": [{"start": 600, "end": 720, "startTime": "10:00", "endTime": "12:00", "name": "Physics 2", "type": "Lecture", "loc": "SK3 102 Lecture 1", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "1": [{"start": 840, "end": 1020, "startTime": "14:00", "endTime": "17:00", "name": "Physics 2", "type": "Workshop", "loc": "SK2 101 (ME 101) Physics Lab,SK3 206 CR 2", "group": "2E8", "weeks": "41-52", "staff": "John Wong Sze Yong"}], "2": [], "3": [{"start": 660, "end": 780, "startTime": "11:00", "endTime": "13:00", "name": "Physics 2", "type": "Clinic", "loc": "Auditorium", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "4": [], "5": [], "6": []}};
+  const ALL_SCHEDULES = {"3E1": {"0": [{"start": 480, "end": 600, "startTime": "8:00", "endTime": "10:00", "name": "Mathematics 3", "type": "Lecture", "loc": "SK3 103 Lecture 2", "group": "3E1-4", "weeks": "41-52", "staff": "Puteri Nurul Fatihah Binti Mohamad Azli;Shubashini Krishnan"}, {"start": 600, "end": 720, "startTime": "10:00", "endTime": "12:00", "name": "Physics 2", "type": "Lecture", "loc": "SK3 102 Lecture 1", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}, {"start": 780, "end": 870, "startTime": "13:00", "endTime": "14:30", "name": "Critical Thinking", "type": "Seminar", "loc": "LTCL 4 (HL2-104)", "group": "3E1", "weeks": "41-52", "staff": "Elia Bit"}], "1": [{"start": 480, "end": 570, "startTime": "8:00", "endTime": "9:30", "name": "Mathematics 3", "type": "Tutorial", "loc": "PA3 204", "group": "3E1", "weeks": "41-52", "staff": "Puteri Nurul Fatihah Binti Mohamad Azli"}, {"start": 720, "end": 810, "startTime": "12:00", "endTime": "13:30", "name": "Critical Thinking", "type": "Seminar", "loc": "LTCL 2 (HL2-102)", "group": "3E1", "weeks": "41-52", "staff": "Elia Bit"}, {"start": 840, "end": 960, "startTime": "14:00", "endTime": "16:00", "name": "Chemistry", "type": "Lecture", "loc": "Auditorium", "group": "3E1-4; D2A1/D1A1", "weeks": "41-52", "staff": "Cynthia Anak Paul Sebli;Nikia William"}], "2": [{"start": 780, "end": 900, "startTime": "13:00", "endTime": "15:00", "name": "Chemistry", "type": "Tutorial", "loc": "LTCL 5 (HL2-105)", "group": "3E1", "weeks": "41-52", "staff": "Hii Kiew Ling"}, {"start": 1020, "end": 1110, "startTime": "17:00", "endTime": "18:30", "name": "Mathematics 3", "type": "Clinic", "loc": "SK3 206 CR 2", "group": "3E1-4", "weeks": "41-52", "staff": "Puteri Nurul Fatihah Binti Mohamad Azli;Shubashini Krishnan"}], "3": [{"start": 480, "end": 600, "startTime": "8:00", "endTime": "10:00", "name": "Chemistry", "type": "Lab", "loc": "SK2 204 (ME 204) Chem Lab 1", "group": "3E1", "weeks": "41-52", "staff": "Cynthia Anak Paul Sebli"}, {"start": 660, "end": 780, "startTime": "11:00", "endTime": "13:00", "name": "Physics 2", "type": "Clinic", "loc": "Auditorium", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}, {"start": 840, "end": 930, "startTime": "14:00", "endTime": "15:30", "name": "Mathematics 3", "type": "Tutorial", "loc": "PA3 205", "group": "3E1", "weeks": "41-52", "staff": "Puteri Nurul Fatihah Binti Mohamad Azli"}], "4": [{"start": 480, "end": 660, "startTime": "8:00", "endTime": "11:00", "name": "Physics 2", "type": "Workshop", "loc": "SK2 101 (ME 101) Physics Lab,SK3 205 CR 1", "group": "3E1", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "5": [], "6": []}, "3E2": {"0": [{"start": 480, "end": 600, "startTime": "8:00", "endTime": "10:00", "name": "Mathematics 3", "type": "Lecture", "loc": "SK3 103 Lecture 2", "group": "3E1-4", "weeks": "41-52", "staff": "Puteri Nurul Fatihah Binti Mohamad Azli;Shubashini Krishnan"}, {"start": 600, "end": 720, "startTime": "10:00", "endTime": "12:00", "name": "Physics 2", "type": "Lecture", "loc": "SK3 102 Lecture 1", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}, {"start": 780, "end": 870, "startTime": "13:00", "endTime": "14:30", "name": "Mathematics 3", "type": "Tutorial", "loc": "LTCL 3 (HL2-103)", "group": "3E2", "weeks": "41-52", "staff": "Shubashini Krishnan"}], "1": [{"start": 840, "end": 960, "startTime": "14:00", "endTime": "16:00", "name": "Chemistry", "type": "Lecture", "loc": "Auditorium", "group": "3E1-4; D2A1/D1A1", "weeks": "41-52", "staff": "Cynthia Anak Paul Sebli;Nikia William"}], "2": [{"start": 780, "end": 900, "startTime": "13:00", "endTime": "15:00", "name": "Chemistry", "type": "Lab", "loc": "SK2 205 (ME 205) Chem Lab 2", "group": "3E2", "weeks": "41-52", "staff": "Cynthia Anak Paul Sebli"}, {"start": 840, "end": 930, "startTime": "14:00", "endTime": "15:30", "name": "Mathematics 3", "type": "Tutorial", "loc": "PA3 206", "group": "3E2", "weeks": "41-52", "staff": "Shubashini Krishnan"}, {"start": 1020, "end": 1110, "startTime": "17:00", "endTime": "18:30", "name": "Mathematics 3", "type": "Clinic", "loc": "SK3 206 CR 2", "group": "3E1-4", "weeks": "41-52", "staff": "Puteri Nurul Fatihah Binti Mohamad Azli;Shubashini Krishnan"}], "3": [{"start": 480, "end": 570, "startTime": "8:00", "endTime": "9:30", "name": "Critical Thinking", "type": "Seminar", "loc": "SK3 104 Lecture 3", "group": "3E2", "weeks": "41-52", "staff": "Grace Abigail"}, {"start": 660, "end": 780, "startTime": "11:00", "endTime": "13:00", "name": "Physics 2", "type": "Clinic", "loc": "Auditorium", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}, {"start": 840, "end": 1020, "startTime": "14:00", "endTime": "17:00", "name": "Physics 2", "type": "Workshop", "loc": "SK3 206 CR 2,SK2 101 (ME 101) Physics Lab", "group": "3E2", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "4": [{"start": 480, "end": 570, "startTime": "8:00", "endTime": "9:30", "name": "Critical Thinking", "type": "Seminar", "loc": "LTCL 2 (HL2-102)", "group": "3E2", "weeks": "41-52", "staff": "Grace Abigail"}, {"start": 600, "end": 720, "startTime": "10:00", "endTime": "12:00", "name": "Chemistry", "type": "Tutorial", "loc": "LTCL 4 (HL2-104)", "group": "3E2", "weeks": "41-52", "staff": "Nikia William"}], "5": [], "6": []}, "3E3": {"0": [{"start": 480, "end": 600, "startTime": "8:00", "endTime": "10:00", "name": "Mathematics 3", "type": "Lecture", "loc": "SK3 103 Lecture 2", "group": "3E1-4", "weeks": "41-52", "staff": "Puteri Nurul Fatihah Binti Mohamad Azli;Shubashini Krishnan"}, {"start": 600, "end": 720, "startTime": "10:00", "endTime": "12:00", "name": "Physics 2", "type": "Lecture", "loc": "SK3 102 Lecture 1", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "1": [{"start": 480, "end": 570, "startTime": "8:00", "endTime": "9:30", "name": "Critical Thinking", "type": "Seminar", "loc": "PA3 211", "group": "3E3", "weeks": "41-52", "staff": "Grace Abigail"}, {"start": 690, "end": 780, "startTime": "11:30", "endTime": "13:00", "name": "Mathematics 3", "type": "Tutorial", "loc": "LTCL 9 (HL2-109)", "group": "3E3", "weeks": "41-52", "staff": "Shubashini Krishnan"}, {"start": 840, "end": 960, "startTime": "14:00", "endTime": "16:00", "name": "Chemistry", "type": "Lecture", "loc": "Auditorium", "group": "3E1-4; D2A1/D1A1", "weeks": "41-52", "staff": "Cynthia Anak Paul Sebli;Nikia William"}], "2": [{"start": 810, "end": 900, "startTime": "13:30", "endTime": "15:00", "name": "Critical Thinking", "type": "Seminar", "loc": "SK3 104 Lecture 3", "group": "3E3", "weeks": "41-52", "staff": "Grace Abigail"}, {"start": 1020, "end": 1110, "startTime": "17:00", "endTime": "18:30", "name": "Mathematics 3", "type": "Clinic", "loc": "SK3 206 CR 2", "group": "3E1-4", "weeks": "41-52", "staff": "Puteri Nurul Fatihah Binti Mohamad Azli;Shubashini Krishnan"}], "3": [{"start": 480, "end": 600, "startTime": "8:00", "endTime": "10:00", "name": "Chemistry", "type": "Lab", "loc": "SK2 205 (ME 205) Chem Lab 2", "group": "3E3", "weeks": "41-52", "staff": "Nikia William"}, {"start": 660, "end": 780, "startTime": "11:00", "endTime": "13:00", "name": "Physics 2", "type": "Clinic", "loc": "Auditorium", "group": "3E1-3; 2E1-8", "weeks": "41-52", "staff": "Lukman Mohd Najib"}, {"start": 780, "end": 900, "startTime": "13:00", "endTime": "15:00", "name": "Chemistry", "type": "Tutorial", "loc": "LTCL 4 (HL2-104)", "group": "3E3", "weeks": "41-52", "staff": "Cynthia Anak Paul Sebli"}], "4": [{"start": 480, "end": 570, "startTime": "8:00", "endTime": "9:30", "name": "Mathematics 3", "type": "Tutorial", "loc": "PA3 209", "group": "3E3", "weeks": "41-52", "staff": "Shubashini Krishnan"}, {"start": 840, "end": 1020, "startTime": "14:00", "endTime": "17:00", "name": "Physics 2", "type": "Workshop", "loc": "SK2 101 (ME 101) Physics Lab,SK3 205 CR 1", "group": "3E3", "weeks": "41-52", "staff": "Lukman Mohd Najib"}], "5": [], "6": []}, "3E4": {"0": [{"start": 480, "end": 600, "startTime": "8:00", "endTime": "10:00", "name": "Mathematics 3", "type": "Lecture", "loc": "SK3 103 Lecture 2", "group": "3E1-4", "weeks": "41-52", "staff": "Puteri Nurul Fatihah Binti Mohamad Azli;Shubashini Krishnan"}, {"start": 930, "end": 1020, "startTime": "15:30", "endTime": "17:00", "name": "Critical Thinking", "type": "Seminar", "loc": "PA3 211", "group": "3E4", "weeks": "41-52", "staff": "Chai Kang Ming"}], "1": [{"start": 840, "end": 960, "startTime": "14:00", "endTime": "16:00", "name": "Chemistry", "type": "Lecture", "loc": "Auditorium", "group": "3E1-4; D2A1/D1A1", "weeks": "41-52", "staff": "Cynthia Anak Paul Sebli;Nikia William"}, {"start": 930, "end": 1020, "startTime": "15:30", "endTime": "17:00", "name": "Mathematics 3", "type": "Tutorial", "loc": "PA3 207", "group": "3E4", "weeks": "41-52", "staff": "Shubashini Krishnan"}], "2": [{"start": 780, "end": 900, "startTime": "13:00", "endTime": "15:00", "name": "Chemistry", "type": "Tutorial", "loc": "PA3 204", "group": "3E4; D2A1; D1A1", "weeks": "41-52", "staff": "Nikia William"}, {"start": 930, "end": 1020, "startTime": "15:30", "endTime": "17:00", "name": "Critical Thinking", "type": "Seminar", "loc": "PA3 202", "group": "3E4", "weeks": "41-52", "staff": "Chai Kang Ming"}, {"start": 1020, "end": 1110, "startTime": "17:00", "endTime": "18:30", "name": "Mathematics 3", "type": "Clinic", "loc": "SK3 206 CR 2", "group": "3E1-4", "weeks": "41-52", "staff": "Puteri Nurul Fatihah Binti Mohamad Azli;Shubashini Krishnan"}], "3": [{"start": 570, "end": 660, "startTime": "9:30", "endTime": "11:00", "name": "Mathematics 3", "type": "Tutorial", "loc": "PA3 206", "group": "3E4", "weeks": "41-52", "staff": "Shubashini Krishnan"}, {"start": 780, "end": 900, "startTime": "13:00", "endTime": "15:00", "name": "Chemistry", "type": "Lab", "loc": "SK2 205 (ME 205) Chem Lab 2", "group": "3E4; D2A1; D1A1", "weeks": "41-52", "staff": "Nikia William"}], "4": [], "5": [], "6": []}};
 
   const DAY_NAMES = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
   let currentClass = "3E1";
@@ -549,7 +511,7 @@
   if (qClass && ALL_SCHEDULES[qClass]) {
     currentClass = qClass;
   } else {
-    const saved = localStorage.getItem('curtin_selected_class');
+    const saved = localStorage.getItem('curtin_3e_class');
     if (saved && ALL_SCHEDULES[saved]) {
       currentClass = saved;
     }
@@ -564,19 +526,12 @@
   function selectClass(cls) {
     if (!ALL_SCHEDULES[cls]) return;
     currentClass = cls;
-    localStorage.setItem('curtin_selected_class', cls);
+    localStorage.setItem('curtin_3e_class', cls);
 
     // Update active tab state
     document.querySelectorAll('.class-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.class === cls);
     });
-
-    const sel = document.getElementById('otherClassSelect');
-    if (cls.startsWith('2E')) {
-      sel.value = cls;
-    } else {
-      sel.selectedIndex = 0;
-    }
 
     document.getElementById('pageTitle').textContent = `${cls} TIMETABLE`;
     const count = Object.values(ALL_SCHEDULES[cls]).reduce((acc, arr) => acc + arr.length, 0);
