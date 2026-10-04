@@ -302,7 +302,17 @@ export function createRouter(paths) {
     return { coords, metres, steps: directions(coords, branches), toCode };
   }
 
-  return { snap, route, doors, nodes, edges };
+  /** The way the path under `point` runs, measured over about 30 m: { bearing, length, distance } or null. */
+  function pathDirection(point) {
+    const s = snap(point);
+    if (!s) return null;
+    const [a, b] = edges[s.edge];
+    const back = branchPoint(b, a, 15);
+    const ahead = branchPoint(a, b, 15);
+    return { bearing: bearingDeg(back, ahead), length: metresBetween(back, ahead), distance: s.distance };
+  }
+
+  return { snap, route, pathDirection, doors, nodes, edges };
 }
 
 // a point `far` metres along coords from index i, going forwards (dir 1) or backwards (dir -1)

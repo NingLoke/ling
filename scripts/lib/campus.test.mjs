@@ -218,3 +218,14 @@ test("Curtin University Lake is on the map with its island", () => {
   const polygons = lake.geometry.type === "MultiPolygon" ? lake.geometry.coordinates : [lake.geometry.coordinates];
   assert.ok(polygons.some((rings) => rings.length >= 2), "the island (inner ring) is missing");
 });
+
+test("the path under the walker gives a direction to calibrate the compass with", () => {
+  // a long straight edge of the walking network: standing on it, its direction comes back (either way)
+  const [a, b] = paths.edges.filter(([x, y, m]) => m > 40).map(([x, y]) => [paths.nodes[x], paths.nodes[y]])[0];
+  const middle = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  const d = router.pathDirection(middle);
+  assert.ok(d && d.distance < 1 && d.length >= 12);
+  const along = bearingDeg(a, b);
+  const off = Math.abs(((d.bearing - along + 540) % 360) - 180);
+  assert.ok(Math.min(off, 180 - off) < 15, `path runs ${along.toFixed(0)}°, got ${d.bearing.toFixed(0)}°`);
+});

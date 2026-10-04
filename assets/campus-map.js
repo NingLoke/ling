@@ -3,7 +3,7 @@
 // Map data © OpenStreetMap contributors (ODbL). Rendering: MapLibre GL JS (BSD-3-Clause), loaded on demand.
 import {
   createRouter, buildingForRoom, metresBetween, bearingDeg, progressOnRoute, walkMinutes, TURN_ZH, pointInRing, createPositionFilter,
-} from "./campus-geo.js?v=274ed27a1c";
+} from "./campus-geo.js?v=123ba7d680";
 
 let current = null;
 
@@ -107,7 +107,16 @@ const CSS = `
 .cm .maplibregl-ctrl-attrib{font-size:10px;max-width:calc(100vw - 24px)}
 .cm-fabs .cm-north svg{transition:transform .15s linear}
 .cm-fabs .cm-btn[hidden]{display:none}
-.cm-fabs .cm-compass{border-color:var(--cm-accent);color:var(--cm-accent);animation:cm-nudge 1.6s ease-in-out 3}
+.cm-fabs .cm-compass.cm-needs{border-color:var(--cm-accent);color:var(--cm-accent);animation:cm-nudge 1.6s ease-in-out 3}
+.cm-sheet-head{display:flex;align-items:center;gap:8px}
+.cm-sheet-head h2{flex:1}
+.cm-sheet-head .cm-btn{min-height:40px;padding:0 12px;font-size:14px}
+.cm-picks{display:grid;gap:6px;margin-top:10px}
+.cm-pick{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:6px 12px;border-radius:12px;border:1px solid var(--cm-line);
+  background:none;color:var(--cm-text);font:inherit;font-size:15px;text-align:left;cursor:pointer}
+.cm-pick b{min-width:40px}
+.cm-pick span{color:var(--cm-muted);font-size:13px}
+.cm-pick i{margin-left:auto;font-style:normal;font-size:20px;color:var(--cm-accent);display:inline-block}
 @keyframes cm-nudge{50%{transform:scale(1.08)}}
 @media (prefers-reduced-motion:reduce){.cm-me::before{animation:none}.cm-arrow svg{transition:none}}
 `;
@@ -330,7 +339,7 @@ export function openCampusMap(options) {
   const locateBtn = el("button", { class: "cm-btn", type: "button", "aria-label": "显示我的位置", "aria-pressed": "false", html: ICON.locate });
   const pitchBtn = el("button", { class: "cm-btn", type: "button", "aria-label": "切换 2D / 3D", text: "2D" });
   const northBtn = el("button", { class: "cm-btn cm-north", type: "button", "aria-label": "指向正北", html: ICON.north });
-  const compassBtn = el("button", { class: "cm-btn cm-compass", type: "button", "aria-label": "开启指南针（地图跟着手机转）", html: ICON.compass, hidden: true });
+  const compassBtn = el("button", { class: "cm-btn cm-compass", type: "button", "aria-label": "方向校准", title: "方向校准", html: ICON.compass, hidden: true });
   const fabs = el("div", { class: "cm-fabs" }, [locateBtn, compassBtn, pitchBtn, northBtn]);
   const sheet = el("div", { class: "cm-sheet" });
   const announcer = el("div", { class: "cm-sr", role: "status", "aria-live": "polite" });
@@ -389,7 +398,17 @@ export function openCampusMap(options) {
   let focusCode = null;
   let me = null; // { lon, lat, accuracy, at }: smoothed position, accuracy as the phone reports it
   const positionFilter = createPositionFilter();
-  let heading = null; // where the phone points, degrees from north, smoothed
+  let heading = null; // where the phone points, degrees from north, smoothed and calibrated
+  let rawHeading = null; // the same straight from the compass
+  // the student's own correction for this phone's compass (方向校准), kept for a few hours
+  const OFFSET_KEY = "cm:compass-offset";
+  let headingOffset = 0;
+  try {
+    const saved = JSON.parse(localStorage.getItem(OFFSET_KEY) || "null");
+    if (saved && Date.now() - saved.at < 6 * 3600_000 && Number.isFinite(saved.offset)) headingOffset = saved.offset;
+  } catch {
+    /* private mode */
+  }
   let course = null; // direction of travel from GPS, when walking and there is no compass
   let watchId = null;
   let meMarker = null;
@@ -442,21 +461,46 @@ export function openCampusMap(options) {
     }
   })();
 
-  // the overview frames the buildings with codes (teaching blocks and Kingfisher), not the empty fields around them
-  function campusBounds() {
-    const points = [...buildings.values()].flatMap((f) => f.geometry.coordinates[0]);
-    const lons = points.map((p) => p[0]);
-    const lats = points.map((p) => p[1]);
-    return [[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]];
+  // The overview is fitted to where the coded buildings really land on screen, 3D perspective included,
+  // between the title bar and the sheet. It tries a few bearings around the official map's "west at the
+  // top" and keeps the one that shows the campus largest (the campus is about as wide as it is long, so a
+  // slight turn often fits a tall phone screen better).
+  let campusPoints = null;
+  function overviewCamera() {
+    campusPoints ??= [...buildings.values()].flatMap((f) => f.geometry.coordinates[0]);
+    const w = mapBox.clientWidth || 390;
+    const h = mapBox.clientHeight || 700;
+    const box = { left: 6, right: w - 6, top: 76, bottom: h - Math.min(Math.max(sheet.offsetHeight, 150) + 6, h * 0.5) };
+    const saved = { center: map.getCenter(), zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch(), padding: map.getPadding() };
+    let best = null;
+    for (const bearing of [240, 255, 270, 285, 300]) {
+      const camera = fitPoints(campusPoints, bearing, 48, box);
+      const score = camera.zoom - Math.abs(bearing - 270) / 150;
+      if (!best || score > best.score) best = { ...camera, score };
+    }
+    map.jumpTo(saved); // all of this happens before the next frame is drawn
+    delete best.score;
+    return best;
   }
-
-  // fit the buildings flat, then tilt and lean in a little: tilted, the far half shrinks and leaves room
-  function overviewCamera(bottom = Math.max(sheet.offsetHeight, 170)) {
-    const height = mapBox.clientHeight || 600;
-    const padding = { top: 90, bottom: Math.min(bottom + 10, Math.max(0, height - 200)), left: 12, right: 12 };
-    const flat = map.cameraForBounds(campusBounds(), { padding, bearing: 270, absolutePadding: true });
-    if (!flat) return { center: campus.meta.centre, zoom: 16, bearing: 270, pitch: 52 };
-    return { center: flat.center, zoom: flat.zoom + 0.35, bearing: 270, pitch: 52, padding: flat.padding };
+  function fitPoints(points, bearing, pitch, box) {
+    const padding = { top: 0, bottom: 0, left: 0, right: 0 };
+    const w = mapBox.clientWidth || 390;
+    const h = mapBox.clientHeight || 700;
+    let center = campus.meta.centre;
+    let zoom = 16;
+    for (let round = 0; round < 6; round++) {
+      map.jumpTo({ center, zoom, bearing, pitch, padding });
+      const xy = points.map((p) => map.project(p));
+      const xs = xy.map((p) => p.x);
+      const ys = xy.map((p) => p.y);
+      const [left, right, top, bottom] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+      // move the drawing's middle to the middle of the free area, then scale it to fit
+      center = map.unproject([w / 2 + (left + right) / 2 - (box.left + box.right) / 2, h / 2 + (top + bottom) / 2 - (box.top + box.bottom) / 2]).toArray();
+      const scale = Math.min((box.right - box.left) / Math.max(1, right - left), (box.bottom - box.top) / Math.max(1, bottom - top));
+      zoom = Math.min(19, Math.max(14, zoom + Math.log2(scale)));
+      if (Math.abs(Math.log2(scale)) < 0.01) break;
+    }
+    return { center, zoom, bearing, pitch, padding };
   }
 
   function start() {
@@ -542,7 +586,10 @@ export function openCampusMap(options) {
       updateLabelsVisibility();
       ready = true;
       if (options.focus) select(options.focus, { navigate: options.navigate });
-      else idleSheet();
+      else {
+        idleSheet();
+        map.jumpTo(overviewCamera()); // again, now that the sheet's real height is known
+      }
     });
   }
   let touching = false;
@@ -562,7 +609,7 @@ export function openCampusMap(options) {
     if (!map) return;
     const z = map.getZoom();
     for (const l of labels) {
-      const show = l.code === focusCode || (z >= 15 && (z >= 16.3 || l.mine));
+      const show = l.code === focusCode || (z >= 15 && (z >= 15.8 || l.mine)); // all codes from the campus overview in
       l.node.style.display = show ? "" : "none";
     }
     cancelAnimationFrame(updateLabelsVisibility.frame);
@@ -667,6 +714,14 @@ export function openCampusMap(options) {
   }
 
   function overview() {
+    // back to the short campus sheet first, so the map has the room
+    if (!nav) {
+      focusCode = null;
+      setFocusState(null);
+      markFocusLabel();
+      idleSheet();
+    }
+    if (follow) setFollow(false);
     map.easeTo({ ...overviewCamera(), duration: reduceMotion ? 0 : 900 });
   }
 
@@ -724,7 +779,7 @@ export function openCampusMap(options) {
     const listen = () => {
       if (closed || compass === "on") return;
       compass = "on";
-      compassBtn.hidden = true;
+      compassBtn.classList.remove("cm-needs");
       if ("ondeviceorientationabsolute" in window) window.addEventListener("deviceorientationabsolute", onOrientation);
       else window.addEventListener("deviceorientation", onOrientation);
     };
@@ -744,7 +799,7 @@ export function openCampusMap(options) {
         if (answer === "granted") listen();
         else if (!closed) {
           compass = "denied";
-          compassBtn.hidden = true;
+          compassBtn.classList.remove("cm-needs");
         }
       },
       () => {
@@ -752,6 +807,7 @@ export function openCampusMap(options) {
         if (closed || compass === "on") return;
         compass = "needs-tap";
         compassBtn.hidden = false;
+        compassBtn.classList.add("cm-needs");
       }
     );
   }
@@ -782,7 +838,8 @@ export function openCampusMap(options) {
   }
   function showHeading() {
     headingFrame = 0;
-    const h = ((Math.atan2(sx, sy) * 180) / Math.PI + 360) % 360;
+    rawHeading = ((Math.atan2(sx, sy) * 180) / Math.PI + 360) % 360;
+    const h = (rawHeading + headingOffset + 360) % 360;
     if (heading != null && Math.abs(((h - heading + 540) % 360) - 180) < 1.5) return; // no shimmering
     heading = h;
     turnDot();
@@ -797,6 +854,7 @@ export function openCampusMap(options) {
 
   function startWatch() {
     watchId = navigator.geolocation.watchPosition(onPosition, onPositionError, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
+    compassBtn.hidden = false;
   }
   function locate(fly) {
     if (!("geolocation" in navigator) || window.isSecureContext === false) {
@@ -844,13 +902,24 @@ export function openCampusMap(options) {
     ? "手机只给了大概位置。到 设置 › 隐私与安全性 › 定位服务 › Safari 网站，打开「精确位置」。"
     : "手机只给了大概位置。点地址栏左边的图标 › 权限 › 位置，改成「精确」。";
   let roughSaid = 0;
+  let offCompass = 0;
+  let offCompassSaid = false;
 
   function onPosition(position) {
     const { longitude, latitude, accuracy } = position.coords;
     const fix = positionFilter.update(longitude, latitude, accuracy, position.timestamp || Date.now());
     if (!fix) return; // a sudden jump: wait for the next fixes to confirm it
     const { heading: gpsCourse, speed } = position.coords;
-    course = gpsCourse != null && !Number.isNaN(gpsCourse) && speed > 0.8 && accuracy < 25 ? gpsCourse : course;
+    const walking = gpsCourse != null && !Number.isNaN(gpsCourse) && speed > 0.8 && accuracy < 25;
+    course = walking ? gpsCourse : course;
+    // walking steadily one way while the compass points elsewhere: suggest calibrating (once)
+    if (walking && heading != null && speed > 1 && accuracy < 15) {
+      offCompass = Math.abs(((gpsCourse - heading + 540) % 360) - 180) > 50 ? offCompass + 1 : 0;
+      if (offCompass >= 6 && !offCompassSaid) {
+        offCompassSaid = true;
+        say("地图的方向好像跟你走的方向对不上：点右边的指南针按钮校准一下。", 7000);
+      }
+    }
     const first = !me;
     me = { lon: fix.lon, lat: fix.lat, accuracy, at: Date.now() };
     if (msg.textContent.startsWith("正在定位")) msg.textContent = "";
@@ -873,6 +942,109 @@ export function openCampusMap(options) {
       if (first) cameraTo(point, { zoom: 18, pitch: 60 });
       else map.easeTo({ center: point, duration: reduceMotion ? 0 : 600 });
     }
+  }
+
+  // ----- direction calibration (方向校准) -----
+  // Phone compasses are often off by 10-40° near steel and concrete. The student points the top of the
+  // phone at something they know (a building nearby, or the way the path under their feet leads) and taps
+  // it; the difference becomes a correction. A phone with no compass gets its map turned that way instead.
+  let calibrating = false;
+  const COMPASS_WORDS = ["北", "东北", "东", "东南", "南", "西南", "西", "西北"];
+  const compassWord = (deg) => COMPASS_WORDS[Math.round(deg / 45) % 8];
+  function calibrationTargets(point) {
+    const picks = [];
+    const nameOf = (f) => f.properties.zh || f.properties.name || "";
+    const ahead = (bearing) => {
+      let best = null;
+      for (const [code, f] of buildings) {
+        const d = metresBetween(point, f.properties.centre);
+        const off = Math.abs(((bearingDeg(point, f.properties.centre) - bearing + 540) % 360) - 180);
+        if (d < 15 || d > 400 || off > 30) continue;
+        if (!best || d < best.d) best = { code, f, d };
+      }
+      return best;
+    };
+    const path = router.pathDirection(point);
+    if (path && path.distance <= 15 && path.length >= 12) {
+      for (const bearing of [path.bearing, (path.bearing + 180) % 360]) {
+        const there = ahead(bearing);
+        picks.push({
+          bearing,
+          title: there ? `顺着这条路，往 ${there.code} 那边` : `顺着这条路，往${compassWord(bearing)}`,
+          note: there ? nameOf(there.f) : "脚下的路",
+        });
+      }
+    }
+    const near = [...buildings]
+      .map(([code, f]) => ({ code, f, d: metresBetween(point, f.properties.centre) }))
+      .filter(({ f, d }) => d >= 20 && d <= 300 && !pointInRing(point, f.geometry.coordinates[0]))
+      .sort((a, b) => a.d - b.d)
+      .slice(0, 4);
+    for (const { code, f, d } of near) picks.push({ bearing: bearingDeg(point, f.properties.centre), title: code, note: `${nameOf(f)} · ${fmtMetres(d)}` });
+    return picks;
+  }
+  function calibrationSheet() {
+    if (!me) {
+      say("先等定位好了再校准方向。", 3500);
+      if (watchId == null) locate(true);
+      return;
+    }
+    calibrating = true;
+    const picks = calibrationTargets([me.lon, me.lat]);
+    const hasCompass = compass === "on" && rawHeading != null; // some phones have no magnetometer at all
+    const facing = heading ?? course;
+    const arrowFor = (bearing) => (facing == null ? "" : `rotate(${(((bearing - facing + 540) % 360) - 180).toFixed(0)}deg)`);
+    sheet.replaceChildren(
+      el("div", { class: "cm-sheet-head" }, [el("h2", { text: "方向校准" }), el("button", { class: "cm-btn", type: "button", text: "取消", onclick: closeCalibration })]),
+      el("p", {
+        text: hasCompass
+          ? "手机平拿在胸前，顶端对准下面一个你认得的目标，然后点它。箭头是指南针现在以为它在的方向。"
+          : "这台手机没开指南针。面朝下面一个你认得的目标，点它，地图就按这个方向摆好。",
+      }),
+      picks.length
+        ? el("div", { class: "cm-picks" }, picks.map((pick) => {
+          const arrow = el("i", { "aria-hidden": "true", text: facing == null ? "" : "↑" });
+          arrow.style.transform = arrowFor(pick.bearing);
+          return el("button", { class: "cm-pick", type: "button", onclick: () => applyCalibration(pick) }, [el("b", { text: pick.title }), el("span", { text: pick.note }), arrow]);
+        }))
+        : el("p", { text: "附近 300 米内没有认得出的楼。走到楼旁边或路上再试。" }),
+      headingOffset
+        ? el("div", { class: "cm-actions" }, [el("button", { class: "cm-btn", type: "button", text: `清除校准（现在修正 ${headingOffset > 0 ? "+" : ""}${Math.round(headingOffset)}°）`, onclick: () => applyCalibration(null) })])
+        : null
+    );
+  }
+  function applyCalibration(pick) {
+    askCompass(); // still inside the tap
+    if (!pick) {
+      headingOffset = 0;
+      say("已清除方向校准。", 3000);
+    } else if (compass === "on" && rawHeading != null) {
+      headingOffset = ((pick.bearing - rawHeading + 540) % 360) - 180;
+      say(Math.abs(headingOffset) < 5 ? "指南针本来就很准，不用改。" : `方向校准好了：指南针偏了 ${Math.round(Math.abs(headingOffset))}°，已经修正。`, 4500);
+    } else {
+      course = pick.bearing; // no compass: face this way until walking shows otherwise
+      say("已按你面对的方向摆好地图。走起来以后会跟着你走的方向转。", 5000);
+    }
+    try {
+      if (headingOffset) localStorage.setItem(OFFSET_KEY, JSON.stringify({ offset: headingOffset, at: Date.now() }));
+      else localStorage.removeItem(OFFSET_KEY);
+    } catch {
+      /* private mode */
+    }
+    if (rawHeading != null) heading = (rawHeading + headingOffset + 360) % 360;
+    turnDot();
+    if (pick) map.easeTo({ bearing: pick.bearing, duration: reduceMotion ? 0 : 600 });
+    closeCalibration();
+  }
+  function closeCalibration() {
+    calibrating = false;
+    if (nav) {
+      navView = null;
+      if (nav.arrived) arrivedSheet(nav.code);
+      else if (me && updateNavigation()) return;
+      else if (!me) navWaitingSheet(nav.code);
+    } else if (focusCode) buildingSheet(focusCode);
+    else idleSheet();
   }
 
   // ----- navigation -----
@@ -914,7 +1086,7 @@ export function openCampusMap(options) {
     const door = router.nodes[router.doors[nav.code]];
     const f = buildings.get(nav.code);
     if (me.accuracy >= 1000) {
-      sheet.replaceChildren(
+      if (!calibrating) sheet.replaceChildren(
         el("h2", { text: `去 ${nav.code}` }),
         el("p", { text: `${roughHelp()}改好后回到这里就能带路。` }),
         el("div", { class: "cm-actions" }, [el("button", { class: "cm-btn", type: "button", text: "结束", onclick: endNavigation })])
@@ -923,7 +1095,7 @@ export function openCampusMap(options) {
     }
     const far = metresBetween(point, campus.meta.centre);
     if (far > 2500) {
-      sheet.replaceChildren(
+      if (!calibrating) sheet.replaceChildren(
         el("h2", { text: `去 ${nav.code}` }),
         el("p", { text: `你现在离校园约 ${fmtMetres(far)}。导航只在校园里用，到了学校再打开。` }),
         el("div", { class: "cm-actions" }, [el("button", { class: "cm-btn", type: "button", text: "结束", onclick: endNavigation })])
@@ -962,7 +1134,7 @@ export function openCampusMap(options) {
       progress = progressOnRoute(nav.route, point, tolerance);
     }
     nav.along = progress.offRoute ? null : progress.along; // next fix: look near here first
-    navSheet(progress);
+    if (!calibrating) navSheet(progress);
     const shown = !progress.offRoute && progress.distance <= Math.min(15, Math.max(5, me.accuracy)) ? progress.point : point;
     if (follow && !handsOn()) {
       const bearing = heading ?? course ?? bearingDeg(shown, progress.nextStep?.at || door);
@@ -989,7 +1161,11 @@ export function openCampusMap(options) {
       navView = { strong, span, arrow, followBtn, icon: null };
       sheet.replaceChildren(
         el("div", { class: "cm-nav" }, [arrow, el("div", {}, [strong, span])]),
-        el("div", { class: "cm-actions" }, [followBtn, el("button", { class: "cm-btn", type: "button", text: "结束导航", onclick: endNavigation })])
+        el("div", { class: "cm-actions" }, [
+          followBtn,
+          el("button", { class: "cm-btn", type: "button", text: "校准方向", onclick: () => { askCompass(); calibrationSheet(); } }),
+          el("button", { class: "cm-btn", type: "button", text: "结束导航", onclick: endNavigation }),
+        ])
       );
     }
     const icon = arriving ? "flag" : "arrow";
@@ -1016,6 +1192,7 @@ export function openCampusMap(options) {
   }
 
   function arrivedSheet(code) {
+    calibrating = false;
     const f = buildings.get(code);
     const mine = (byCode.get(code) || []).find((m) => m.next) || (byCode.get(code) || [])[0];
     announcer.textContent = `到了 ${code}`;
@@ -1078,7 +1255,7 @@ export function openCampusMap(options) {
   closeBtn.addEventListener("click", () => close());
   compassBtn.addEventListener("click", () => {
     askCompass(); // first, while the tap still counts as a gesture
-    say("转一转手机，地图上的扇形会跟着你转。", 3500);
+    calibrationSheet();
   });
   // iPhone grants the screen wake lock only during a tap: retry on the next one if it failed earlier
   overlay.addEventListener("pointerdown", () => {
