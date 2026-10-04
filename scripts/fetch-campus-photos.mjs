@@ -57,12 +57,23 @@ async function commons() {
     const info = await getJson(`${api}?action=query&pageids=${batch}&prop=imageinfo|coordinates&iiprop=url|extmetadata|mime|size&iiurlwidth=960&coprop=type|dim&format=json&origin=*`);
     for (const page of Object.values(info.query?.pages || {})) {
       const ii = page.imageinfo?.[0];
-      if (!ii || !/^image\/(jpeg|png|webp)$/.test(ii.mime)) continue;
+      const skip = (why) => console.log(`  skip ${page.title} (${why})`);
+      if (!ii || !/^image\/(jpeg|png|webp)$/.test(ii.mime)) {
+        skip(ii?.mime || "no image");
+        continue;
+      }
       const meta = ii.extmetadata || {};
       const coord = page.coordinates?.[0];
       const words = `${page.title} ${plain(meta.ImageDescription?.value)} ${plain(meta.Categories?.value)}`;
-      if (!coord && !/curtin/i.test(words)) continue;
-      if (!coord && !/miri|malaysia|sarawak/i.test(words)) continue;
+      if (!coord && !/curtin/i.test(words)) {
+        skip("no location, not about Curtin");
+        continue;
+      }
+      if (!coord && !/miri|malaysia|sarawak/i.test(words)) {
+        skip("no location, not the Malaysian campus");
+        continue;
+      }
+      console.log(`  keep ${page.title}${coord ? ` @ ${coord.lat},${coord.lon}` : ""}`);
       photos.push({
         id: `commons:${page.pageid}`,
         source: "Wikimedia Commons",
