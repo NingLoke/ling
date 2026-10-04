@@ -4,9 +4,9 @@
 //   https://www.google.com/maps/embed?pb=!4v…!6m8!1m7!1s<photo id>!2m2!1d<lat>!2d<lon>!3f<heading>!4f<pitch>!5f<zoom>
 // parseStreetView() accepts that iframe code, its address, or the address shown in the browser while
 // looking at the view (https://www.google.com/maps/@lat,lon,3a,80y,319h,93t/data=…!1s<id>…).
-// Without a photo id, Google's older embed address (maps?layer=c&cbll=lat,lon&output=svembed) is
-// forwarded to the same embed with just a position, and Google shows the 360° view nearest to it:
-// streetViewAt() builds that address directly.
+// Without a photo id, Google's older embed address for Street View (maps?layer=c&cbll=lat,lon&
+// output=svembed) still works without a key: Google shows the 360° view nearest to that position, looked
+// up when the page shows it (streetViewAt). Nothing of Google's is stored here.
 
 const ZOOM = 0.7820865974627469; // Google's default for an embedded view
 
@@ -46,7 +46,7 @@ export function streetViewEmbed({ pano, lat, lon }, heading = 0, pitch = 0) {
 /** The 360° view Google has nearest to a position (no photo id needed), looking towards `heading`. */
 export function streetViewAt({ lat, lon }, heading = 0, pitch = 0) {
   const h = ((heading % 360) + 360) % 360;
-  return `https://www.google.com/maps/embed?origin=mfe&pb=!6m7!1m6!2m2!1d${lat}!2d${lon}!3f${h.toFixed(1)}!4f${pitch.toFixed(1)}!5f1`;
+  return `https://maps.google.com/maps?layer=c&cbll=${lat},${lon}&cbp=12,${h.toFixed(1)},0,0,${(-pitch).toFixed(1)}&source=embed&output=svembed`;
 }
 
 /** Google's satellite picture of a place, about `metres` across, as an embeddable address. */

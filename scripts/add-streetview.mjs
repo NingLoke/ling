@@ -1,5 +1,6 @@
-// Adds a Google Maps 360° view (Street View or an uploaded photo sphere) to the campus map, where the
-// building's 街景 button then opens it inside the site.
+// Adds a Google Maps 360° view (Street View or an uploaded photo sphere) to the campus map: it is shown
+// at the top of the nearest building's sheet instead of the view Google would pick by itself, and 街景
+// opens it in Google Maps.
 //   node scripts/add-streetview.mjs '<address of the view in Google Maps, or its "Embed a map" iframe code>' [--title "..."] [--at SK3]
 // The view is listed in data/campus/streetviews.json next to the nearest building (or the one given).
 import { readFile, writeFile } from "node:fs/promises";

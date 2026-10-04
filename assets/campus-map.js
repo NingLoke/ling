@@ -2,9 +2,9 @@
 // and walking directions to a building. Opens as a full-screen overlay; returns close().
 // Map data © OpenStreetMap contributors (ODbL). Rendering: MapLibre GL JS (BSD-3-Clause), loaded on demand.
 import {
-  createRouter, buildingForRoom, metresBetween, bearingDeg, progressOnRoute, walkMinutes, TURN_ZH, pointInRing, createPositionFilter, closestPointOnSegment,
+  createRouter, buildingForRoom, metresBetween, bearingDeg, progressOnRoute, walkMinutes, TURN_ZH, pointInRing, createPositionFilter, closestPointOnSegment, polygonCentroid,
 } from "./campus-geo.js?v=29383000af";
-import { streetViewEmbed, streetViewAt, satelliteEmbed } from "./streetview-url.js?v=3b6d1368d1";
+import { streetViewEmbed, streetViewAt, satelliteEmbed } from "./streetview-url.js?v=4ae4fac379";
 
 let current = null;
 
@@ -115,9 +115,13 @@ const CSS = `
 .cm-real a svg{width:14px;height:14px;opacity:.7}
 .cm-real .cm-pano-btn{border-color:var(--cm-accent);color:var(--cm-accent);font-weight:700}
 .cm-real .cm-pano-btn svg{width:18px;height:18px}
-.cm-sheet:has(>.cm-media){padding-top:0;max-height:min(74vh,720px)}
+.cm-sheet:has(>.cm-media){padding-top:0;
+  max-height:min(72vh,calc(100vh - 290px - env(safe-area-inset-top)));max-height:min(72dvh,calc(100dvh - 290px - env(safe-area-inset-top)))}
 .cm-media{display:flex;flex-direction:column;margin:0 calc(-16px - env(safe-area-inset-right)) 12px calc(-16px - env(safe-area-inset-left));
-  height:min(40vh,78vw,400px);overflow:hidden;border-radius:20px 20px 0 0;background:var(--cm-line);border-bottom:1px solid var(--cm-line)}
+  height:min(36vh,70vw,360px,calc((100vh - 290px - env(safe-area-inset-top)) * .55));
+  height:min(36dvh,70vw,360px,calc((100dvh - 290px - env(safe-area-inset-top)) * .55));min-height:150px;
+  overflow:hidden;border-radius:20px 20px 0 0;background:var(--cm-line);border-bottom:1px solid var(--cm-line)}
+.cm-media.cm-media-small{height:min(24vh,200px);min-height:120px}
 .cm-media-wait{animation:cm-wait 1.2s ease-in-out infinite alternate}
 .cm-media-track{flex:1;min-height:0;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain;background:#111}
 .cm-media-track::-webkit-scrollbar{display:none}
@@ -129,7 +133,7 @@ button.cm-media-item{cursor:zoom-in}
   background:radial-gradient(120% 90% at 50% 35%,color-mix(in srgb,var(--cm-accent) 22%,var(--cm-panel)),var(--cm-panel))}
 .cm-media-poster svg{width:40px;height:40px;color:var(--cm-accent)}
 .cm-media-poster small{color:var(--cm-muted)}
-.cm-media-cap{flex:none;margin:0;display:flex;align-items:center;gap:8px;background:var(--cm-panel);
+.cm-media-cap{flex:none;margin:0;display:flex;align-items:center;gap:8px;background:var(--cm-panel);touch-action:pan-y;
   padding:7px calc(10px + env(safe-area-inset-right)) 7px calc(14px + env(safe-area-inset-left))}
 .cm-media-text{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;column-gap:8px;row-gap:2px;font-size:13px;line-height:1.35}
 .cm-media-text span{min-width:0}
@@ -142,9 +146,12 @@ button.cm-media-item{cursor:zoom-in}
 .cm-media-count{min-width:30px;text-align:center;font-size:12px;color:var(--cm-muted);font-variant-numeric:tabular-nums}
 @keyframes cm-wait{to{opacity:.55}}
 @media (min-width:720px) and (orientation:landscape){
-  .cm-sheet:has(>.cm-media){display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;padding-top:14px;max-height:62vh}
-  .cm-media{position:sticky;top:0;margin:0;height:min(54vh,420px);border-radius:14px;border:1px solid var(--cm-line)}
+  /* side by side, and clear of the map buttons on the right */
+  .cm-sheet:has(>.cm-media){display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;padding-top:14px;
+    max-height:62vh;right:calc(env(safe-area-inset-right) + 70px);border-top-right-radius:20px;border-right:1px solid var(--cm-line)}
+  .cm-media,.cm-media.cm-media-small{position:sticky;top:0;margin:0;height:min(54vh,420px);min-height:0;border-radius:14px;border:1px solid var(--cm-line)}
   .cm-media-cap{padding:7px 10px 7px 12px}
+  .cm:has(.cm-sheet>.cm-media) .maplibregl-ctrl-bottom-right{bottom:0}
 }
 .cm-photo{position:absolute;inset:0;z-index:5;background:#000;display:grid;grid-template-rows:auto 1fr auto;color:#f2f2f2}
 .cm-photo .cm-pano-box,.cm-photo iframe{width:100%;height:100%;min-height:0;border:0;display:block;background:#111}
@@ -646,7 +653,7 @@ export function openCampusMap(options) {
       map.on("click", "buildings", (event) => {
         const f = event.features?.[0];
         if (f?.properties?.code) select(f.properties.code);
-        else if (f) showOther(f.properties, [event.lngLat.lng, event.lngLat.lat]);
+        else if (f) showOther(f.properties, campus.features.find((x) => x.id != null && x.id === f.id) || { ...f, properties: { ...f.properties, centre: [event.lngLat.lng, event.lngLat.lat] } });
       });
       map.on("mouseenter", "buildings", () => (map.getCanvas().style.cursor = "pointer"));
       map.on("mouseleave", "buildings", () => (map.getCanvas().style.cursor = ""));
@@ -726,8 +733,13 @@ export function openCampusMap(options) {
     for (const [k, f] of buildings) if (f.id != null) map.setFeatureState({ source: "campus", id: f.id }, { focus: k === code });
   }
 
+  // keep what the camera looks at in the part of the map the sheet leaves free
+  function sheetPadding() {
+    const free = mapBox.clientHeight - 70 - 80;
+    return { top: 70, bottom: Math.max(0, Math.min(sheet.offsetHeight + 12, free)), left: 0, right: 0 };
+  }
   function cameraTo(centre, { zoom = 17.6, pitch = 58, bearing = map.getBearing(), duration = 900 } = {}) {
-    map.easeTo({ center: centre, zoom, pitch, bearing, duration: reduceMotion ? 0 : duration, padding: { bottom: sheet.offsetHeight * 0.8, top: 70 } });
+    map.easeTo({ center: centre, zoom, pitch, bearing, duration: reduceMotion ? 0 : duration, padding: sheetPadding() });
   }
 
   function select(code, { navigate = false } = {}) {
@@ -757,7 +769,7 @@ export function openCampusMap(options) {
     const mine = byCode.get(code) || [];
     // half picture (this building, or the nearest real picture), half options
     sheet.replaceChildren(
-      mediaPane(code, p.centre),
+      mediaPane(placeOf(f, code)),
       el("div", { class: "cm-opts" }, [
         el("h2", {}, [p.code, el("small", { text: [p.name, p.zh].filter(Boolean).join(" · ") })]),
         mine.length
@@ -820,12 +832,12 @@ export function openCampusMap(options) {
     // first: 街景 opens that one in Google Maps (the roadside spot above often has none)
     if (!googleEmbedKey) {
       loadPictures().then(() => {
-        const found = picturesFor(code, f.properties.centre);
+        const found = picturesFor(placeOf(f, code));
         const view = found.list.find((pic) => pic.kind === "google" && (!found.near || pic.d < 150));
         if (!view) return;
         const x = view.x;
         const heading = Math.round(bearingDeg([x.lon, x.lat], f.properties.centre));
-        street.href = `https://www.google.com/maps/@?api=1&map_action=pano&${x.pano ? `pano=${encodeURIComponent(x.pano)}` : `viewpoint=${at(x.lat)},${at(x.lon)}`}&heading=${heading}&pitch=0&fov=80`;
+        street.href = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${at(x.lat)},${at(x.lon)}${x.pano ? `&pano=${encodeURIComponent(x.pano)}` : ""}&heading=${heading}&pitch=0&fov=80`;
       });
     }
     return row;
@@ -833,10 +845,12 @@ export function openCampusMap(options) {
 
   // ----- Google 360° views inside the map (Google's own embed, no key) -----
   let streetViews = null;
+  let noGoogleView = null; // buildings Google has no 360° view near
   async function loadStreetViews() {
     if (streetViews || !streetViewsUrl) return streetViews || [];
     try {
       const data = await fetch(new URL(streetViewsUrl, document.baseURI)).then((r) => (r.ok ? r.json() : null));
+      if (data) noGoogleView = new Set(Array.isArray(data.noGoogleView) ? data.noGoogleView : []);
       // a view is found by its photo id, or by its exact position (Google shows the view nearest to it)
       streetViews = (Array.isArray(data?.views) ? data.views : []).filter((x) => Number.isFinite(x.lon) && Number.isFinite(x.lat));
     } catch {
@@ -994,83 +1008,110 @@ export function openCampusMap(options) {
     const spot = (x) => (Number.isFinite(x.lon) && Number.isFinite(x.lat) ? [x.lon, x.lat] : null);
     const codesOf = (x) => [...(Array.isArray(x.codes) ? x.codes : []), ...(x.near ? [x.near] : [])].filter((k) => buildings.has(k));
     const centreOf = (codes) => (codes.length ? buildings.get(codes[0]).properties.centre : null);
+    const walls = campus.features.filter((f) => f.properties.kind === "building" && f.id != null);
+    // the building a picture was taken inside, if any: it then only counts as that building's own (a few
+    // metres in from the outline, which is about as good as the map's outlines and the photos' positions)
+    const inside = (point) => (point ? walls.find((f) => outlines(f.geometry).some((outer) => pointInRing(point, outer)) && toOutline(f.geometry, point) > 3)?.id ?? null : null);
     pictures = [
-      ...gv.map((x) => ({ kind: "google", x, codes: codesOf(x), from: spot(x), at: spot(x) })),
       ...ph.map((x) => ({ kind: "photo", x, codes: codesOf(x), from: spot(x), at: centreOf(codesOf(x)) || spot(x) })),
+      ...gv.map((x) => ({ kind: "google", x, codes: codesOf(x), from: spot(x), at: spot(x) })),
       ...pa.map((x) => ({ kind: "pano", x, codes: codesOf(x), from: spot(x), at: spot(x) })),
-    ];
+    ].map((pic) => ({ ...pic, inside: inside(pic.from) }));
     return pictures;
   }
-  // metres from a point to a building's walls (0 inside it)
-  function fromBuilding(code, point) {
-    const g = buildings.get(code).geometry;
-    const polygons = g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [];
+  const outlines = (g) => (g?.type === "Polygon" ? [g.coordinates[0]] : g?.type === "MultiPolygon" ? g.coordinates.map((p) => p[0]) : []);
+  // metres from a point to the nearest outline of a building, inside or out
+  function toOutline(geometry, point) {
     let best = Infinity;
-    for (const [outer] of polygons) {
-      if (pointInRing(point, outer)) return 0;
+    for (const outer of outlines(geometry)) {
       for (let i = 0; i < outer.length - 1; i++) best = Math.min(best, metresBetween(point, closestPointOnSegment(point, outer[i], outer[i + 1])));
     }
-    return Number.isFinite(best) ? best : metresBetween(point, buildings.get(code).properties.centre);
+    return best;
   }
-  // is this a picture of the building `code`?
-  function shows(pic, code, centre) {
-    if (!code) return false;
-    if (pic.codes.length) return pic.codes.includes(code);
+  // metres from a point to a building's walls (0 inside it)
+  const fromWalls = (geometry, point) => (outlines(geometry).some((outer) => pointInRing(point, outer)) ? 0 : toOutline(geometry, point));
+  // what a sheet's pictures are about: a building with a code, or one tapped without a code
+  function placeOf(feature, code = feature.properties.code) {
+    const ring = outlines(feature.geometry)[0];
+    return { code: code || null, id: feature.id ?? null, geometry: feature.geometry, centre: feature.properties.centre || (ring ? polygonCentroid(ring) : null) };
+  }
+  const distanceTo = (place, point) => {
+    const d = fromWalls(place.geometry, point);
+    return Number.isFinite(d) ? d : metresBetween(place.centre, point);
+  };
+  // is this a picture of the place?
+  function shows(pic, place) {
+    if (pic.codes.length) return !!place.code && pic.codes.includes(place.code);
     if (!pic.from) {
-      const f = buildings.get(code).properties;
+      if (!place.code) return false;
+      const f = buildings.get(place.code).properties;
       const text = `${pic.x.title || ""} ${pic.x.description || ""}`.toLowerCase();
-      return [code, f.name, f.osmName].some((w) => w && w.length > 2 && text.includes(w.toLowerCase()));
+      return [place.code, f.name, f.osmName].some((w) => w && w.length > 2 && text.includes(w.toLowerCase()));
     }
-    const d = fromBuilding(code, pic.from);
+    if (pic.inside != null && pic.inside !== place.id) return false; // taken inside another building
+    const d = distanceTo(place, pic.from);
     if (pic.kind !== "photo") return d < 30; // a 360° view taken right beside it
     if (pic.x.heading == null) return d < 20;
-    return d < 60 && Math.abs(((bearingDeg(pic.from, centre) - pic.x.heading + 540) % 360) - 180) < 50;
+    return d < 60 && Math.abs(((bearingDeg(pic.from, place.centre) - pic.x.heading + 540) % 360) - 180) < 50;
   }
-  const KIND_ORDER = { google: 0, pano: 1, photo: 2 };
-  // the building's own pictures; without any, the nearest real pictures (each with how far away it is)
-  function picturesFor(code, centre) {
-    const far = (pic) => (code ? fromBuilding(code, pic.at) : metresBetween(pic.at, centre));
-    // outside views first (they show what the building looks like), then the ones inside it
+  const KIND_ORDER = { photo: 0, google: 1, pano: 2 };
+  // Google's 360° view nearest a building's main door, looked up by Google when it is shown (only the
+  // buildings it has none near are listed, in streetviews.json)
+  const doorOf = (code) => router?.nodes[router.doors[code]] || buildings.get(code).properties.centre;
+  const hasGoogleView = (code) => !!streetViewsUrl && !!noGoogleView && !noGoogleView.has(code);
+  const googleAt = (code) => {
+    const [lon, lat] = doorOf(code);
+    return { kind: "google", x: { lon, lat, title: "", author: "" }, codes: [code], from: [lon, lat], at: [lon, lat], inside: null, auto: true };
+  };
+  // the place's own pictures; without any, the nearest real pictures (each with how far away it is)
+  function picturesFor(place) {
+    // photos filed under the building first, then flat photos, then 360° views from outside (they show
+    // what the building looks like) before the ones inside it
     const rank = (pic) => (pic.kind !== "photo" && pic.d === 0 ? 25 : pic.d);
-    const own = pictures
-      .filter((pic) => shows(pic, code, centre))
-      .map((pic) => ({ ...pic, d: pic.at ? far(pic) : 0 }))
-      .sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind] || rank(a) - rank(b));
-    if (own.length) return { near: false, list: own.slice(0, 6) };
-    const near = pictures
-      .filter((pic) => pic.at)
-      .map((pic) => ({ ...pic, d: far(pic) }))
+    const mine = pictures.filter((pic) => shows(pic, place));
+    // a view picked by hand (streetviews.json) stands in for the one Google would pick
+    if (place.code && hasGoogleView(place.code) && !mine.some((pic) => pic.kind === "google")) mine.push(googleAt(place.code));
+    const own = mine
+      .map((pic) => ({ ...pic, d: pic.at ? distanceTo(place, pic.at) : 0 }))
+      .sort((a, b) => b.codes.includes(place.code) - a.codes.includes(place.code) || KIND_ORDER[a.kind] - KIND_ORDER[b.kind] || rank(a) - rank(b));
+    if (own.length) return { near: false, list: own.slice(0, 8) };
+    const others = [...buildings.keys()].filter((code) => code !== place.code && hasGoogleView(code)).map(googleAt);
+    const near = [...pictures, ...others]
+      .filter((pic) => pic.at && (pic.inside == null || pic.kind === "photo")) // not from inside another building
+      .map((pic) => ({ ...pic, d: distanceTo(place, pic.at) }))
       .sort((a, b) => a.d - b.d);
     return { near: true, list: near.slice(0, 3) };
   }
-  // The picture half of a sheet: the building's own pictures, or the nearest ones marked 在这附近, and
-  // last Google's satellite picture of it. `ownOnly`: leave it out unless the building has its own.
-  function mediaPane(code, centre, { ownOnly = false } = {}) {
-    const pane = el("figure", { class: "cm-media cm-media-wait", "aria-label": code ? `${code} 的实景` : "实景" });
+  // The picture half of a sheet: the place's own pictures, or the nearest ones marked 在这附近, and last
+  // Google's satellite picture of it. `small`: a lower strip (the arrival sheet), only with its own pictures.
+  function mediaPane(place, { small = false } = {}) {
+    const pane = el("figure", { class: `cm-media cm-media-wait${small ? " cm-media-small" : ""}`, "aria-label": place.code ? `${place.code} 的实景` : "实景" });
     loadPictures().then(() => {
       if (!pane.isConnected) return; // the sheet moved on
-      const found = picturesFor(code, centre);
-      if (ownOnly && found.near) pane.remove();
-      else fillPane(pane, code, centre, found);
+      const found = picturesFor(place);
+      if (small && found.near) pane.remove();
+      else fillPane(pane, place, found);
+    }).catch((error) => {
+      console.warn(error);
+      pane.remove();
     });
     return pane;
   }
-  function fillPane(pane, code, centre, { near, list }) {
+  function fillPane(pane, place, { near, list }) {
+    const { code, centre } = place;
     pane.classList.remove("cm-media-wait");
     const items = list.map((pic) => ({ ...pic, near }));
     // the satellite picture is real too, and every building has one
-    const g = code ? buildings.get(code).geometry : null;
-    const corners = !g ? [] : g.type === "Polygon" ? g.coordinates.flat() : g.type === "MultiPolygon" ? g.coordinates.flat(2) : [];
-    const size = Math.max(180, 5 * Math.max(0, ...corners.map((p) => metresBetween(p, centre)))); // metres across
+    const size = Math.max(180, 5 * Math.max(0, ...outlines(place.geometry).flat().map((p) => metresBetween(p, centre)))); // metres across
     items.push({ kind: "satellite", x: { lat: centre[1], lon: centre[0], size }, codes: [], d: 0, near: false });
     const photoList = items.filter((pic) => pic.kind === "photo").map((pic) => pic.x);
     const frames = [];
-    const track = el("div", { class: "cm-media-track" }, items.map((pic, i) => {
+    const slides = items.map((pic, i) => {
       const x = pic.x;
       if (pic.kind === "google" || pic.kind === "satellite") {
         // a live view: drag to look around (Google's own embed); loaded when it is shown
         const src = pic.kind === "google" ? googleView(x, bearingDeg([x.lon, x.lat], centre)) : satelliteEmbed(x, x.size);
-        const frame = el("iframe", { title: pic.kind === "google" ? `${x.title || "Google 360° 实景"}（可以拖动）` : "卫星图", allowfullscreen: true, referrerpolicy: "strict-origin-when-cross-origin", "data-src": src });
+        const frame = el("iframe", { title: pic.kind === "google" ? `${x.title || "Google 360° 实景"}（可以拖动看四周）` : "卫星图（可以拖动、缩放）", allowfullscreen: true, referrerpolicy: "strict-origin-when-cross-origin", "data-src": src });
         frames[i] = frame;
         return el("div", { class: `cm-media-item cm-media-${pic.kind}` }, [frame]);
       }
@@ -1081,22 +1122,34 @@ export function openCampusMap(options) {
           ? el("img", { src: x.thumb, alt: "", loading: i ? "lazy" : "eager", decoding: "async", referrerpolicy: "no-referrer" })
           : el("span", { class: "cm-media-poster" }, [el("span", { html: ICON.pano }), el("b", { text: "360° 实景" }), el("small", { text: "点开，拖动看四周" })]),
       ]);
-    }));
+    });
+    const track = el("div", { class: "cm-media-track" }, slides);
     const text = el("div", { class: "cm-media-text" });
     const count = el("span", { class: "cm-media-count", "aria-hidden": "true" });
-    const step = (by) => track.scrollTo({ left: (shown + by) * track.clientWidth, behavior: reduceMotion ? "auto" : "smooth" });
-    const prev = el("button", { class: "cm-btn", type: "button", "aria-label": "上一张", text: "‹", onclick: () => step(-1) });
-    const nextBtn = el("button", { class: "cm-btn", type: "button", "aria-label": "下一张", text: "›", onclick: () => step(1) });
-    const caption = (i) => {
+    let shown = 0; // the picture on screen
+    let target = 0; // where the ‹ › buttons are taking it
+    let moving = false;
+    let width = 0;
+    const go = (i) => {
+      target = Math.max(0, Math.min(items.length - 1, i));
+      moving = true;
+      track.scrollTo({ left: target * track.clientWidth, behavior: reduceMotion ? "auto" : "smooth" });
+      caption(target); // straight away, so quick taps add up and the buttons say where it is going
+    };
+    const prev = el("button", { class: "cm-btn", type: "button", "aria-label": "上一张", text: "‹", onclick: () => go(target - 1) });
+    const nextBtn = el("button", { class: "cm-btn", type: "button", "aria-label": "下一张", text: "›", onclick: () => go(target + 1) });
+    function caption(i) {
       const pic = items[i];
       const x = pic.x;
-      const where = pic.kind === "google" && x.title ? x.title : pic.codes.length ? pic.codes[0] : "";
+      const where = pic.auto ? `${pic.codes[0]} 门口` : pic.kind === "google" && x.title ? x.title : pic.codes.length ? pic.codes[0] : "";
+      const here = code ? `${code} ` : "这栋楼";
       const line = pic.kind === "satellite"
         ? `${code ? `${code} ` : "这里"}的卫星图，可以拖动、缩放`
         : pic.near
-          ? `${code ? `${code} 还没有实景照片，` : ""}这是附近${where ? `的 ${where}` : "拍的"}${pic.kind === "photo" ? "" : `，已经转向${code ? ` ${code}` : "这里"}`}`
-          : pic.kind === "google" ? `${x.title || "360° 实景"} · 拖动看四周` : x.title || (pic.kind === "pano" ? "360° 实景" : "实景照片");
-      const credit = pic.kind === "satellite" ? "Google 卫星图" : pic.kind === "google" ? (x.author === "Google" ? "Google 街景" : ["Google 地图", x.author].filter(Boolean).join(" · ")) : [x.author, x.license].filter(Boolean).join(" · ");
+          ? `${here}还没有实景照片，这是附近${where ? `的 ${where}` : "拍的"}${pic.kind === "photo" ? "" : `，已经转向${code ? ` ${code}` : "这里"}`}`
+          : pic.auto ? `${code} 门口最近的 360° 实景 · 拖动看四周，点箭头往前走`
+            : pic.kind === "google" ? `${x.title || "360° 实景"} · 拖动看四周` : x.title || (pic.kind === "pano" ? "360° 实景" : "实景照片");
+      const credit = pic.kind === "satellite" ? "Google 卫星图" : pic.kind === "google" ? ["Google 地图", x.author || "作者见画面右下角"].join(" · ") : [x.author, x.license].filter(Boolean).join(" · ");
       text.replaceChildren(...[
         pic.near ? el("b", { class: "cm-near", text: `在这附近 · 约 ${fmtMetres(pic.d)}` }) : null,
         el("span", { text: line }),
@@ -1105,16 +1158,50 @@ export function openCampusMap(options) {
       count.textContent = `${i + 1}/${items.length}`;
       prev.disabled = i === 0;
       nextBtn.disabled = i === items.length - 1;
+      // only the picture on screen can be reached with Tab or a screen reader
+      slides.forEach((slide, k) => (slide.inert = k !== i));
       const frame = frames[i];
       if (frame && !frame.src) frame.src = frame.dataset.src;
-    };
-    let shown = 0;
+    }
     track.addEventListener("scroll", () => {
-      const i = Math.min(items.length - 1, Math.max(0, Math.round(track.scrollLeft / Math.max(1, track.clientWidth))));
-      if (i !== shown) caption((shown = i));
+      if (track.clientWidth !== width) {
+        // the phone turned: stay on the same picture
+        width = track.clientWidth;
+        track.scrollTo({ left: shown * width });
+        return;
+      }
+      const i = Math.min(items.length - 1, Math.max(0, Math.round(track.scrollLeft / Math.max(1, width))));
+      if (moving && Math.abs(track.scrollLeft - target * width) < 2) moving = false;
+      if (i !== shown) {
+        shown = i;
+        if (!moving) caption(i);
+      }
+      if (!moving) target = shown;
     }, { passive: true });
+    track.addEventListener("pointerdown", () => (moving = false), { passive: true });
+    if (typeof ResizeObserver === "function") {
+      new ResizeObserver(() => {
+        if (!track.isConnected || track.clientWidth === width) return;
+        width = track.clientWidth;
+        track.scrollTo({ left: target * width });
+      }).observe(track);
+    }
+    // a 360° view keeps the swipe for itself: swiping along the caption strip changes pictures too
+    const cap = el("figcaption", { class: "cm-media-cap" }, [text, el("div", { class: "cm-media-nav" }, [prev, count, nextBtn])]);
+    let swipe = null;
+    cap.addEventListener("pointerdown", (event) => (swipe = { x: event.clientX, y: event.clientY }));
+    cap.addEventListener("pointerup", (event) => {
+      if (!swipe) return;
+      const dx = event.clientX - swipe.x;
+      const dy = event.clientY - swipe.y;
+      swipe = null;
+      if (Math.abs(dx) > 40 && Math.abs(dx) > 1.5 * Math.abs(dy)) go(target + (dx < 0 ? 1 : -1));
+    });
+    cap.addEventListener("pointercancel", () => (swipe = null));
     caption(0);
-    pane.replaceChildren(track, el("figcaption", { class: "cm-media-cap" }, [text, el("div", { class: "cm-media-nav" }, [prev, count, nextBtn])]));
+    width = track.clientWidth;
+    pane.replaceChildren(track, cap);
+    text.setAttribute("aria-live", "polite"); // after the first caption: say only what the student changes
   }
   function photoViewer(list, index) {
     const box = el("div", { class: "cm-photo", role: "dialog", "aria-label": "照片" });
@@ -1131,10 +1218,11 @@ export function openCampusMap(options) {
         ]),
         el("img", { src: x.full, alt: x.title, referrerpolicy: "no-referrer" }),
         el("footer", {}, [
-          `${x.author} · `,
-          el("a", { href: x.licenseUrl || x.page, target: "_blank", rel: "noopener", text: x.license }),
-          " · ",
-          el("a", { href: x.page, target: "_blank", rel: "noopener", text: x.source }),
+          ...[
+            x.author || null,
+            x.license ? (x.licenseUrl || x.page ? el("a", { href: x.licenseUrl || x.page, target: "_blank", rel: "noopener", text: x.license }) : x.license) : null,
+            x.source ? (x.page ? el("a", { href: x.page, target: "_blank", rel: "noopener", text: x.source }) : x.source) : null,
+          ].filter(Boolean).flatMap((part, k) => (k ? [" · ", part] : [part])),
           x.taken ? ` · ${x.taken}` : "",
           list.length > 1 ? ` · ${index + 1}/${list.length}` : "",
         ])
@@ -1145,7 +1233,7 @@ export function openCampusMap(options) {
     box.querySelector("button")?.focus();
   }
 
-  function showOther(props, point) {
+  function showOther(props, feature) {
     if (nav && !nav.arrived) {
       say(props.osmName || "这栋楼没有课表代码。", 3000);
       return;
@@ -1155,8 +1243,9 @@ export function openCampusMap(options) {
     focusCode = null;
     setFocusState(null);
     markFocusLabel();
+    const place = placeOf(feature, null);
     sheet.replaceChildren(
-      mediaPane(null, point),
+      mediaPane(place),
       el("div", { class: "cm-opts" }, [
         el("h2", { text: props.osmName || "校园建筑" }),
         el("p", { text: "这栋楼没有课表代码。点有代码（比如 SK3、PA3）的楼可以导航。" }),
@@ -1164,6 +1253,8 @@ export function openCampusMap(options) {
       ])
     );
     sheet.scrollTop = 0;
+    // the taller sheet must not hide the building just tapped
+    if (place.centre) map.easeTo({ center: place.centre, duration: reduceMotion ? 0 : 600, padding: sheetPadding() });
   }
 
   function idleSheet() {
@@ -1660,7 +1751,7 @@ export function openCampusMap(options) {
     const mine = (byCode.get(code) || []).find((m) => m.next) || (byCode.get(code) || [])[0];
     announcer.textContent = `到了 ${code}`;
     sheet.replaceChildren(
-      ...(f ? [mediaPane(code, f.properties.centre, { ownOnly: true })] : []), // a photo, so it is easy to recognise
+      ...(f ? [mediaPane(placeOf(f, code), { small: true })] : []), // a picture, so it is easy to recognise
       el("div", { class: "cm-opts" }, [
         el("h2", {}, [`到了！${code}`, el("small", { text: [f?.properties.name, f?.properties.zh].filter(Boolean).join(" · ") })]),
         el("p", { text: mine ? `${mine.title} 在 ${mine.room}。` : "你已经在这栋楼旁边了。" }),

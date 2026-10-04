@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { parseStreetView, streetViewEmbed, streetViewAt, satelliteEmbed } from "../../assets/streetview-url.js";
-import { metresBetween } from "../../assets/campus-geo.js";
+import { metresBetween, CAMPUS_CODES } from "../../assets/campus-geo.js";
 
 const ID = "CIHM0ogKEICAgICUDGHAEQ";
 
@@ -34,6 +34,11 @@ test("other links are refused", () => {
   assert.equal(parseStreetView("hello"), null);
 });
 
+test("buildings listed without a Google view are real building codes", () => {
+  const { noGoogleView = [] } = JSON.parse(readFileSync(new URL("../../data/campus/streetviews.json", import.meta.url), "utf8"));
+  for (const code of noGoogleView) assert.ok(CAMPUS_CODES.has(code), code);
+});
+
 test("every saved view is on campus, with a unique id and a photo id or an exact position", () => {
   const { views } = JSON.parse(readFileSync(new URL("../../data/campus/streetviews.json", import.meta.url), "utf8"));
   assert.ok(Array.isArray(views));
@@ -48,8 +53,10 @@ test("every saved view is on campus, with a unique id and a photo id or an exact
 
 test("embeds the 360° view nearest a position without a photo id", () => {
   const src = streetViewAt({ lat: 4.5118437, lon: 114.0181191 }, 400);
-  assert.equal(src, "https://www.google.com/maps/embed?origin=mfe&pb=!6m7!1m6!2m2!1d4.5118437!2d114.0181191!3f40.0!4f0.0!5f1");
-  assert.equal(new URL(src).hostname, "www.google.com");
+  assert.equal(src, "https://maps.google.com/maps?layer=c&cbll=4.5118437,114.0181191&cbp=12,40.0,0,0,0.0&source=embed&output=svembed");
+  const url = new URL(src);
+  assert.equal(url.searchParams.get("output"), "svembed");
+  assert.equal(url.searchParams.get("cbll"), "4.5118437,114.0181191");
 });
 
 test("embeds a satellite picture centred on a building", () => {

@@ -48,14 +48,22 @@ await mkdir(DIR, { recursive: true });
 const ext = path.extname(file).toLowerCase() || ".jpg";
 let full = `${id}${ext}`;
 let thumb = full;
+let sharp = null;
 try {
-  const { default: sharp } = await import("sharp");
+  ({ default: sharp } = await import("sharp"));
+} catch {
+  /* optional */
+}
+try {
+  if (!sharp) throw new Error('"sharp" is not installed');
+  await sharp(buffer, { failOn: "none" }).rotate().resize({ width: 1600, withoutEnlargement: true }).jpeg({ quality: 80, mozjpeg: true }).toFile(path.join(DIR, `${id}.jpg`));
+  await sharp(buffer, { failOn: "none" }).rotate().resize({ width: 640, withoutEnlargement: true }).jpeg({ quality: 72, mozjpeg: true }).toFile(path.join(DIR, `${id}-s.jpg`));
   full = `${id}.jpg`;
   thumb = `${id}-s.jpg`;
-  await sharp(buffer, { failOn: "none" }).rotate().resize({ width: 1600, withoutEnlargement: true }).jpeg({ quality: 80, mozjpeg: true }).toFile(path.join(DIR, full));
-  await sharp(buffer, { failOn: "none" }).rotate().resize({ width: 640, withoutEnlargement: true }).jpeg({ quality: 72, mozjpeg: true }).toFile(path.join(DIR, thumb));
-} catch {
-  console.warn('note: copied as is; install "sharp" (npm i sharp) to make it smaller for phones');
+} catch (error) {
+  // phones' HEIC photos only show in Safari: they need converting to JPEG first
+  if (/^\.hei[cf]$/.test(ext)) throw new Error(`could not convert ${file} to JPEG (${error.message}); export it as JPEG first`);
+  console.warn(`note: copied as is (${error.message}); install "sharp" (npm i sharp) to make it smaller for phones`);
   await copyFile(file, path.join(DIR, full));
 }
 
