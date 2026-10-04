@@ -3,7 +3,7 @@
 // Map data © OpenStreetMap contributors (ODbL). Rendering: MapLibre GL JS (BSD-3-Clause), loaded on demand.
 import {
   createRouter, buildingForRoom, metresBetween, bearingDeg, progressOnRoute, walkMinutes, TURN_ZH, pointInRing, createPositionFilter,
-} from "./campus-geo.js?v=94ae86f8c9";
+} from "./campus-geo.js?v=cec571fde3";
 
 let current = null;
 
@@ -102,6 +102,9 @@ const CSS = `
 .cm .maplibregl-ctrl-bottom-right,.cm .maplibregl-ctrl-bottom-left{bottom:var(--cm-sheet,0px)}
 .cm .maplibregl-ctrl-attrib{font-size:10px;max-width:calc(100vw - 24px)}
 .cm-fabs .cm-north svg{transition:transform .15s linear}
+.cm-fabs .cm-btn[hidden]{display:none}
+.cm-fabs .cm-compass{border-color:var(--cm-accent);color:var(--cm-accent);animation:cm-nudge 1.6s ease-in-out 3}
+@keyframes cm-nudge{50%{transform:scale(1.08)}}
 @media (prefers-reduced-motion:reduce){.cm-me::before{animation:none}.cm-arrow svg{transition:none}}
 `;
 
@@ -111,6 +114,7 @@ const ICON = {
   list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>',
   north: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l5 14-5-3-5 3z" fill="currentColor" fill-opacity=".25"/></svg>',
   arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V5"/><path d="M6 11l6-6 6 6"/></svg>',
+  compass: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z" fill="currentColor" fill-opacity=".3"/></svg>',
   flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4"/><path d="M6 4h11l-2 4 2 4H6"/></svg>',
 };
 const TURN_ROTATE = { start: 0, "slight-left": -40, left: -90, "slight-right": 40, right: 90, uturn: 180, arrive: 0 };
@@ -291,10 +295,12 @@ function campusStyle(c, campus, basemap) {
  *   classes      [{ code, room, title, when }] the timetable's classes, shown per building
  *   classLabel   "2E3" (used in texts)
  *   basemap      TileJSON URL of the world map around the campus (OpenFreeMap by default), or false
+ *   compassPermission  the promise from DeviceOrientationEvent.requestPermission() if the page already
+ *                asked during the tap that opened the map (iPhone only lets a page ask during a tap)
  */
 export function openCampusMap(options) {
   if (current) {
-    current.focus(options.focus, options.navigate);
+    current.focus(options.focus, options.navigate, options.compassPermission);
     return current.close;
   }
   const { maplibreUrl, campusUrl, pathsUrl, style = "ink", classes = [], classLabel = "", basemap = OPENFREEMAP } = options;
@@ -317,7 +323,8 @@ export function openCampusMap(options) {
   const locateBtn = el("button", { class: "cm-btn", type: "button", "aria-label": "显示我的位置", "aria-pressed": "false", html: ICON.locate });
   const pitchBtn = el("button", { class: "cm-btn", type: "button", "aria-label": "切换 2D / 3D", text: "2D" });
   const northBtn = el("button", { class: "cm-btn cm-north", type: "button", "aria-label": "指向正北", html: ICON.north });
-  const fabs = el("div", { class: "cm-fabs" }, [locateBtn, pitchBtn, northBtn]);
+  const compassBtn = el("button", { class: "cm-btn cm-compass", type: "button", "aria-label": "开启指南针（地图跟着手机转）", html: ICON.compass, hidden: true });
+  const fabs = el("div", { class: "cm-fabs" }, [locateBtn, compassBtn, pitchBtn, northBtn]);
   const sheet = el("div", { class: "cm-sheet", "aria-live": "polite" });
   const msg = el("div", { class: "cm-msg", role: "status" });
   const loading = el("div", { class: "cm-loading", text: "正在载入 3D 校园地图…" });
@@ -365,7 +372,8 @@ export function openCampusMap(options) {
   let focusCode = null;
   let me = null; // { lon, lat, accuracy, at }: smoothed position, accuracy as the phone reports it
   const positionFilter = createPositionFilter();
-  let heading = null; // degrees, smoothed
+  let heading = null; // where the phone points, degrees from north, smoothed
+  let course = null; // direction of travel from GPS, when walking and there is no compass
   let watchId = null;
   let meMarker = null;
   let pinMarker = null;
@@ -628,63 +636,131 @@ export function openCampusMap(options) {
   }
 
   // ----- location & compass -----
-  async function askCompass() {
+  // iPhone only lets a page ask for the motion sensors during a tap, so askCompass() is called straight
+  // from click handlers, before any await. The page can also ask on its "带我去" tap and hand the pending
+  // answer over (options.compassPermission). Chrome 152+ has the same function but answers without asking.
+  let compass = "off"; // off | on | needs-tap | denied
+  let pendingPermission = options.compassPermission || null;
+  function askCompass() {
+    if (compass === "on" || compass === "denied") return;
+    const listen = () => {
+      if (closed || compass === "on") return;
+      compass = "on";
+      compassBtn.hidden = true;
+      if ("ondeviceorientationabsolute" in window) window.addEventListener("deviceorientationabsolute", onOrientation);
+      else window.addEventListener("deviceorientation", onOrientation);
+    };
+    let request = pendingPermission;
+    pendingPermission = null;
     try {
-      if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
-        const answer = await DeviceOrientationEvent.requestPermission();
-        if (answer !== "granted") return;
-      }
+      request ??= typeof DeviceOrientationEvent !== "undefined" ? DeviceOrientationEvent.requestPermission?.() : null;
     } catch {
+      request = null;
+    }
+    if (!request || typeof request.then !== "function") {
+      listen();
       return;
     }
-    if ("ondeviceorientationabsolute" in window) window.addEventListener("deviceorientationabsolute", onOrientation);
-    else window.addEventListener("deviceorientation", onOrientation);
+    request.then(
+      (answer) => {
+        if (answer === "granted") listen();
+        else if (!closed) {
+          compass = "denied";
+          compassBtn.hidden = true;
+        }
+      },
+      () => {
+        // asked outside a tap: show a button the student can tap
+        if (closed || compass === "on") return;
+        compass = "needs-tap";
+        compassBtn.hidden = false;
+      }
+    );
   }
+  let sx = 0;
+  let sy = 0;
+  let lastTurn = 0;
+  let headingFrame = 0;
+  let calibrationSaid = false;
   function onOrientation(event) {
     let h = null;
-    if (typeof event.webkitCompassHeading === "number" && !Number.isNaN(event.webkitCompassHeading)) h = event.webkitCompassHeading;
-    else if (event.absolute && typeof event.alpha === "number") h = (360 - event.alpha) % 360;
-    if (h == null) return;
-    const screenAngle = screen.orientation?.angle ?? window.orientation ?? 0;
-    h = (h + screenAngle + 360) % 360;
-    // smooth on the circle
-    if (heading == null) heading = h;
-    else {
-      const diff = ((h - heading + 540) % 360) - 180;
-      heading = (heading + diff * 0.2 + 360) % 360;
+    if (typeof event.webkitCompassHeading === "number" && event.webkitCompassAccuracy !== -1) h = event.webkitCompassHeading; // iPhone
+    else if (event.absolute && typeof event.alpha === "number") h = 360 - event.alpha; // Android
+    if (h == null || Number.isNaN(h)) return;
+    if (!calibrationSaid && event.webkitCompassAccuracy > 30) {
+      calibrationSaid = true;
+      say("指南针不太准：离开金属和电器，拿着手机在空中画几个 8 字。", 5000);
     }
-    if (meMarker) {
-      meMarker.getElement().classList.add("cm-has-heading");
-      meMarker.setRotation(heading);
-    }
+    // the sensors measure the phone's top edge in portrait; turn by the screen rotation
+    const screenAngle = screen.orientation?.angle ?? (window.orientation < 0 ? window.orientation + 360 : window.orientation) ?? 0;
+    const r = (((h + screenAngle) % 360) * Math.PI) / 180;
+    // average as a unit vector (so 359° and 1° average to 0°, not 180°), time constant 0.25 s
+    const now = performance.now();
+    const k = lastTurn ? 1 - Math.exp(-(now - lastTurn) / 250) : 1;
+    lastTurn = now;
+    sx += k * (Math.sin(r) - sx);
+    sy += k * (Math.cos(r) - sy);
+    if (!headingFrame) headingFrame = requestAnimationFrame(showHeading);
   }
+  function showHeading() {
+    headingFrame = 0;
+    const h = ((Math.atan2(sx, sy) * 180) / Math.PI + 360) % 360;
+    if (heading != null && Math.abs(((h - heading + 540) % 360) - 180) < 1.5) return; // no shimmering
+    heading = h;
+    turnDot();
+  }
+  function turnDot() {
+    const facing = heading ?? course;
+    if (!meMarker || facing == null) return;
+    meMarker.getElement().classList.add("cm-has-heading");
+    meMarker.setRotation(facing);
+  }
+  const isIPhone = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
+  function startWatch() {
+    watchId = navigator.geolocation.watchPosition(onPosition, onPositionError, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
+  }
   function locate(fly) {
-    if (!("geolocation" in navigator)) {
-      say("这个浏览器不支持定位。");
+    if (!("geolocation" in navigator) || window.isSecureContext === false) {
+      say("这个浏览器用不了定位。");
       return;
     }
     askCompass();
     follow = true;
     locateBtn.setAttribute("aria-pressed", "true");
     if (watchId == null) {
-      say("正在定位…（要允许网页使用位置）", 0);
-      watchId = navigator.geolocation.watchPosition(onPosition, onPositionError, { enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 });
+      say(/MicroMessenger/i.test(navigator.userAgent) ? "微信里常常拿不到定位：点右上角 ··· 选「在浏览器打开」。" : "正在定位…（要允许网页使用位置）", 0);
+      startWatch();
     } else if (me && fly) {
-      cameraTo([me.lon, me.lat], { zoom: 18, pitch: 60, bearing: heading ?? map.getBearing() });
+      cameraTo([me.lon, me.lat], { zoom: 18, pitch: 60, bearing: heading ?? course ?? map.getBearing() });
     }
   }
 
   function onPositionError(error) {
-    if (error.code === 1) say("没有定位权限。到浏览器设置里允许这个网站使用位置，再点一次定位。", 7000);
-    else if (error.code === 3) say("定位超时，到空旷一点的地方再试试。", 5000);
-    else say("暂时拿不到位置。", 4000);
+    if (error.code === 1) {
+      // denied: stop, so the next tap on the locate button asks again
+      if (watchId != null) navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+      follow = false;
+      locateBtn.setAttribute("aria-pressed", "false");
+      say(isIPhone()
+        ? "没有定位权限。到 设置 › 隐私与安全性 › 定位服务 › Safari 网站，选「使用 App 期间」，再点一次定位。"
+        : "没有定位权限。点地址栏左边的图标 › 权限 › 位置 › 允许，再点一次定位。", 9000);
+    } else if (error.code === 3) say("还在找 GPS 信号…到空旷一点的地方会快很多。", 5000);
+    else say("暂时拿不到位置，会继续尝试。", 4000); // the watch keeps running
   }
+  // the phone only shares a rough position (iPhone "Precise Location" off, or Chrome's "Approximate")
+  const roughHelp = () => isIPhone()
+    ? "手机只给了大概位置。到 设置 › 隐私与安全性 › 定位服务 › Safari 网站，打开「精确位置」。"
+    : "手机只给了大概位置。点地址栏左边的图标 › 权限 › 位置，改成「精确」。";
+  let roughSaid = 0;
 
   function onPosition(position) {
     const { longitude, latitude, accuracy } = position.coords;
     const fix = positionFilter.update(longitude, latitude, accuracy, position.timestamp || Date.now());
     if (!fix) return; // a sudden jump: wait for the next fixes to confirm it
+    const { heading: gpsCourse, speed } = position.coords;
+    course = gpsCourse != null && !Number.isNaN(gpsCourse) && speed > 0.8 && accuracy < 25 ? gpsCourse : course;
     const first = !me;
     me = { lon: fix.lon, lat: fix.lat, accuracy, at: Date.now() };
     if (msg.textContent.startsWith("正在定位")) msg.textContent = "";
@@ -696,9 +772,13 @@ export function openCampusMap(options) {
       const node = el("div", { class: "cm-me" }, [el("div", { class: "cm-cone" }), el("i")]);
       meMarker = new maplibre.Marker({ element: node, rotationAlignment: "map", pitchAlignment: "map" }).setLngLat(shown).addTo(map);
     } else meMarker.setLngLat(shown);
+    if (heading == null) turnDot();
     const far = metresBetween(point, campus.meta.centre);
     if (first && far > 2500) say(`你现在离校园约 ${fmtMetres(far)}，到了学校再用导航。`, 6000);
-    if (accuracy > 60) say(`GPS 不太准（误差约 ${Math.round(accuracy)} 米），走到空旷处会好一些。`, 4000);
+    if (accuracy >= 1000) {
+      if (Date.now() - roughSaid > 60000) say(roughHelp(), 10000);
+      roughSaid = Date.now();
+    } else if (accuracy > 60) say(`GPS 不太准（误差约 ${Math.round(accuracy)} 米），走到空旷处会好一些。`, 4000);
     if (!nav && follow && (first || far < 3000)) {
       if (first) cameraTo(point, { zoom: 18, pitch: 60 });
       else map.easeTo({ center: point, duration: reduceMotion ? 0 : 600 });
@@ -706,7 +786,7 @@ export function openCampusMap(options) {
   }
 
   // ----- navigation -----
-  async function beginNavigation(code) {
+  function beginNavigation(code) {
     focusCode = code;
     setFocusState(code);
     markFocusLabel();
@@ -714,11 +794,7 @@ export function openCampusMap(options) {
     seeThrough(true);
     setPin(code);
     locate(false);
-    try {
-      wakeLock = (await navigator.wakeLock?.request("screen")) || null;
-    } catch {
-      wakeLock = null;
-    }
+    requestWakeLock();
     if (me) updateNavigation(true);
     else navWaitingSheet(code);
   }
@@ -736,7 +812,7 @@ export function openCampusMap(options) {
     const f = buildings.get(code);
     sheet.replaceChildren(
       el("h2", {}, [`去 ${code}`, el("small", { text: f?.properties.zh || f?.properties.name || "" })]),
-      el("p", { text: "正在等 GPS 定位…第一次会问你要不要允许网页使用位置，选允许。在室外会快很多。" }),
+      el("p", { text: "正在等 GPS 定位…第一次会问你要不要允许网页使用位置，选允许。在室外会快很多。位置只在你的手机上用，不会上传。" }),
       el("div", { class: "cm-actions" }, [el("button", { class: "cm-btn", type: "button", text: "取消", onclick: endNavigation })])
     );
   }
@@ -760,6 +836,14 @@ export function openCampusMap(options) {
         arrivedSheet(nav.code);
         map.getSource("route")?.setData(EMPTY);
       }
+      return null;
+    }
+    if (me.accuracy >= 1000) {
+      sheet.replaceChildren(
+        el("h2", { text: `去 ${nav.code}` }),
+        el("p", { text: `${roughHelp()}改好后回到这里就能带路。` }),
+        el("div", { class: "cm-actions" }, [el("button", { class: "cm-btn", type: "button", text: "结束", onclick: endNavigation })])
+      );
       return null;
     }
     const far = metresBetween(point, campus.meta.centre);
@@ -791,7 +875,7 @@ export function openCampusMap(options) {
     navSheet(progress);
     const shown = !progress.offRoute && progress.distance <= Math.min(15, Math.max(5, me.accuracy)) ? progress.point : point;
     if (follow) {
-      const bearing = heading ?? bearingDeg(shown, progress.nextStep?.at || door);
+      const bearing = heading ?? course ?? bearingDeg(shown, progress.nextStep?.at || door);
       map.easeTo({ center: shown, bearing, pitch: 62, zoom: Math.max(map.getZoom(), 18.2), duration: reduceMotion ? 0 : 800, padding: { bottom: sheet.offsetHeight * 0.9, top: 60 } });
     }
     return shown;
@@ -844,6 +928,27 @@ export function openCampusMap(options) {
     else idleSheet();
   }
 
+  // keep the screen on while walking; the browser drops the lock whenever the page is hidden
+  let wakeRequest = null;
+  function requestWakeLock() {
+    if (wakeLock || wakeRequest || !navigator.wakeLock) return;
+    wakeRequest = navigator.wakeLock.request("screen").then(
+      (lock) => {
+        wakeRequest = null;
+        if (closed || !nav || nav.arrived) {
+          lock.release().catch(() => {});
+          return;
+        }
+        wakeLock = lock;
+        lock.addEventListener?.("release", () => {
+          if (wakeLock === lock) wakeLock = null;
+        });
+      },
+      () => {
+        wakeRequest = null;
+      }
+    );
+  }
   function releaseWakeLock() {
     wakeLock?.release?.().catch(() => {});
     wakeLock = null;
@@ -851,6 +956,14 @@ export function openCampusMap(options) {
 
   // ----- controls -----
   closeBtn.addEventListener("click", () => close());
+  compassBtn.addEventListener("click", () => {
+    askCompass(); // first, while the tap still counts as a gesture
+    say("转一转手机，地图上的扇形会跟着你转。", 3500);
+  });
+  // iPhone grants the screen wake lock only during a tap: retry on the next one if it failed earlier
+  overlay.addEventListener("pointerdown", () => {
+    if (nav && !nav.arrived && !wakeLock) requestWakeLock();
+  });
   listBtn.addEventListener("click", openList);
   locateBtn.addEventListener("click", () => {
     if (!map) return;
@@ -881,16 +994,18 @@ export function openCampusMap(options) {
     }
   };
   window.addEventListener("keydown", onKey);
-  const onVisible = async () => {
-    if (!document.hidden && nav && !wakeLock) {
-      try {
-        wakeLock = (await navigator.wakeLock?.request("screen")) || null;
-      } catch {
-        wakeLock = null;
-      }
-    }
+  const onVisible = () => {
+    if (!document.hidden && nav && !nav.arrived && !wakeLock) requestWakeLock();
   };
   document.addEventListener("visibilitychange", onVisible);
+  // Safari stops location when the page goes into the back/forward cache; start again when it returns
+  const onPageShow = (event) => {
+    if (event.persisted && watchId != null) {
+      navigator.geolocation.clearWatch(watchId);
+      startWatch();
+    }
+  };
+  window.addEventListener("pageshow", onPageShow);
 
   function close({ fromHistory = false } = {}) {
     if (closed) return;
@@ -901,6 +1016,8 @@ export function openCampusMap(options) {
     window.removeEventListener("keydown", onKey);
     window.removeEventListener("popstate", onPop);
     document.removeEventListener("visibilitychange", onVisible);
+    window.removeEventListener("pageshow", onPageShow);
+    cancelAnimationFrame(headingFrame);
     releaseWakeLock();
     sheetSize?.disconnect();
     clearTimeout(say.timer);
@@ -925,7 +1042,8 @@ export function openCampusMap(options) {
 
   current = {
     close: () => close(),
-    focus: (code, navigate) => {
+    focus: (code, navigate, permission) => {
+      if (permission && compass !== "on") pendingPermission = permission;
       if (code && map?.loaded()) select(code, { navigate });
     },
   };
