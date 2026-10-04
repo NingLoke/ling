@@ -1,0 +1,166 @@
+{
+ "_about": "Official Curtin Malaysia building codes matched to OpenStreetMap buildings (the official campus map was fitted to OSM: 90.4° rotation, ~0.93 m/px, anchor error 1-12 m). FN7 is not in OSM; its footprint comes from the official map.",
+ "SK1": {
+  "osm": "way/315410726",
+  "name": "Skylark 1",
+  "zh": "工程与科学学院"
+ },
+ "SK2": {
+  "osm": "way/315410727",
+  "name": "Skylark 2",
+  "zh": "工程与科学学院"
+ },
+ "SK3": {
+  "osm": "way/1311241551",
+  "name": "Skylark 3",
+  "zh": "工程与科学学院"
+ },
+ "PA1": {
+  "osm": "way/315410723",
+  "name": "Prinia 1",
+  "zh": "研究生院 · 学生事务处"
+ },
+ "PA2": {
+  "osm": "way/315410724",
+  "name": "Prinia 2",
+  "zh": "人文学院"
+ },
+ "PA3": {
+  "osm": "way/315410725",
+  "name": "Prinia 3",
+  "zh": "Distributed Learning Space"
+ },
+ "HL1": {
+  "osm": "way/315410731",
+  "name": "Hornbill 1",
+  "zh": "ICT 电脑室"
+ },
+ "HL2": {
+  "osm": "way/315410729",
+  "name": "Hornbill 2",
+  "zh": "HDR Centre · FYE Studios · LTCL / LTBS 讲堂"
+ },
+ "FN1": {
+  "osm": "way/599704626",
+  "name": "Falcon 1",
+  "zh": "Harry Perkins 讲堂"
+ },
+ "FN2": {
+  "osm": "way/1311241550",
+  "name": "Falcon 2",
+  "zh": ""
+ },
+ "FN3": {
+  "osm": "way/315410730",
+  "name": "Falcon 3",
+  "zh": "美食广场 Food Court"
+ },
+ "FN4": {
+  "osm": "way/544448845",
+  "name": "Falcon 4",
+  "zh": "图书馆 · 礼堂 Auditorium"
+ },
+ "FN5": {
+  "osm": "way/1235776430",
+  "name": "Falcon 5",
+  "zh": "食堂 Cafeteria"
+ },
+ "FN6": {
+  "osm": "way/1235776429",
+  "name": "Falcon 6",
+  "zh": "工程研究实验室"
+ },
+ "FN7": {
+  "osm": null,
+  "name": "Falcon 7",
+  "zh": "",
+  "levels": 2,
+  "polygon": [
+   [
+    114.0175343,
+    4.5105281
+   ],
+   [
+    114.0174656,
+    4.5107135
+   ],
+   [
+    114.0177851,
+    4.5107834
+   ],
+   [
+    114.0178538,
+    4.510598
+   ],
+   [
+    114.0175343,
+    4.5105281
+   ]
+  ]
+ },
+ "HN1": {
+  "osm": "way/1311241544",
+  "name": "Heron 1",
+  "zh": "行政楼 · 国际学生办公室"
+ },
+ "HN2": {
+  "osm": "way/315410721",
+  "name": "Heron 2",
+  "zh": "商学院"
+ },
+ "HN3": {
+  "osm": "way/315410722",
+  "name": "Heron 3",
+  "zh": "体育活动中心"
+ },
+ "HN4": {
+  "osm": "way/599704619",
+  "name": "Heron 4",
+  "zh": "Azman 伊斯兰中心（祈祷室）"
+ },
+ "KR1": {
+  "osm": "way/1311283746",
+  "name": "Kingfisher 1",
+  "zh": "学生宿舍 Loagan Bunut"
+ },
+ "KR2": {
+  "osm": "way/599292757",
+  "name": "Kingfisher 2",
+  "zh": "学生宿舍 Similajau"
+ },
+ "KR3": {
+  "osm": "way/599292750",
+  "name": "Kingfisher 3",
+  "zh": "学生宿舍 Sibuti"
+ },
+ "KR4": {
+  "osm": "way/599292752",
+  "name": "Kingfisher 4",
+  "zh": "学生宿舍 Mulu"
+ },
+ "KR5": {
+  "osm": "way/599292753",
+  "name": "Kingfisher 5",
+  "zh": "多功能厅 Multipurpose Hall"
+ },
+ "KR6": {
+  "osm": "way/599292760",
+  "name": "Kingfisher 6",
+  "zh": "学生宿舍 Niah"
+ },
+ "KR7": {
+  "osm": "way/599292761",
+  "name": "Kingfisher 7",
+  "zh": "学生宿舍 Lambir"
+ },
+ "KR8": {
+  "osm": "way/1235776427",
+  "name": "Kingfisher 8",
+  "zh": "学生宿舍"
+ },
+ "KR9": {
+  "osm": "way/1235776428",
+  "name": "Kingfisher 9",
+  "zh": "学生宿舍"
+ }
+}

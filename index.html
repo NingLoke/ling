@@ -95,6 +95,14 @@ a { color: inherit; }
   border: 1px solid var(--line-2); font-size: 13px; color: var(--ink-2); background: rgba(249, 246, 239, .6);
 }
 .chip:empty { display: none; }
+.map-btn {
+  position: relative; margin-left: auto; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px 0 11px;
+  border-radius: 999px; border: 1px solid var(--line-2); background: var(--paper-hi); color: var(--ink); font-size: 13px; cursor: pointer;
+  box-shadow: 0 6px 16px -14px rgba(29, 28, 26, .6);
+}
+.map-btn::after { content: ""; position: absolute; inset: -4px; } /* 44px to tap */
+.map-btn svg { width: 15px; height: 15px; color: var(--seal); }
+.map-btn:hover { border-color: rgba(181, 65, 46, .5); }
 
 /* ---------- now card ---------- */
 .now {
@@ -150,6 +158,22 @@ a { color: inherit; }
 .rooms { display: grid; gap: 2px; font-size: 14px; color: var(--ink-2); }
 .rooms span { display: flex; align-items: flex-start; gap: 6px; overflow-wrap: anywhere; }
 .rooms svg { flex: none; width: 14px; height: 14px; margin-top: 3px; color: var(--ink-3); }
+.room-link {
+  position: relative; display: flex; align-items: flex-start; gap: 6px; width: fit-content; max-width: 100%; min-height: 26px; padding: 1px 0;
+  border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; overflow-wrap: anywhere;
+}
+.room-link i { flex: none; align-self: center; font-style: normal; font-size: 11.5px; color: var(--seal); padding: 0 6px; border-radius: 999px; background: var(--seal-wash); }
+.room-link::after { content: ""; position: absolute; inset: -6px -4px; } /* easier to tap */
+.room-link:hover { color: var(--ink); }
+.room-link:hover svg { color: var(--seal); }
+.go-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.go-btn {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 18px 0 14px; border-radius: 999px;
+  border: 1px solid var(--seal); background: var(--seal); color: var(--on-ink); font-size: 15px; font-weight: 600; cursor: pointer;
+}
+.go-btn svg { width: 17px; height: 17px; }
+.go-btn.quiet { background: transparent; color: var(--seal); border-color: rgba(181, 65, 46, .45); font-weight: 500; font-size: 14px; }
+.go-row .link-btn { margin: 0 -8px 0 auto; }
 
 /* ---------- schedule ---------- */
 .sched { margin-top: 26px; min-height: 420px; }
@@ -458,6 +482,10 @@ dialog.viewer .sheet-head { position: static; padding-top: calc(env(safe-area-in
     <div class="today-row">
       <span class="today-date" id="today"></span>
       <span class="chip" id="week-chip"></span>
+      <button class="map-btn" id="map-btn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4 3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/></svg>
+        校园地图
+      </button>
     </div>
   </header>
 
@@ -513,6 +541,7 @@ dialog.viewer .sheet-head { position: static; padding-top: calc(env(safe-area-in
 <script type="application/json" id="embedded-timetable">{"schema":1,"class":"2E3","title":"2E3","semester":"Semester Two","timezone":"Asia/Kuching","source":"http://sws.curtin.edu.my","weeks":[{"week":39,"start":"2026-09-21"},{"week":40,"start":"2026-09-28"},{"week":41,"start":"2026-10-05"},{"week":42,"start":"2026-10-12"},{"week":43,"start":"2026-10-19"},{"week":44,"start":"2026-10-26"},{"week":45,"start":"2026-11-02"},{"week":46,"start":"2026-11-09"},{"week":47,"start":"2026-11-16"},{"week":48,"start":"2026-11-23"},{"week":49,"start":"2026-11-30"},{"week":50,"start":"2026-12-07"},{"week":51,"start":"2026-12-14"},{"week":52,"start":"2026-12-21"}],"units":{"CMFP0042":{"code":"CMFP0042","name":"Mathematics 2","short":"Maths 2","group":"K"},"CMFP0051":{"code":"CMFP0051","name":"Physics 2","short":"Physics 2","group":"2E3"},"CMFP0061":{"code":"CMFP0061","name":"Programming","short":"Programming","group":"2E3"},"FP-070":{"code":"FP-070","name":"Academic English 060","short":"Academic English","group":"*"},"CMFP0021":{"code":"CMFP0021","name":"Effective Communication Skills","short":"ECS","group":"2E3"}},"events":[{"id":"CMFP0042/CSM/1/3/LEC/2","unit":"CMFP0042","type":"Lecture","day":0,"firstDate":"2026-10-05","start":480,"end":600,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["Auditorium"],"staff":["Jameson Malang"],"group":"K-Q;V-W"},{"id":"CMFP0051/CSM/1/3/LEC/1","unit":"CMFP0051","type":"Lecture","day":0,"firstDate":"2026-10-05","start":600,"end":720,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["SK3 102 Lecture 1"],"staff":["Lukman Mohd Najib"],"group":"3E1-3; 2E1-7"},{"id":"CMFP0061/CSM/1/3/LEC/1","unit":"CMFP0061","type":"Lecture","day":0,"firstDate":"2026-10-05","start":780,"end":900,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["Auditorium"],"staff":["Kamaroizan Mohamad"],"group":"2E1-7; 2F1-3; 3E4"},{"id":"FP-070/CSM/1/3/SEM/01/2","unit":"FP-070","type":"Seminar","day":0,"firstDate":"2026-10-05","start":1020,"end":1200,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["SK3 206 Collaborative Room 2"],"staff":["Grace Abigail","Harith Firajudeen Bin Jeferie"],"group":"Group 1 & 2"},{"id":"CMFP0021/CSM/1/3/SEM/03/1","unit":"CMFP0021","type":"Seminar","day":1,"firstDate":"2026-10-06","start":480,"end":570,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["LTCL 9 (HL2-109)"],"staff":["Chai Kang Ming"],"group":"2E3"},{"id":"CMFP0051/CSM/1/3/WS/06","unit":"CMFP0051","type":"Workshop","day":1,"firstDate":"2026-10-06","start":840,"end":1020,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["SK2 101 (ME 101) Physic Lab","SK3 206 Collaborative Room 2"],"staff":["John Wong Sze Yong"],"group":"2E3"},{"id":"CMFP0042/CSM/1/3/C/1","unit":"CMFP0042","type":"Clinic","day":1,"firstDate":"2026-10-06","start":1020,"end":1110,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["SK3 205 Collaborative Room 1"],"staff":["Fong Ai Ling","Puteri Nurul Fatihah Binti Mohamad Azli","Jameson Malang","Bejay Anak Ugon"],"group":"A-F; K-Q; V-W"},{"id":"CMFP0061/CSM/1/3/LAB/03","unit":"CMFP0061","type":"Lab","day":2,"firstDate":"2026-10-07","start":660,"end":840,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["PA3 106 (Computer Lab)"],"staff":[],"group":"2E3"},{"id":"CMFP0051/CSM/1/3/C/1","unit":"CMFP0051","type":"Clinic","day":3,"firstDate":"2026-10-08","start":660,"end":780,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["Auditorium"],"staff":["Lukman Mohd Najib"],"group":"3E1-3; 2E1-7"},{"id":"CMFP0042/CSM/1/3/TUT/06/1","unit":"CMFP0042","type":"Tutorial","day":3,"firstDate":"2026-10-08","start":930,"end":1020,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["PA3 209"],"staff":["Shubashini Krishnan"],"group":"K"},{"id":"CMFP0021/CSM/1/3/SEM/03/2","unit":"CMFP0021","type":"Seminar","day":3,"firstDate":"2026-10-08","start":1020,"end":1110,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["PA3 203"],"staff":["Chai Kang Ming"],"group":"2E3"},{"id":"CMFP0042/CSM/1/3/TUT/06/2","unit":"CMFP0042","type":"Tutorial","day":4,"firstDate":"2026-10-09","start":600,"end":690,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["PA3 210"],"staff":["Shubashini Krishnan"],"group":"K"},{"id":"FP-070/CSM/1/3/SEM/01/1","unit":"FP-070","type":"Seminar","day":4,"firstDate":"2026-10-09","start":960,"end":1140,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["LTBS LT II (HL2-111)"],"staff":["Grace Abigail","Harith Firajudeen Bin Jeferie"],"group":"Group 1 & 2"}],"updatedAt":"2026-10-04T08:21:39.200Z"}</script>
 <script type="module">
 import * as core from "./assets/timetable-core.js?v=6b6739df93";
+import { buildingForRoom } from "./assets/campus-geo.js?v=94ae86f8c9";
 
 const CLASS = "2E3";
 const VIEW_KEY = `tt:${CLASS}:view`;
@@ -608,7 +637,20 @@ function lessonHead(e, size = "") {
       h("div", { class: "sub" }, `${typeZh(e.type)} · ${e.type}`)));
 }
 function roomsBlock(e) {
-  return h("div", { class: "rooms" }, roomsOf(e).map((room) => h("span", null, pinIcon(), room)));
+  return h("div", { class: "rooms" }, roomsOf(e).map((room) => {
+    const code = buildingForRoom(room);
+    if (!code) return h("span", null, pinIcon(), room);
+    return h("button", { class: "room-link", type: "button", "aria-label": `${room}：在校园地图上看 ${code}`, onclick: () => openMap(code) },
+      pinIcon(), room, h("i", { "aria-hidden": "true" }, `${code} ›`));
+  }));
+}
+const buildingOf = (e) => (e?.rooms || []).map((room) => buildingForRoom(room)).find(Boolean) || null;
+/** "带我去 SK3" (walking directions) or "在地图上看 SK3". */
+function goButton(e, navigate) {
+  const code = buildingOf(e);
+  if (!code) return null;
+  return h("button", { class: `go-btn${navigate ? "" : " quiet"}`, type: "button", onclick: () => openMap(code, navigate) },
+    pinIcon(), navigate ? `带我去 ${code}` : `在地图上看 ${code}`);
 }
 function progressBar(fraction) {
   const pct = Math.round(fraction * 100);
@@ -665,9 +707,9 @@ function nextBlock(next, now, caption) {
     h("p", { class: "now-big num" }, `${relDay(next.iso, now.iso)} ${core.fmtTime(e.start)}`),
     lessonHead(e, "lg"),
     roomsBlock(e),
-    next.iso !== now.iso
-      ? h("div", { class: "now-foot" }, h("button", { class: "link-btn", type: "button", onclick: () => jumpTo(next.iso) }, "看那天的课 →"))
-      : null,
+    h("div", { class: "go-row" },
+      goButton(e, next.iso === now.iso),
+      next.iso !== now.iso ? h("button", { class: "link-btn", type: "button", onclick: () => jumpTo(next.iso) }, "看那天的课 →") : null),
   ];
 }
 
@@ -685,6 +727,7 @@ function renderNow(now) {
       label("上课中", fmtRange(e), true),
       lessonHead(e, "lg"),
       roomsBlock(e),
+      h("div", { class: "go-row" }, goButton(e, true)),
       h("p", { class: "now-big num" }, h("small", null, "还剩"), core.fmtCountdownZh(s.remaining)),
       progressBar(s.progress),
       after
@@ -697,6 +740,7 @@ function renderNow(now) {
       label("下一节", fmtRange(e)),
       lessonHead(e, "lg"),
       roomsBlock(e),
+      h("div", { class: "go-row" }, goButton(e, true)),
       h("p", { class: "now-big num" }, h("small", null, "还有"), core.fmtCountdownZh(s.minutesUntil)),
       h("p", { class: "now-after" }, `今天还有 ${s.today.filter((x) => x.start > now.minutes).length} 节课`),
     ];
@@ -1229,6 +1273,47 @@ $("back").addEventListener("click", () => {
   follow = true;
   renderAll();
 });
+// ---------- campus map (3D, GPS, walking directions), loaded on first use ----------
+const MAP_STYLE = "ink";
+/** This week's classes for the map: which buildings are "ours", and the next one to walk to. */
+function mapClasses(now) {
+  if (!data) return [];
+  const s = core.currentStatus(data, now);
+  const upcoming = s.kind === "live" ? s.after || s.event : s.kind === "next" ? s.event : s.next?.event;
+  const wk = core.defaultWeek(data, now);
+  const days = wk == null ? [] : core.eventsInWeek(data, wk);
+  return days.flatMap((events, d) => events.flatMap((e) => (e.rooms || []).map((room, i) => ({
+    room,
+    title: `${unitOf(e.unit).short || unitOf(e.unit).name} ${typeZh(e.type)}`,
+    when: `${core.DAY_NAMES_ZH[d]} ${core.fmtTime(e.start)}`,
+    next: e === upcoming && i === 0,
+  }))));
+}
+let mapLoading = false;
+async function openMap(code = null, navigate = false) {
+  if (mapLoading) return;
+  mapLoading = true;
+  try {
+    const { openCampusMap } = await import("./assets/campus-map.js?v=ec6d6c910b");
+    openCampusMap({
+      maplibreUrl: "./assets/vendor/maplibre-gl-6.12.0/maplibre-gl.mjs",
+      campusUrl: "data/campus/campus.geojson",
+      pathsUrl: "data/campus/paths.json",
+      style: MAP_STYLE,
+      focus: code,
+      navigate,
+      classLabel: data?.title || CLASS,
+      classes: mapClasses(getNow()),
+    });
+  } catch (error) {
+    console.warn(error);
+    toast("地图载入失败，检查一下网络再试。");
+  } finally {
+    mapLoading = false;
+  }
+}
+$("map-btn").addEventListener("click", () => openMap());
+
 $("egg").addEventListener("click", async () => {
   const { openTetris } = await import("./assets/tetris.js?v=8d18c1ed2b");
   openTetris({

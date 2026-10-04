@@ -1,13 +1,15 @@
 name: Campus map data
 
-# Downloads the campus from OpenStreetMap into data/campus/ for the 3D campus map.
-# Runs when the fetch script changes, or by hand from the Actions tab.
+# Downloads the campus from OpenStreetMap into data/campus/ and rebuilds the 3D campus map's data
+# (buildings, walking paths). Runs when these scripts change, or by hand from the Actions tab.
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths:
       - "scripts/fetch-campus-osm.mjs"
+      - "scripts/build-campus.mjs"
+      - "data/campus/codes.json"
       - ".github/workflows/campus-map-data.yml"
 
 permissions:
@@ -31,6 +33,12 @@ jobs:
 
       - name: Download the campus from OpenStreetMap
         run: node scripts/fetch-campus-osm.mjs
+
+      - name: Build the map and walking paths
+        run: node scripts/build-campus.mjs
+
+      - name: Check every room still has a building and a route
+        run: node --test scripts/lib/campus.test.mjs
 
       - name: Commit changes
         shell: bash
