@@ -324,12 +324,12 @@ export function createGame({ random = Math.random, startLevel = 1 } = {}) {
     },
     // For unit tests only: set up exact positions.
     testing: {
-      /** rows: visible rows top to bottom, strings like "XXXXXXXXX." ("." empty, any other char filled). */
+      /** rows: visible rows top to bottom, strings like "XXXXXXXXX." ("." empty, a piece letter keeps its colour, anything else filled). */
       setBoard(rows) {
         board = Array.from({ length: HIDDEN + ROWS }, emptyRow);
         const offset = HIDDEN + ROWS - rows.length;
         rows.forEach((text, i) => {
-          board[offset + i] = [...text.padEnd(COLS, ".")].slice(0, COLS).map((c) => (c === "." ? null : "G"));
+          board[offset + i] = [...text.padEnd(COLS, ".")].slice(0, COLS).map((c) => (c === "." ? null : PIECES.includes(c) ? c : "G"));
         });
       },
       spawn(type) {
@@ -559,6 +559,25 @@ function withAlpha(color, alpha) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
+const inkDots = new Map();
+/** A soft watercolour drop (colour fading to nothing at the edge), cached per colour. */
+function inkDot(color) {
+  if (!inkDots.has(color)) {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 64;
+    const ctx = canvas.getContext("2d");
+    const bloom = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    bloom.addColorStop(0, withAlpha(color, 0.85));
+    bloom.addColorStop(0.45, withAlpha(color, 0.55));
+    bloom.addColorStop(0.8, withAlpha(color, 0.18));
+    bloom.addColorStop(1, withAlpha(color, 0));
+    ctx.fillStyle = bloom;
+    ctx.fillRect(0, 0, 64, 64);
+    inkDots.set(color, canvas);
+  }
+  return inkDots.get(color);
+}
+
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
@@ -572,7 +591,7 @@ function roundRect(ctx, x, y, w, h, r) {
 /** Pre-rendered block images (one per piece type and variant) at a given device-pixel size. */
 function makeTiles(theme, size) {
   const ink = theme.style === "ink";
-  const pad = ink ? 0 : Math.ceil(size * 0.45); // room for the neon glow
+  const pad = Math.ceil(size * (ink ? 0.14 : 0.45)); // room for the ink bleed / neon glow
   const variants = ink ? 3 : 1;
   const tiles = {};
   for (const type of PIECES) {
@@ -582,7 +601,7 @@ function makeTiles(theme, size) {
       const canvas = document.createElement("canvas");
       canvas.width = canvas.height = size + pad * 2;
       const ctx = canvas.getContext("2d");
-      if (ink) drawInkTile(ctx, size, color, seeded(type.charCodeAt(0) * 97 + v * 7919 + 13));
+      if (ink) drawInkTile(ctx, size, color, seeded(type.charCodeAt(0) * 97 + v * 7919 + 13), pad);
       else drawNeonTile(ctx, size, pad, color);
       tiles[type].push({ canvas, pad, size });
     }
@@ -613,53 +632,67 @@ function drawNeonTile(ctx, size, pad, color) {
   ctx.stroke();
 }
 
-function drawInkTile(ctx, size, color, rand) {
-  // A slightly irregular wash: lighter in the middle, ink pooling darker at the edges, a few grains.
-  const inset = size * 0.08;
-  const points = [];
-  const steps = 12;
-  for (let i = 0; i < steps; i++) {
-    const t = (i / steps) * Math.PI * 2;
-    const side = size / 2 - inset;
-    // squircle-ish outline with gentle wobble
-    const cx = Math.cos(t);
-    const cy = Math.sin(t);
-    const k = 1 / Math.max(Math.abs(cx), Math.abs(cy)) ** 0.85;
-    const wobble = 1 + (rand() - 0.5) * 0.09;
-    points.push([size / 2 + cx * side * Math.min(k, 1.32) * wobble, size / 2 + cy * side * Math.min(k, 1.32) * wobble]);
-  }
-  const outline = new Path2D();
-  points.forEach(([x, y], i) => {
-    const [nx, ny] = points[(i + 1) % points.length];
-    const mx = (x + nx) / 2;
-    const my = (y + ny) / 2;
-    if (i === 0) outline.moveTo(mx, my);
-    else outline.quadraticCurveTo(x, y, mx, my);
-  });
-  const [fx, fy] = points[0];
-  const [sx, sy] = points[1];
-  outline.quadraticCurveTo(fx, fy, (fx + sx) / 2, (fy + sy) / 2);
-  outline.closePath();
-  const wash = ctx.createRadialGradient(size * (0.42 + rand() * 0.16), size * (0.38 + rand() * 0.16), size * 0.05, size / 2, size / 2, size * 0.62);
-  wash.addColorStop(0, withAlpha(color, 0.5));
-  wash.addColorStop(0.7, withAlpha(color, 0.78));
-  wash.addColorStop(1, withAlpha(color, 0.95));
-  ctx.fillStyle = wash;
-  ctx.fill(outline);
+function drawInkTile(ctx, size, color, rand, pad = 0) {
+  // One square of rice paper washed with a traditional pigment, like watercolour: the paper shows
+  // through, the colour soaks a little past the edge, lifts where the brush started and settles
+  // deeper at the rim, with a faint dry-brush hair or two and the paper's own grain.
+  const [r0, g0, b0] = rgbOf(color);
+  const deep = `rgb(${Math.round(r0 * 0.62)},${Math.round(g0 * 0.62)},${Math.round(b0 * 0.62)})`;
+  const inset = Math.max(1, size * 0.08);
+  const x = pad + inset;
+  const y = pad + inset;
+  const w = size - inset * 2;
+  const r = Math.max(1, size * 0.06);
+  const shape = new Path2D();
+  shape.moveTo(x + r, y);
+  shape.arcTo(x + w, y, x + w, y + w, r);
+  shape.arcTo(x + w, y + w, x, y + w, r);
+  shape.arcTo(x, y + w, x, y, r);
+  shape.arcTo(x, y, x + w, y, r);
+  shape.closePath();
+
+  // pigment, soaking softly into the paper around it
   ctx.save();
-  ctx.clip(outline);
-  for (let i = 0; i < 7; i++) {
-    ctx.fillStyle = withAlpha(color, 0.12 + rand() * 0.18);
-    ctx.beginPath();
-    ctx.arc(rand() * size, rand() * size, size * (0.04 + rand() * 0.12), 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.fillStyle = "rgba(255,255,255,.10)";
-  ctx.fillRect(size * 0.18, size * (0.2 + rand() * 0.1), size * 0.5, size * 0.07);
+  ctx.shadowColor = withAlpha(color, 0.32);
+  ctx.shadowBlur = size * 0.1;
+  ctx.fillStyle = withAlpha(color, 0.76);
+  ctx.fill(shape);
   ctx.restore();
-  ctx.strokeStyle = withAlpha(color, 0.55);
-  ctx.lineWidth = Math.max(1, size * 0.035);
-  ctx.stroke(outline);
+
+  // wet wash: paper-light where the brush lifted, the pigment settling deeper towards one corner
+  const lx = x + w * (0.24 + rand() * 0.16);
+  const ly = y + w * (0.2 + rand() * 0.16);
+  const wash = ctx.createRadialGradient(lx, ly, w * 0.03, x + w * 0.58, y + w * 0.62, w * 0.92);
+  wash.addColorStop(0, "rgba(255,251,242,.36)");
+  wash.addColorStop(0.45, "rgba(255,251,242,.1)");
+  wash.addColorStop(1, withAlpha(deep, 0.28));
+  ctx.fillStyle = wash;
+  ctx.fill(shape);
+
+  ctx.save();
+  ctx.clip(shape);
+  // the paper's grain showing through
+  for (let i = 0; i < 26; i++) {
+    ctx.fillStyle = rand() < 0.5 ? "rgba(255,251,242,.10)" : withAlpha(deep, 0.1);
+    ctx.fillRect(x + rand() * w, y + rand() * w, Math.max(1, size * 0.02), Math.max(1, size * 0.02));
+  }
+  // a dry-brush hair or two
+  ctx.lineCap = "round";
+  for (let i = 0; i < 2; i++) {
+    const sy = y + w * (0.25 + rand() * 0.5);
+    ctx.strokeStyle = `rgba(255,251,242,${0.06 + rand() * 0.05})`;
+    ctx.lineWidth = Math.max(0.8, size * 0.014);
+    ctx.beginPath();
+    ctx.moveTo(x + w * (0.08 + rand() * 0.2), sy);
+    ctx.quadraticCurveTo(x + w * 0.5, sy + (rand() - 0.5) * w * 0.05, x + w * (0.7 + rand() * 0.25), sy + (rand() - 0.5) * w * 0.06);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // pigment pooled along the rim, in its own deeper shade
+  ctx.strokeStyle = withAlpha(deep, 0.42);
+  ctx.lineWidth = Math.max(1, size * 0.03);
+  ctx.stroke(shape);
 }
 
 // ---------------------------------------------------------------------------
@@ -699,16 +732,21 @@ const SKINS = {
   ],
   ink: [
     { name: "水墨" },
-    { name: "青绿", accent: "#2f7d6d", glow: "#2f7d6d", glow2: "#2f6f8f", board: ["#f3f1e7", "#e6ede2"], grid: "rgba(47,125,109,.12)",
-      pieces: { I: "#2f6f8f", O: "#7a9a3a", T: "#2f7d6d", S: "#4f8f6f", Z: "#3a5f7d", J: "#1f4f5f", L: "#6f8f4f" } },
-    { name: "朱砂", accent: "#c0392b", glow: "#c0392b", glow2: "#c97b3a", board: ["#f6eee4", "#efe1d2"], grid: "rgba(192,57,43,.12)",
-      pieces: { I: "#a8402c", O: "#c97b3a", T: "#c0392b", S: "#8c3b2e", Z: "#d4553f", J: "#6e2a22", L: "#b5652e" } },
-    { name: "金碧", accent: "#b8862b", glow: "#c9972f", glow2: "#1f3f6f", board: ["#f5efdc", "#ebe0c2"], grid: "rgba(184,134,43,.14)",
-      pieces: { I: "#1f3f6f", O: "#c9972f", T: "#b8862b", S: "#2f5f5f", Z: "#8f3f2f", J: "#14284a", L: "#d4a843" } },
-    { name: "雪夜", accent: "#5b6f9f", glow: "#5b6f9f", glow2: "#8a96b0", board: ["#eef1f5", "#e0e6ee"], grid: "rgba(91,111,159,.13)",
-      pieces: { I: "#4a5a7f", O: "#8a96b0", T: "#5b6f9f", S: "#3f4f6f", Z: "#6f7f9f", J: "#232c40", L: "#9aa6c0" } },
-    { name: "桃花", accent: "#d9667f", glow: "#d9667f", glow2: "#8f9f5f", board: ["#fbf1ef", "#f5e2e2"], grid: "rgba(217,102,127,.13)",
-      pieces: { I: "#c75b7a", O: "#e8a0a8", T: "#d9667f", S: "#8f9f5f", Z: "#b04a6a", J: "#7a3a52", L: "#e89aa6" } },
+    // 青绿山水: azurite & malachite on pale celadon paper
+    { name: "青绿", accent: "#2f7a5a", glow: "#2f7a5a", glow2: "#2e6e9e", board: ["#f4f3ea", "#e9efe6"], grid: "rgba(47,122,90,.12)",
+      pieces: { I: "#2e6e9e", O: "#c9a23a", T: "#2f7a5a", S: "#5f9a6f", Z: "#3f7f8f", J: "#2f4a6b", L: "#8a9a4a" } },
+    // 朱砂: cinnabar, rouge, vermilion orange
+    { name: "朱砂", accent: "#c0442f", glow: "#c0442f", glow2: "#d4683c", board: ["#f8f1e6", "#f1e5d6"], grid: "rgba(192,68,47,.12)",
+      pieces: { I: "#c0442f", O: "#d9a43a", T: "#9e2f4a", S: "#a3623a", Z: "#d4683c", J: "#2b2a28", L: "#c45a6a" } },
+    // 金碧: gold with azurite and ink, on warm paper
+    { name: "金碧", accent: "#b8862b", glow: "#c9972f", glow2: "#2e6e9e", board: ["#f6f0de", "#ece2c6"], grid: "rgba(184,134,43,.14)",
+      pieces: { I: "#2e6e9e", O: "#c9972f", T: "#b5412e", S: "#3f7a5f", Z: "#8f3f2f", J: "#1f2f4a", L: "#a8823a" } },
+    // 雪夜: the five shades of ink, one indigo, one seal red
+    { name: "雪夜", accent: "#3b5a7a", glow: "#3b5a7a", glow2: "#8a8a86", board: ["#f1f3f5", "#e3e7ec"], grid: "rgba(59,90,122,.12)",
+      pieces: { I: "#33332f", O: "#aaa9a3", T: "#b5412e", S: "#5c5b55", Z: "#3b5a7a", J: "#121211", L: "#84837d" } },
+    // 桃花: peach blossom pinks with young-leaf green
+    { name: "桃花", accent: "#c95b78", glow: "#c95b78", glow2: "#8faa5a", board: ["#fcf3f1", "#f6e6e6"], grid: "rgba(201,91,120,.13)",
+      pieces: { I: "#c95b78", O: "#e3a0ae", T: "#9e2f4a", S: "#7f9f4f", Z: "#d97a8c", J: "#5a3a4a", L: "#a3623a" } },
   ],
 };
 
@@ -1277,9 +1315,14 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
       for (const [x, y] of state.ghost) {
         if (y < 0) continue;
         if (ink) {
-          ctx.fillStyle = withAlpha(color, 0.12);
-          roundRect(ctx, x * size + size * 0.1, y * size + size * 0.1, size * 0.8, size * 0.8, size * 0.2);
+          ctx.fillStyle = withAlpha(color, 0.07);
+          ctx.strokeStyle = withAlpha(color, 0.4);
+          ctx.lineWidth = Math.max(1, size * 0.03);
+          ctx.setLineDash([size * 0.12, size * 0.08]);
+          roundRect(ctx, x * size + size * 0.1, y * size + size * 0.1, size * 0.8, size * 0.8, size * 0.07);
           ctx.fill();
+          ctx.stroke();
+          ctx.setLineDash([]);
         } else {
           ctx.strokeStyle = withAlpha(color, 0.5);
           ctx.lineWidth = Math.max(1, size * 0.06);
@@ -1328,10 +1371,8 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
       for (const p of particles) {
         const a = Math.max(0, p.life / p.max);
         if (ink) {
-          ctx.fillStyle = withAlpha(p.color, 0.6 * a);
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.globalAlpha = 0.7 * a;
+          ctx.drawImage(inkDot(p.color), p.x - p.r, p.y - p.r, p.r * 2, p.r * 2);
         } else {
           ctx.fillStyle = withAlpha(p.color, 0.22 * a);
           ctx.beginPath();
@@ -1456,10 +1497,10 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
             y: (row + 0.5) * size,
             vx: Math.cos(angle) * speed,
             vy: Math.sin(angle) * speed - (ink ? 0 : size * 0.004),
-            r: size * (ink ? 0.08 + Math.random() * 0.14 : 0.05 + Math.random() * 0.07),
+            r: size * (ink ? 0.1 + Math.random() * 0.22 : 0.05 + Math.random() * 0.07),
             life,
             max: life,
-            color: ink ? (Math.random() < (count >= 4 ? 0.4 : 0.15) ? skin.accent : skin.pieces.J) : colors[(Math.random() * colors.length) | 0],
+            color: ink && Math.random() < (count >= 4 ? 0.35 : 0.1) ? skin.accent : colors[(Math.random() * colors.length) | 0],
           });
         }
       }
@@ -1480,7 +1521,7 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
       p.vy += gravity * dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      if (ink) p.r *= 1 + dt * 0.0005; // ink spreads as it lands
+      if (ink) p.r *= 1 + dt * 0.0009; // the colour blooms into the paper as it lands
     }
     if (shake > 0.3) {
       shake *= Math.exp(-dt / 70);
