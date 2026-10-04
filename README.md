@@ -26,6 +26,10 @@ SWS 把选了哪一科存在服务器会话里，网址里不带科目，所以�
 - **画地图**用 [MapLibre GL JS](https://maplibre.org) 6.12（BSD-3-Clause），放在 `assets/vendor/`，第一次打开地图时才下载（约 300 KB）。需要 iPhone iOS 16.4 以上或较新的 Android Chrome。
 - **定位和带路**：手机 GPS（`watchPosition`）加指南针定朝向；路线在本机用 A* 算，偏离路线会自动重新规划，走到门口会震动提示。位置只在你的手机上用，不保存、不发给别人（显示地图时会像普通地图一样从 OpenFreeMap 下载附近的地图块）。GPS 在室内、楼之间可能偏差 10–30 米，室外最准。
 
+- **方向校准**：手机指南针在钢筋水泥旁边常常偏 10–40°。定位后点右边的指南针按钮（导航时点「校准方向」），手机顶端对准一栋认得的楼或脚下这条路的方向，点它就按差值修正（在这台手机上保留 6 小时）。没有指南针的手机会直接按你面对的方向摆好地图。
+- **看实景**：点一栋楼，「街景 / 卫星图 / Google 地图」会在 Google 地图里打开这栋楼的实景（用的是公开的 Maps 链接，不需要密钥）。`.github/workflows/campus-photos.yml` 每周在 Wikimedia Commons、Panoramax、KartaView、OpenAerialMap 找开放授权的校园照片，记在 `data/campus/photos.json`，有的话会直接显示在楼的卡片里（注明作者和授权）。目前这些开放图库里还没有这个校园的照片：把带位置的照片上传到 Wikimedia Commons 或 Panoramax，一周内就会自动出现。
+- **门**：OpenStreetMap 没有画这里的出入口，所以每栋楼取离路最近的一个角，再加上其他方向也靠近路的角（最多 3 个）当门，带路时走到最近的那个。
+
 改了 `codes.json` 或 `build-campus.mjs` 推送后，Actions 会重新下载并生成地图数据，并检查每间教室都能找到楼和路线。
 
 ## 改班级 / 科目

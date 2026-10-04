@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   metresBetween, bearingDeg, closestPointOnSegment, polygonCentroid, pointInRing, buildingForRoom,
-  createRouter, directions, progressOnRoute, walkMinutes, CAMPUS_CODES, createPositionFilter,
+  createRouter, directions, progressOnRoute, walkMinutes, CAMPUS_CODES, createPositionFilter, segmentsCross,
 } from "../../assets/campus-geo.js";
 
 const json = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), "utf8"));
@@ -68,11 +68,14 @@ test("all 28 official buildings are on the map with a door on the walking networ
     assert.ok(f, `${code} missing`);
     assert.ok(f.properties.height >= 3, `${code} has a height`);
     assert.ok(paths.doors[code] != null, `${code} has no door`);
-    // the door sits on (or right next to) the building outline
-    const door = paths.nodes[paths.doors[code]];
+    assert.ok(paths.entrances[code].includes(paths.doors[code]) && paths.entrances[code].length <= 3);
+    // every door sits on (or right next to) the building outline
     const ring = f.geometry.coordinates[0];
-    const toOutline = Math.min(...ring.slice(0, -1).map((p, i) => metresBetween(door, closestPointOnSegment(door, p, ring[i + 1]))));
-    assert.ok(toOutline < 1, `${code} door ${toOutline.toFixed(1)} m from its outline`);
+    for (const n of paths.entrances[code]) {
+      const door = paths.nodes[n];
+      const toOutline = Math.min(...ring.slice(0, -1).map((p, i) => metresBetween(door, closestPointOnSegment(door, p, ring[i + 1]))));
+      assert.ok(toOutline < 1, `${code} door ${toOutline.toFixed(1)} m from its outline`);
+    }
   }
 });
 
@@ -84,7 +87,7 @@ test("walking routes exist between every pair of teaching buildings and are sens
       if (from === to) continue;
       const r = router.route(start, to);
       assert.ok(r, `no route ${from} -> ${to}`);
-      const straight = metresBetween(start, paths.nodes[paths.doors[to]]);
+      const straight = metresBetween(start, r.coords.at(-1));
       assert.ok(r.metres >= straight - 1, `${from}->${to} shorter than a straight line`);
       assert.ok(r.metres < straight * 4 + 150, `${from}->${to} detour too long: ${Math.round(r.metres)} m vs ${Math.round(straight)} m`);
       assert.ok(r.metres < 1500, `${from}->${to} ${Math.round(r.metres)} m`);
@@ -101,7 +104,7 @@ test("a route from the student village to the library starts at the walker and e
   const r = router.route(near, "FN4");
   assert.ok(r);
   assert.deepEqual(r.coords[0], near);
-  assert.deepEqual(r.coords.at(-1), paths.nodes[paths.doors.FN4]);
+  assert.ok(paths.entrances.FN4.some((n) => paths.nodes[n].join() === r.coords.at(-1).join()), "ends at one of FN4's doors");
   const halfway = r.coords[Math.floor(r.coords.length / 2)];
   const p = progressOnRoute(r, halfway);
   assert.equal(p.offRoute, false);
@@ -168,8 +171,11 @@ test("a gentle bend is announced at a fork where another way goes straighter on"
 
 test("a small jog is not two turns, and two quick turns the same way are one", () => {
   const m = (east, north) => [114 + east / 110_850, 4.5 + north / 110_574];
-  const jog = directions([m(0, 0), m(40, 0), m(43, 2), m(46, 0), m(90, 0)]);
+  // a 4 m sideways jog between two junctions: on its own each corner would be a slight turn
+  // (slight-left, then slight-right 6 m later); together they cancel out
+  const jog = directions([m(0, 0), m(40, 0), m(42, 4), m(44, 4), m(90, 4)], [null, [0], null, [180], null]);
   assert.deepEqual(jog.map((s) => s.turn), ["start", "arrive"]);
+  assert.ok(Math.abs(jog.at(-1).metres - (40 + Math.hypot(2, 4) + 2 + 46)) < 1);
   // round a corner: right, 6 m, right again -> a single right turn, not a U-turn
   const corner = directions([m(0, 0), m(0, 40), m(6, 40), m(6, 0)]);
   assert.deepEqual(corner.map((s) => s.turn), ["start", "right", "arrive"]);
@@ -228,4 +234,29 @@ test("the path under the walker gives a direction to calibrate the compass with"
   const along = bearingDeg(a, b);
   const off = Math.abs(((d.bearing - along + 540) % 360) - 180);
   assert.ok(Math.min(off, 180 - off) < 15, `path runs ${along.toFixed(0)}°, got ${d.bearing.toFixed(0)}°`);
+});
+
+test("open-ground shortcuts never cross a drain or stream where there is no bridge", () => {
+  const lines = campus.features.filter((f) => f.properties.kind === "stream" && !f.properties.culvert).map((f) => f.geometry.coordinates);
+  const links = paths.edges.filter((e) => e[4] === 1);
+  assert.ok(links.length > 20, "open-ground links are marked");
+  for (const [a, b] of links) {
+    for (const line of lines) {
+      for (let i = 1; i < line.length; i++) assert.ok(!segmentsCross(paths.nodes[a], paths.nodes[b], line[i - 1], line[i]), `link ${a}-${b} crosses water`);
+    }
+  }
+  assert.equal(segmentsCross([0, 0], [2, 2], [0, 2], [2, 0]), true);
+  assert.equal(segmentsCross([0, 0], [1, 1], [2, 2], [3, 0]), false);
+});
+
+test("a building's doors: a route may end at any of them, whichever is nearest", () => {
+  const several = Object.entries(paths.entrances).filter(([, list]) => list.length > 1);
+  assert.ok(several.length >= 10, "big buildings have more than one door");
+  for (const [code, list] of several.slice(0, 10)) {
+    for (const n of list) {
+      // standing at one of its own doors, the route is (almost) nothing
+      const r = router.route(paths.nodes[n], code);
+      assert.ok(r && r.metres < 1, `${code}: ${r?.metres}`);
+    }
+  }
 });

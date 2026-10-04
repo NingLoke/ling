@@ -6,7 +6,7 @@
 // Map data © OpenStreetMap contributors, ODbL 1.0.
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { metresBetween, polygonCentroid, closestPointOnSegment, pointInRing, createRouter, CAMPUS_CODES, ROOM_ALIASES } from "../assets/campus-geo.js";
+import { metresBetween, polygonCentroid, closestPointOnSegment, pointInRing, createRouter, segmentsCross, CAMPUS_CODES, ROOM_ALIASES } from "../assets/campus-geo.js";
 
 const DIR = path.resolve("data/campus");
 const osm = JSON.parse(await readFile(path.join(DIR, "osm.json"), "utf8"));
@@ -113,7 +113,10 @@ for (const e of elements) {
   if ((kind === "water" || kind === "green" || kind === "parking") && !isArea) continue;
   features.push({
     type: "Feature",
-    properties: { kind, osm: `way/${e.id}`, highway: tags.highway ?? null, sport: tags.sport ?? null, name: tags.name ?? null },
+    properties: {
+      kind, osm: `way/${e.id}`, highway: tags.highway ?? null, sport: tags.sport ?? null, name: tags.name ?? null,
+      ...(kind === "stream" ? { culvert: tags.tunnel === "culvert" || tags.culvert === "yes" } : {}),
+    },
     geometry: isArea ? { type: "Polygon", coordinates: [ring] } : { type: "LineString", coordinates: ring },
   });
 }
@@ -228,30 +231,47 @@ nodes.forEach((n, i) => {
 });
 let graphEdges = edges.filter(([a, b]) => keep.has(a) && keep.has(b)).map(([a, b, m, w]) => [keep.get(a), keep.get(b), m, w]);
 
-// Doors: connect each building to the nearest point of the network (splitting that edge).
-const doors = {};
+// Doors: OSM has no entrances here, so each building gets up to three "doors": the corner of its outline
+// nearest the network, plus corners on other sides that are almost as close to a path. Each door is joined
+// to the nearest point of the network (splitting that edge). Routes end at whichever door is nearest.
+const doors = {}; // code -> the main door (nearest the network)
+const entrances = {}; // code -> every door
 const buildings = features.filter((f) => f.properties.kind === "building" && (f.properties.code || f.properties.osmName));
-for (const f of buildings) {
-  const ring = f.geometry.coordinates[0];
+const nearestEdge = (v) => {
   let best = null;
   graphEdges.forEach(([a, b], ei) => {
-    for (const v of ring) {
-      const p = closestPointOnSegment(v, graphNodes[a], graphNodes[b]);
-      const d = metresBetween(v, p);
-      if (!best || d < best.d) best = { d, ei, p, v };
-    }
+    const p = closestPointOnSegment(v, graphNodes[a], graphNodes[b]);
+    const d = metresBetween(v, p);
+    if (!best || d < best.d) best = { d, ei, p };
   });
-  if (!best || best.d > 120) continue;
+  return best;
+};
+const attach = (v) => {
+  const best = nearestEdge(v);
   const [a, b, , w] = graphEdges[best.ei];
   const split = graphNodes.push(best.p.map(round)) - 1;
-  const door = graphNodes.push(best.v) - 1;
+  const door = graphNodes.push(v) - 1;
   const factor = w / Math.max(graphEdges[best.ei][2], 0.1);
   const ma = metresBetween(graphNodes[a], best.p);
   const mb = metresBetween(graphNodes[b], best.p);
   graphEdges[best.ei] = null;
   graphEdges.push([a, split, ma, ma * factor], [split, b, mb, mb * factor], [split, door, best.d, best.d * 1.1]);
   graphEdges = graphEdges.filter(Boolean);
-  doors[f.properties.code || f.properties.osm] = door;
+  return door;
+};
+for (const f of buildings) {
+  const ring = f.geometry.coordinates[0].slice(0, -1);
+  const corners = ring.map((v) => ({ v, d: nearestEdge(v)?.d ?? Infinity })).sort((x, y) => x.d - y.d);
+  if (!corners.length || corners[0].d > 120) continue;
+  const chosen = [corners[0]];
+  for (const c of corners.slice(1)) {
+    if (chosen.length >= 3) break;
+    if (c.d > Math.max(20, corners[0].d + 10)) break;
+    if (chosen.every((x) => metresBetween(x.v, c.v) >= 25)) chosen.push(c);
+  }
+  const key = f.properties.code || f.properties.osm;
+  entrances[key] = chosen.map((c) => attach(c.v));
+  doors[key] = entrances[key][0];
 }
 
 // Open ground: OSM maps roads and a few footpaths but not the covered walkways and plazas between
@@ -263,20 +283,22 @@ for (const f of buildings) {
 const blockers = features
   .filter((f) => ["building", "water"].includes(f.properties.kind))
   .flatMap((f) => (f.geometry.type === "MultiPolygon" ? f.geometry.coordinates.map((polygon) => polygon[0]) : [f.geometry.coordinates[0]]));
+// drains and streams with no bridge cannot be walked across either (culverts under a path can)
+const waterLines = features.filter((f) => f.properties.kind === "stream" && !f.properties.culvert).map((f) => f.geometry.coordinates);
 const clear = (p, q) => {
   const len = metresBetween(p, q);
-  const n = Math.ceil(len / 2);
+  const n = Math.ceil(len / 0.5); // fine enough not to step over a thin strip of water
   for (let i = 1; i < n; i++) {
     const t = i / n;
     if (t * len < 1.5 || (1 - t) * len < 1.5) continue; // doors sit on their own outline
     const s = [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
     if (blockers.some((ring) => pointInRing(s, ring))) return false;
   }
-  return true;
+  return !waterLines.some((line) => line.some((c, i) => i > 0 && segmentsCross(p, q, line[i - 1], c)));
 };
 let shortcuts = 0;
 {
-  const doorNodes = Object.values(doors);
+  const doorNodes = Object.values(entrances).flat();
   const detour = (from, to) => {
     const r = createRouter({ nodes: graphNodes, edges: graphEdges, doors: { _: to } }).route(graphNodes[from], "_");
     return r ? r.metres : Infinity;
@@ -295,12 +317,12 @@ let shortcuts = 0;
   for (const [a, b, d] of candidates) {
     if (detour(a, b) <= d * 1.6 + 10) continue;
     if (!clear(graphNodes[a], graphNodes[b])) continue;
-    graphEdges.push([a, b, d, d * 1.25]);
+    graphEdges.push([a, b, d, d * 1.25, 1]); // 1 marks an open-ground link
     shortcuts++;
   }
 }
 
-graphEdges = graphEdges.map(([a, b, m, w]) => [a, b, Math.round(m * 10) / 10, Math.round(w * 10) / 10]);
+graphEdges = graphEdges.map(([a, b, m, w, link]) => [a, b, Math.round(m * 10) / 10, Math.round(w * 10) / 10, ...(link ? [1] : [])]);
 
 const lons = graphNodes.map((n) => n[0]).concat(outline.map((p) => p[0]));
 const lats = graphNodes.map((n) => n[1]).concat(outline.map((p) => p[1]));
@@ -313,10 +335,10 @@ const meta = {
   rooms: ROOM_ALIASES,
 };
 await writeFile(path.join(DIR, "campus.geojson"), `${JSON.stringify({ type: "FeatureCollection", meta, features })}\n`);
-await writeFile(path.join(DIR, "paths.json"), `${JSON.stringify({ meta: { attribution: meta.attribution }, nodes: graphNodes, edges: graphEdges, doors })}\n`);
+await writeFile(path.join(DIR, "paths.json"), `${JSON.stringify({ meta: { attribution: meta.attribution }, nodes: graphNodes, edges: graphEdges, doors, entrances })}\n`);
 
 const count = (k) => features.filter((f) => f.properties.kind === k).length;
 console.log(`buildings ${count("building")} (coded ${features.filter((f) => f.properties.code).length}), roofs ${count("roof")}, water ${count("water")}, green ${count("green")}, parking ${count("parking")}, ways ${count("way")}`);
-console.log(`graph: ${graphNodes.length} nodes, ${graphEdges.length} edges, ${bridges} gaps bridged, ${shortcuts} open-ground links, ${Object.keys(doors).length} doors; dropped ${nodes.length - main.size} nodes outside the main network`);
+console.log(`graph: ${graphNodes.length} nodes, ${graphEdges.length} edges, ${bridges} gaps bridged, ${shortcuts} open-ground links, ${Object.keys(doors).length} buildings with ${Object.values(entrances).flat().length} doors; dropped ${nodes.length - main.size} nodes outside the main network`);
 const noDoor = features.filter((f) => f.properties.code && doors[f.properties.code] == null).map((f) => f.properties.code);
 if (noDoor.length) console.log(`::warning::no door for ${noDoor.join(", ")}`);

@@ -2,8 +2,8 @@
 // and walking directions to a building. Opens as a full-screen overlay; returns close().
 // Map data © OpenStreetMap contributors (ODbL). Rendering: MapLibre GL JS (BSD-3-Clause), loaded on demand.
 import {
-  createRouter, buildingForRoom, metresBetween, bearingDeg, progressOnRoute, walkMinutes, TURN_ZH, pointInRing, createPositionFilter,
-} from "./campus-geo.js?v=123ba7d680";
+  createRouter, buildingForRoom, metresBetween, bearingDeg, progressOnRoute, walkMinutes, TURN_ZH, pointInRing, createPositionFilter, closestPointOnSegment,
+} from "./campus-geo.js?v=29383000af";
 
 let current = null;
 
@@ -108,6 +108,20 @@ const CSS = `
 .cm-fabs .cm-north svg{transition:transform .15s linear}
 .cm-fabs .cm-btn[hidden]{display:none}
 .cm-fabs .cm-compass.cm-needs{border-color:var(--cm-accent);color:var(--cm-accent);animation:cm-nudge 1.6s ease-in-out 3}
+.cm-real{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px}
+.cm-real>span{font-size:13px;color:var(--cm-muted);margin-right:2px}
+.cm-real a{min-height:38px;padding:0 12px;font-size:14px;text-decoration:none}
+.cm-real a svg{width:14px;height:14px;opacity:.7}
+.cm-thumbs{display:flex;gap:8px;overflow-x:auto;margin-top:10px;padding-bottom:4px;scroll-snap-type:x mandatory}
+.cm-thumbs button{flex:none;width:112px;height:84px;padding:0;border:1px solid var(--cm-line);border-radius:10px;overflow:hidden;background:var(--cm-line);cursor:pointer;scroll-snap-align:start}
+.cm-thumbs img{width:100%;height:100%;object-fit:cover;display:block}
+.cm-photo{position:absolute;inset:0;z-index:5;background:#000;display:grid;grid-template-rows:auto 1fr auto;color:#f2f2f2}
+.cm-photo header{display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px}
+.cm-photo header b{flex:1;font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cm-photo img{width:100%;height:100%;object-fit:contain;min-height:0}
+.cm-photo footer{padding:8px 14px calc(env(safe-area-inset-bottom) + 12px);font-size:12px;line-height:1.5;color:#bbb}
+.cm-photo footer a{color:#9cd2ff}
+.cm-photo .cm-btn{background:rgba(255,255,255,.12);color:#fff;border-color:transparent}
 .cm-sheet-head{display:flex;align-items:center;gap:8px}
 .cm-sheet-head h2{flex:1}
 .cm-sheet-head .cm-btn{min-height:40px;padding:0 12px;font-size:14px}
@@ -128,6 +142,7 @@ const ICON = {
   north: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l5 14-5-3-5 3z" fill="currentColor" fill-opacity=".25"/></svg>',
   arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V5"/><path d="M6 11l6-6 6 6"/></svg>',
   compass: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z" fill="currentColor" fill-opacity=".3"/></svg>',
+  out: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
   flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4"/><path d="M6 4h11l-2 4 2 4H6"/></svg>',
 };
 const TURN_ROTATE = { start: 0, "slight-left": -40, left: -90, "slight-right": 40, right: 90, uturn: 180, arrive: 0 };
@@ -304,6 +319,7 @@ function campusStyle(c, campus, basemap) {
  * Open the 3D campus map.
  *   maplibreUrl  URL of maplibre-gl.mjs (its CSS sits next to it)
  *   campusUrl, pathsUrl  data/campus/campus.geojson and paths.json
+ *   photosUrl    data/campus/photos.json (openly licensed real pictures; optional)
  *   style        "ink" | "neon"
  *   focus        building code to show ("SK3"), or null
  *   navigate     start walking directions to focus right away
@@ -319,7 +335,7 @@ export function openCampusMap(options) {
     current.focus(options.focus, options.navigate, options.compassPermission);
     return current.close;
   }
-  const { maplibreUrl, campusUrl, pathsUrl, style = "ink", classes = [], classLabel = "", basemap = OPENFREEMAP } = options;
+  const { maplibreUrl, campusUrl, pathsUrl, photosUrl = null, style = "ink", classes = [], classLabel = "", basemap = OPENFREEMAP } = options;
   const c = { ...PALETTES[style === "neon" ? "neon" : "ink"], ...(options.palette || {}) };
   const reduceMotion = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
   const html = document.documentElement;
@@ -382,10 +398,32 @@ export function openCampusMap(options) {
       ignorePops--;
       return;
     }
-    const list = overlay.querySelector(".cm-list");
-    if (list) list.closeList(true);
+    const layer = [...overlay.querySelectorAll(".cm-list, .cm-photo")].at(-1);
+    if (layer) layer.closeLayer(true);
     else close({ fromHistory: true });
   };
+  // the building list and the photo viewer each get a history entry, so Back closes them, not the map
+  let layers = 0;
+  function pushLayer(node) {
+    let pushed = false;
+    try {
+      history.pushState({ ...(history.state || {}), __campusLayer: layers + 1 }, "");
+      pushed = true;
+      layers++;
+    } catch {
+      /* ignore */
+    }
+    node.closeLayer = (fromHistory = false) => {
+      if (!node.isConnected) return;
+      node.remove();
+      if (!pushed) return;
+      layers--;
+      if (!fromHistory) {
+        ignorePops++;
+        history.back();
+      }
+    };
+  }
   window.addEventListener("popstate", onPop);
   overlay.focus({ preventScroll: true });
 
@@ -654,14 +692,13 @@ export function openCampusMap(options) {
       say(`地图上找不到 ${code}`);
       return;
     }
-    if (nav) {
-      if (!navigate) {
-        // keep walking to the destination; just say what this building is
-        say(code === nav.code ? `${code} 就是目的地。` : `${code} · ${f.properties.zh || f.properties.name || ""}。要改去这里，先点「结束导航」。`, 4000);
-        return;
-      }
-      stopNavigation();
+    if (nav && !nav.arrived && !navigate) {
+      // keep walking to the destination; just say what this building is
+      say(code === nav.code ? `${code} 就是目的地。` : `${code} · ${f.properties.zh || f.properties.name || ""}。要改去这里，先结束这次导航。`, 4000);
+      return;
     }
+    if (nav) stopNavigation(); // a new destination, or already arrived at the last one
+    if (follow) setFollow(false); // looking somewhere else: stop pulling the camera back to the walker
     focusCode = code;
     setFocusState(code);
     markFocusLabel();
@@ -682,15 +719,118 @@ export function openCampusMap(options) {
       el("div", { class: "cm-actions" }, [
         el("button", { class: "cm-btn cm-primary", type: "button", onclick: () => select(code, { navigate: true }) }, [el("span", { html: ICON.flag }), "带我去"]),
         el("button", { class: "cm-btn", type: "button", text: "看全校", onclick: overview }),
-      ])
+      ]),
+      realViews(f)
     );
+    showPhotos(code);
+  }
+
+  // ----- real-world pictures -----
+  // Street View, satellite and the place in Google Maps open in the Maps app or site (plain Maps URLs, no
+  // key). Openly licensed photos found by the campus-photos job (data/campus/photos.json) show right here.
+  // street view cars drive on roads: stand on the nearest one and look at the building
+  const DRIVEN = new Set(["service", "residential", "unclassified", "living_street", "tertiary", "secondary", "primary", "trunk"]);
+  let roads = null;
+  function roadsideSpot(centre) {
+    roads ??= campus.features.filter((x) => x.properties.kind === "way" && DRIVEN.has(x.properties.highway)).map((x) => x.geometry.coordinates);
+    let best = null;
+    for (const line of roads) {
+      for (let i = 0; i < line.length - 1; i++) {
+        const p = closestPointOnSegment(centre, line[i], line[i + 1]);
+        const d = metresBetween(centre, p);
+        if (!best || d < best.d) best = { p, d };
+      }
+    }
+    return best && best.d < 150 ? best.p : centre;
+  }
+  function realViews(f) {
+    const [lon, lat] = f.properties.centre;
+    const [vlon, vlat] = roadsideSpot(f.properties.centre);
+    const look = Math.round(bearingDeg([vlon, vlat], [lon, lat]));
+    const at = (n) => n.toFixed(6);
+    const link = (text, href) => el("a", { class: "cm-btn", href, target: "_blank", rel: "noopener" }, [text, el("span", { html: ICON.out })]);
+    return el("div", { class: "cm-real" }, [
+      el("span", { text: "看实景" }),
+      link("街景", `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${at(vlat)},${at(vlon)}&heading=${look}&pitch=5&fov=80`),
+      link("卫星图", `https://www.google.com/maps/@?api=1&map_action=map&center=${at(lat)},${at(lon)}&zoom=19&basemap=satellite`),
+      link("Google 地图", `https://www.google.com/maps/search/?api=1&query=${at(lat)},${at(lon)}`),
+    ]);
+  }
+  let photos = null; // [] once loaded (or failed)
+  async function loadPhotos() {
+    if (photos || !photosUrl) return photos || [];
+    try {
+      const data = await fetch(photosUrl).then((r) => (r.ok ? r.json() : null));
+      photos = Array.isArray(data?.photos) ? data.photos.filter((x) => x.thumb && x.full) : [];
+    } catch {
+      photos = [];
+    }
+    return photos;
+  }
+  function photosOf(code) {
+    const f = buildings.get(code);
+    const { centre, name, osmName } = f.properties;
+    const words = [code, name, osmName].filter(Boolean).map((w) => w.toLowerCase());
+    return photos
+      .map((x) => {
+        if (x.lat != null) {
+          const d = metresBetween([x.lon, x.lat], centre);
+          const facing = x.heading == null || Math.abs(((bearingDeg([x.lon, x.lat], centre) - x.heading + 540) % 360) - 180) < 50;
+          return d < 90 && facing ? { x, d } : null;
+        }
+        const text = `${x.title} ${x.description}`.toLowerCase();
+        return words.some((w) => w.length > 2 && text.includes(w)) ? { x, d: 999 } : null;
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.d - b.d)
+      .slice(0, 12)
+      .map(({ x }) => x);
+  }
+  async function showPhotos(code) {
+    await loadPhotos();
+    const list = photosOf(code);
+    // the sheet may have moved on to something else while the list loaded
+    if (!list.length || focusCode !== code || nav || calibrating || !sheet.querySelector(".cm-real")) return;
+    sheet.querySelector(".cm-thumbs")?.remove();
+    sheet.append(el("div", { class: "cm-thumbs", "aria-label": `${code} 的照片` }, list.map((x, i) =>
+      el("button", { type: "button", "aria-label": `看照片：${x.title}`, onclick: () => photoViewer(list, i) }, [el("img", { src: x.thumb, alt: x.title, loading: "lazy", referrerpolicy: "no-referrer" })]))));
+  }
+  function photoViewer(list, index) {
+    const box = el("div", { class: "cm-photo", role: "dialog", "aria-label": "照片" });
+    pushLayer(box);
+    const show = (i) => {
+      index = (i + list.length) % list.length;
+      const x = list[index];
+      box.replaceChildren(
+        el("header", {}, [
+          el("button", { class: "cm-btn", type: "button", "aria-label": "关闭", html: ICON.back, onclick: () => box.closeLayer() }),
+          el("b", { text: x.title }),
+          list.length > 1 ? el("button", { class: "cm-btn", type: "button", text: "‹", "aria-label": "上一张", onclick: () => show(index - 1) }) : null,
+          list.length > 1 ? el("button", { class: "cm-btn", type: "button", text: "›", "aria-label": "下一张", onclick: () => show(index + 1) }) : null,
+        ]),
+        el("img", { src: x.full, alt: x.title, referrerpolicy: "no-referrer" }),
+        el("footer", {}, [
+          `${x.author} · `,
+          el("a", { href: x.licenseUrl || x.page, target: "_blank", rel: "noopener", text: x.license }),
+          " · ",
+          el("a", { href: x.page, target: "_blank", rel: "noopener", text: x.source }),
+          x.taken ? ` · ${x.taken}` : "",
+          list.length > 1 ? ` · ${index + 1}/${list.length}` : "",
+        ])
+      );
+    };
+    show(index);
+    overlay.append(box);
+    box.querySelector("button")?.focus();
   }
 
   function showOther(props) {
-    if (nav) {
+    if (nav && !nav.arrived) {
       say(props.osmName || "这栋楼没有课表代码。", 3000);
       return;
     }
+    if (nav) stopNavigation();
+    if (follow) setFollow(false);
     focusCode = null;
     setFocusState(null);
     markFocusLabel();
@@ -732,22 +872,8 @@ export function openCampusMap(options) {
       ["学生宿舍 Kingfisher", ["KR"]],
     ];
     const list = el("div", { class: "cm-list", role: "dialog", "aria-label": "楼列表" });
-    let listPushed = false;
-    try {
-      history.pushState({ ...(history.state || {}), __campusList: true }, "");
-      listPushed = true;
-    } catch {
-      /* ignore */
-    }
-    const closeList = (fromHistory = false) => {
-      if (!list.isConnected) return;
-      list.remove();
-      if (listPushed && !fromHistory && history.state?.__campusList) {
-        ignorePops++;
-        history.back();
-      }
-    };
-    list.closeList = closeList;
+    pushLayer(list);
+    const closeList = () => list.closeLayer();
     list.append(el("button", { type: "button", onclick: () => closeList() }, [el("b", { html: ICON.back }), el("span", { text: "返回地图" })]));
     if (byCode.size) {
       list.append(el("h3", { text: `${classLabel} 上课的楼` }));
@@ -862,10 +988,10 @@ export function openCampusMap(options) {
       return;
     }
     askCompass();
-    follow = true;
-    locateBtn.setAttribute("aria-pressed", "true");
+    setFollow(true, false);
     if (watchId == null) {
       say(/MicroMessenger/i.test(navigator.userAgent) ? "微信里常常拿不到定位：点右上角 ··· 选「在浏览器打开」。" : "正在定位…（要允许网页使用位置）", 0);
+      locatingSaid = msg.textContent;
       startWatch();
     } else if (me && fly) {
       cameraTo([me.lon, me.lat], { zoom: 18, pitch: 60, bearing: heading ?? course ?? map.getBearing() });
@@ -877,8 +1003,7 @@ export function openCampusMap(options) {
       // denied: stop, so the next tap on the locate button asks again
       if (watchId != null) navigator.geolocation.clearWatch(watchId);
       watchId = null;
-      follow = false;
-      locateBtn.setAttribute("aria-pressed", "false");
+      setFollow(false);
       say(isIPhone()
         ? "没有定位权限。到 设置 › 隐私与安全性 › 定位服务 › Safari 网站，选「使用 App 期间」，再点一次定位。"
         : "没有定位权限。点地址栏左边的图标 › 权限 › 位置 › 允许，再点一次定位。", 9000);
@@ -902,6 +1027,7 @@ export function openCampusMap(options) {
     ? "手机只给了大概位置。到 设置 › 隐私与安全性 › 定位服务 › Safari 网站，打开「精确位置」。"
     : "手机只给了大概位置。点地址栏左边的图标 › 权限 › 位置，改成「精确」。";
   let roughSaid = 0;
+  let locatingSaid = ""; // the "locating…" hint, cleared by the first fix
   let offCompass = 0;
   let offCompassSaid = false;
 
@@ -922,7 +1048,8 @@ export function openCampusMap(options) {
     }
     const first = !me;
     me = { lon: fix.lon, lat: fix.lat, accuracy, at: Date.now() };
-    if (msg.textContent.startsWith("正在定位")) msg.textContent = "";
+    if (locatingSaid && msg.textContent === locatingSaid) msg.textContent = "";
+    locatingSaid = "";
     const point = [me.lon, me.lat];
     map.getSource("accuracy")?.setData(circle(point, Math.max(3, accuracy)));
     // while navigating, the dot sits on the route when we are clearly walking along it
@@ -1083,30 +1210,22 @@ export function openCampusMap(options) {
   function updateNavigation(force = false) {
     if (!nav || !me || nav.arrived) return null; // arrival stays until the student taps 好
     const point = [me.lon, me.lat];
-    const door = router.nodes[router.doors[nav.code]];
+    const entrances = router.entrancesOf(nav.code);
     const f = buildings.get(nav.code);
     if (me.accuracy >= 1000) {
-      if (!calibrating) sheet.replaceChildren(
-        el("h2", { text: `去 ${nav.code}` }),
-        el("p", { text: `${roughHelp()}改好后回到这里就能带路。` }),
-        el("div", { class: "cm-actions" }, [el("button", { class: "cm-btn", type: "button", text: "结束", onclick: endNavigation })])
-      );
+      statusSheet("rough", `${roughHelp()}改好后回到这里就能带路。`);
       return null;
     }
     const far = metresBetween(point, campus.meta.centre);
     if (far > 2500) {
-      if (!calibrating) sheet.replaceChildren(
-        el("h2", { text: `去 ${nav.code}` }),
-        el("p", { text: `你现在离校园约 ${fmtMetres(far)}。导航只在校园里用，到了学校再打开。` }),
-        el("div", { class: "cm-actions" }, [el("button", { class: "cm-btn", type: "button", text: "结束", onclick: endNavigation })])
-      );
+      statusSheet("far", `你现在离校园约 ${fmtMetres(far)}。导航只在校园里用，到了学校再打开。`);
       return null;
     }
     // off the route = further than the GPS error (20-30 m) from it, twice in a row, with a usable fix
     const tolerance = Math.max(20, Math.min(me.accuracy, 30));
     let progress = nav.route ? progressOnRoute(nav.route, point, tolerance, nav.along) : null;
     // arrived: at the door, or inside the building near the end of the route (a route can pass beside it earlier)
-    const atDoor = door && metresBetween(point, door) < Math.max(12, Math.min(25, me.accuracy * 0.6));
+    const atDoor = entrances.some((d) => metresBetween(point, d) < Math.max(12, Math.min(25, me.accuracy * 0.6)));
     const inside = f && pointInRing(point, f.geometry.coordinates[0]) && (!progress || progress.remaining < 40);
     if (atDoor || inside) {
       nav.arrived = true;
@@ -1131,13 +1250,14 @@ export function openCampusMap(options) {
         return null;
       }
       map.getSource("route")?.setData({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: nav.route.coords } });
+      pinMarker?.setLngLat(nav.route.coords.at(-1)); // the door this route leads to
       progress = progressOnRoute(nav.route, point, tolerance);
     }
     nav.along = progress.offRoute ? null : progress.along; // next fix: look near here first
     if (!calibrating) navSheet(progress);
     const shown = !progress.offRoute && progress.distance <= Math.min(15, Math.max(5, me.accuracy)) ? progress.point : point;
     if (follow && !handsOn()) {
-      const bearing = heading ?? course ?? bearingDeg(shown, progress.nextStep?.at || door);
+      const bearing = heading ?? course ?? bearingDeg(shown, progress.nextStep?.at || nav.route.coords.at(-1));
       const camera = { center: shown, bearing, duration: reduceMotion ? 0 : 800, padding: { bottom: sheet.offsetHeight * 0.9, top: 60 } };
       // tilt and zoom in once when the walk starts; after that the student's own zoom and 2D/3D choice stay
       if (!nav.framed) Object.assign(camera, { pitch: pitchBtn.textContent === "3D" ? 0 : 62, zoom: Math.max(map.getZoom(), 18.2) });
@@ -1147,6 +1267,24 @@ export function openCampusMap(options) {
     return shown;
   }
 
+  // a waiting state during navigation (rough position, far away): built once, then only the text changes,
+  // so the 结束 button is not replaced under the student's finger every second
+  let statusView = null;
+  function statusSheet(kind, text) {
+    if (calibrating) return;
+    if (statusView?.kind === kind && sheet.contains(statusView.p)) {
+      statusView.p.textContent = text;
+      return;
+    }
+    const p = el("p", { text });
+    statusView = { kind, p };
+    navView = null;
+    sheet.replaceChildren(
+      el("h2", { text: `去 ${nav.code}` }),
+      p,
+      el("div", { class: "cm-actions" }, [el("button", { class: "cm-btn", type: "button", text: "结束", onclick: endNavigation })])
+    );
+  }
   let navView = null; // the nav sheet's live parts, reused while it is showing
   function navSheet(progress) {
     const step = progress.nextStep;
@@ -1184,11 +1322,11 @@ export function openCampusMap(options) {
       announcer.textContent = instruction;
     }
   }
-  function setFollow(on) {
+  function setFollow(on, refresh = true) {
     follow = on;
     locateBtn.setAttribute("aria-pressed", String(on));
     if (navView) navView.followBtn.textContent = on ? "自由看地图" : "跟着我";
-    if (on && nav) updateNavigation();
+    if (on && nav && refresh) updateNavigation();
   }
 
   function arrivedSheet(code) {
@@ -1221,6 +1359,7 @@ export function openCampusMap(options) {
   }
   function endNavigation() {
     stopNavigation();
+    if (follow) setFollow(false);
     if (focusCode) buildingSheet(focusCode);
     else idleSheet();
   }
@@ -1258,9 +1397,9 @@ export function openCampusMap(options) {
     calibrationSheet();
   });
   // iPhone grants the screen wake lock only during a tap: retry on the next one if it failed earlier
-  overlay.addEventListener("pointerdown", () => {
+  overlay.addEventListener("click", () => {
     if (nav && !nav.arrived && !wakeLock) requestWakeLock();
-  });
+  }, true);
   listBtn.addEventListener("click", () => {
     if (ready && !overlay.querySelector(".cm-list")) openList();
   });
@@ -1285,8 +1424,8 @@ export function openCampusMap(options) {
   });
   const onKey = (event) => {
     if (event.key === "Escape") {
-      const list = overlay.querySelector(".cm-list");
-      if (list) list.closeList();
+      const layer = [...overlay.querySelectorAll(".cm-list, .cm-photo")].at(-1);
+      if (layer) layer.closeLayer();
       else close();
     }
   };
@@ -1335,7 +1474,7 @@ export function openCampusMap(options) {
     }
     const back = typeof options.returnFocus === "function" ? options.returnFocus() : null;
     (previousFocus?.isConnected ? previousFocus : back)?.focus?.({ preventScroll: true });
-    if (historyPushed && !fromHistory && history.state?.__campusMap) history.go(history.state.__campusList ? -2 : -1);
+    if (historyPushed && !fromHistory && history.state?.__campusMap) history.go(-1 - layers);
     current = null;
   }
 

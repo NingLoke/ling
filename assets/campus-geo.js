@@ -61,6 +61,15 @@ export function polygonCentroid(ring) {
   return [ox + cx / (3 * area), oy + cy / (3 * area)];
 }
 
+/** Do segments a-b and c-d cross (not just touch at an end)? Flat projection, fine across a campus. */
+export function segmentsCross(a, b, c, d) {
+  const sx = kx(a[1]);
+  const xy = (p) => [(p[0] - a[0]) * sx, (p[1] - a[1]) * KY];
+  const [A, B, C, D] = [a, b, c, d].map(xy);
+  const side = (p, q, r) => Math.sign((q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]));
+  return side(A, B, C) * side(A, B, D) < 0 && side(C, D, A) * side(C, D, B) < 0;
+}
+
 /** Is a point inside a ring? */
 export function pointInRing([x, y], ring) {
   let inside = false;
@@ -180,18 +189,21 @@ class Heap {
 }
 
 /**
- * Walking router over paths.json ({ nodes: [[lon,lat]], edges: [[a, b, metres, weight]], doors: {CODE: node} }).
+ * Walking router over paths.json ({ nodes: [[lon,lat]], edges: [[a, b, metres, weight]], doors: {CODE: node},
+ * entrances: {CODE: [node, ...]} }). A building can have several doors; a route ends at the nearest one.
  *   snap(point)            nearest spot on the network: { point, edge, distance }
  *   route(from, toCode)    { coords, metres, steps } or null
+ *   entrancesOf(code)      [[lon, lat], ...] the building's doors
  */
 export function createRouter(paths) {
   const { nodes, edges, doors } = paths;
+  const entrances = paths.entrances || Object.fromEntries(Object.entries(doors).map(([code, n]) => [code, [n]]));
   const adjacency = nodes.map(() => []);
   edges.forEach(([a, b, metres, weight], i) => {
     adjacency[a].push([b, weight, metres, i]);
     adjacency[b].push([a, weight, metres, i]);
   });
-  const doorNodes = new Set(Object.values(doors));
+  const doorNodes = new Set(Object.values(entrances).flat());
 
   function snap(point) {
     let best = null;
@@ -211,13 +223,15 @@ export function createRouter(paths) {
     return Math.abs(((bearingDeg(nodes[n], nodes[next]) - bearingDeg(nodes[prev], nodes[n]) + 540) % 360) - 180);
   };
 
-  function shortest(startLinks, goal) {
-    // startLinks: [[node, weight, metres]] from a virtual start
+  function shortest(startLinks, goals) {
+    // startLinks: [[node, weight, metres]] from a virtual start; goals: the doors to reach (any one)
     const g = new Map();
     const metresTo = new Map();
     const came = new Map();
     const heap = new Heap();
-    const h = (n) => metresBetween(nodes[n], nodes[goal]);
+    const goalSet = new Set(goals);
+    const h = (n) => Math.min(...goals.map((x) => metresBetween(nodes[n], nodes[x])));
+    let goal = null;
     for (const [n, w, m] of startLinks) {
       if (!g.has(n) || w < g.get(n)) {
         g.set(n, w);
@@ -231,7 +245,10 @@ export function createRouter(paths) {
       const n = heap.pop();
       if (done.has(n)) continue;
       done.add(n);
-      if (n === goal) break;
+      if (goalSet.has(n)) {
+        goal = n;
+        break;
+      }
       const prev = came.get(n);
       // another building's door is a corner of its outline: walk past it, but never turn there
       const door = doorNodes.has(n) && prev >= 0;
@@ -248,7 +265,7 @@ export function createRouter(paths) {
         }
       }
     }
-    if (!g.has(goal)) return null;
+    if (goal == null) return null;
     const order = [];
     for (let n = goal; n !== -1 && n !== undefined; n = came.get(n)) order.push(n);
     return { order: order.reverse(), metres: metresTo.get(goal) };
@@ -270,8 +287,8 @@ export function createRouter(paths) {
   }
 
   function route(from, toCode) {
-    const goal = doors[toCode];
-    if (goal == null) return null;
+    const goals = entrances[toCode];
+    if (!goals?.length) return null;
     const s = snap(from);
     if (!s) return null;
     const [a, b, edgeMetres, edgeWeight] = edges[s.edge];
@@ -283,7 +300,7 @@ export function createRouter(paths) {
         [a, toA * factor, toA],
         [b, toB * factor, toB],
       ],
-      goal
+      goals
     );
     if (!found) return null;
     const ids = [null, null, ...found.order];
@@ -291,12 +308,23 @@ export function createRouter(paths) {
     const keep = all.map((c, i) => i === 0 || metresBetween(c, all[i - 1]) > 0.5);
     const coords = all.filter((_, i) => keep[i]);
     const nodeIds = ids.filter((_, i) => keep[i]);
-    // the other ways leaving each junction on the route, for telling forks apart
+    // the other ways leaving each junction on the route, for telling forks apart. Nodes joined by
+    // zero-length edges (where a door was split onto a path) count as one junction.
+    const onRoute = new Set(found.order);
     const branches = coords.map((c, i) => {
       const n = nodeIds[i];
-      if (n == null || i === 0 || i === coords.length - 1 || adjacency[n].length < 3) return null;
-      const used = new Set([nodeIds[i - 1], nodeIds[i + 1]]);
-      return adjacency[n].filter(([m]) => !used.has(m)).map(([m]) => bearingDeg(nodes[n], branchPoint(n, m)));
+      if (n == null || i === 0 || i === coords.length - 1) return null;
+      const cluster = new Set([n]);
+      for (const k of cluster) for (const [m] of adjacency[k]) if (metresBetween(nodes[n], nodes[m]) < 0.5) cluster.add(m);
+      const ways = [];
+      for (const k of cluster) {
+        for (const [m] of adjacency[k]) {
+          if (cluster.has(m) || onRoute.has(m)) continue;
+          const far = branchPoint(k, m);
+          if (metresBetween(nodes[n], far) >= 0.5) ways.push(bearingDeg(nodes[n], far));
+        }
+      }
+      return ways.length ? ways : null;
     });
     const metres = s.distance + found.metres;
     return { coords, metres, steps: directions(coords, branches), toCode };
@@ -312,7 +340,9 @@ export function createRouter(paths) {
     return { bearing: bearingDeg(back, ahead), length: metresBetween(back, ahead), distance: s.distance };
   }
 
-  return { snap, route, pathDirection, doors, nodes, edges };
+  const entrancesOf = (code) => (entrances[code] || []).map((n) => nodes[n]);
+
+  return { snap, route, pathDirection, entrancesOf, doors, nodes, edges };
 }
 
 // a point `far` metres along coords from index i, going forwards (dir 1) or backwards (dir -1)
