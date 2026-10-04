@@ -3,7 +3,8 @@
 //   - street-level photos on Panoramax and KartaView (open street-level imagery)
 //   - drone/aerial imagery on OpenAerialMap
 //   node scripts/fetch-campus-photos.mjs
-// Writes data/campus/photos.json (links, authors and licences; the pictures stay on their own servers).
+// Writes data/campus/photos.json (links, authors and licences; the pictures stay on their own servers),
+// keeping the pictures added by hand with scripts/add-photo.mjs.
 // A source that is down or empty is reported and skipped, never fatal.
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -192,9 +193,12 @@ try {
 }
 
 console.log(JSON.stringify(report, null, 1));
-const result = { meta: { sources: report, note: "Pictures stay on their own servers; credit the author and licence when showing them." }, photos, aerial };
-// only write when the pictures themselves changed, so a run that finds nothing new makes no commit
+// pictures added by hand (scripts/add-photo.mjs, "pinned") stay, first
 const before = JSON.parse(await readFile(OUT, "utf8").catch(() => "null"));
+const pinned = (before?.photos || []).filter((p) => p.pinned);
+photos.unshift(...pinned.filter((p) => !photos.some((x) => x.id === p.id)));
+const result = { meta: { sources: report, note: "Credit the author and licence when showing a picture. Files without http are relative to this file." }, photos, aerial };
+// only write when the pictures themselves changed, so a run that finds nothing new makes no commit
 const same = before && JSON.stringify([before.photos, before.aerial]) === JSON.stringify([photos, aerial]);
 if (!same) await writeFile(OUT, `${JSON.stringify(result, null, 1)}\n`);
 console.log(`${photos.length} photos, ${aerial.length} aerial images`);

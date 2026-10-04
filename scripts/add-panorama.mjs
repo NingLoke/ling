@@ -3,8 +3,8 @@
 //        [--haov 240] [--title "..."] [--author "..."] [--license "CC BY 4.0"] [--taken 2026-10-04]
 // The position and the direction of the photo's middle come from its EXIF / Photo Sphere data when the
 // phone wrote them; --at and --north override (or fill in) those. The photo is copied to panoramas/
-// (made at most 6144 px wide if the optional "sharp" package is installed) and listed in
-// data/campus/panoramas.json.
+// (made at most 6144 px wide, with a flat preview of its middle, if the optional "sharp" package is
+// installed) and listed in data/campus/panoramas.json.
 import { readFile, writeFile, mkdir, copyFile } from "node:fs/promises";
 import path from "node:path";
 import { readJpegMeta, panoramaAngles } from "./lib/jpeg-meta.mjs";
@@ -47,12 +47,22 @@ const id = `${(option("title") || path.basename(file, path.extname(file))).toLow
 await mkdir(DIR, { recursive: true });
 const target = path.join(DIR, `${id}.jpg`);
 let width = meta.width;
+let thumb = null; // the middle of the view as a flat picture, for the building's sheet
 try {
   const { default: sharp } = await import("sharp");
   const image = sharp(buffer, { failOn: "none" }).rotate();
   if (meta.width > 6144) image.resize({ width: 6144 });
   await image.jpeg({ quality: 82, mozjpeg: true }).withMetadata().toFile(target);
   width = Math.min(meta.width, 6144);
+  const { width: w, height: h } = await sharp(buffer, { failOn: "none" }).metadata();
+  const cropW = Math.round(Math.min(w, (w * 100) / angles.haov)); // about 100° of the view
+  const cropH = Math.round(Math.min(h, cropW * 0.6));
+  thumb = `${id}-s.jpg`;
+  await sharp(buffer, { failOn: "none" })
+    .extract({ left: Math.round((w - cropW) / 2), top: Math.round((h - cropH) / 2), width: cropW, height: cropH })
+    .resize({ width: 800, withoutEnlargement: true })
+    .jpeg({ quality: 72, mozjpeg: true })
+    .toFile(path.join(DIR, thumb));
 } catch {
   if (meta.width > 8192) console.warn(`warning: ${meta.width} px wide; some phones only show panoramas up to 8192 px. Install "sharp" (npm i sharp) to shrink it automatically.`);
   await copyFile(file, target);
@@ -61,6 +71,7 @@ try {
 const entry = {
   id,
   file: `../../panoramas/${id}.jpg`,
+  ...(thumb ? { thumb: `../../panoramas/${thumb}` } : {}),
   lon: +lon.toFixed(7),
   lat: +lat.toFixed(7),
   north: north == null ? 0 : +(((north % 360) + 360) % 360).toFixed(1),

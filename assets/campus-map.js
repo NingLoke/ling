@@ -4,7 +4,7 @@
 import {
   createRouter, buildingForRoom, metresBetween, bearingDeg, progressOnRoute, walkMinutes, TURN_ZH, pointInRing, createPositionFilter, closestPointOnSegment,
 } from "./campus-geo.js?v=29383000af";
-import { streetViewEmbed } from "./streetview-url.js?v=86b7c353a5";
+import { streetViewEmbed, streetViewAt, satelliteEmbed } from "./streetview-url.js?v=3b6d1368d1";
 
 let current = null;
 
@@ -115,15 +115,45 @@ const CSS = `
 .cm-real a svg{width:14px;height:14px;opacity:.7}
 .cm-real .cm-pano-btn{border-color:var(--cm-accent);color:var(--cm-accent);font-weight:700}
 .cm-real .cm-pano-btn svg{width:18px;height:18px}
-.cm-thumbs{display:flex;gap:8px;overflow-x:auto;margin-top:10px;padding-bottom:4px;scroll-snap-type:x mandatory}
-.cm-thumbs button{flex:none;width:112px;height:84px;padding:0;border:1px solid var(--cm-line);border-radius:10px;overflow:hidden;background:var(--cm-line);cursor:pointer;scroll-snap-align:start}
-.cm-thumbs img{width:100%;height:100%;object-fit:cover;display:block}
+.cm-sheet:has(>.cm-media){padding-top:0;max-height:min(74vh,720px)}
+.cm-media{display:flex;flex-direction:column;margin:0 calc(-16px - env(safe-area-inset-right)) 12px calc(-16px - env(safe-area-inset-left));
+  height:min(40vh,78vw,400px);overflow:hidden;border-radius:20px 20px 0 0;background:var(--cm-line);border-bottom:1px solid var(--cm-line)}
+.cm-media-wait{animation:cm-wait 1.2s ease-in-out infinite alternate}
+.cm-media-track{flex:1;min-height:0;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain;background:#111}
+.cm-media-track::-webkit-scrollbar{display:none}
+.cm-media-item{flex:0 0 100%;height:100%;margin:0;padding:0;border:0;background:none;color:inherit;font:inherit;position:relative;scroll-snap-align:start;scroll-snap-stop:always}
+button.cm-media-item{cursor:zoom-in}
+.cm-media-item img,.cm-media-item iframe{width:100%;height:100%;border:0;object-fit:cover;display:block}
+.cm-media-item:focus-visible{outline:3px solid var(--cm-accent);outline-offset:-3px}
+.cm-media-poster{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:4px;color:var(--cm-text);
+  background:radial-gradient(120% 90% at 50% 35%,color-mix(in srgb,var(--cm-accent) 22%,var(--cm-panel)),var(--cm-panel))}
+.cm-media-poster svg{width:40px;height:40px;color:var(--cm-accent)}
+.cm-media-poster small{color:var(--cm-muted)}
+.cm-media-cap{flex:none;margin:0;display:flex;align-items:center;gap:8px;background:var(--cm-panel);
+  padding:7px calc(10px + env(safe-area-inset-right)) 7px calc(14px + env(safe-area-inset-left))}
+.cm-media-text{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;column-gap:8px;row-gap:2px;font-size:13px;line-height:1.35}
+.cm-media-text span{min-width:0}
+.cm-media-text small{flex-basis:100%;font-size:11px;color:var(--cm-muted)}
+.cm-media-text a{color:inherit}
+.cm-near{padding:1px 8px;border-radius:999px;background:var(--cm-accent);color:var(--cm-on-accent);font-size:12px;white-space:nowrap}
+.cm-media-nav{flex:none;display:flex;align-items:center;gap:4px}
+.cm-media-nav .cm-btn{min-width:38px;min-height:38px;padding:0;border-radius:12px;font-size:22px;line-height:1;box-shadow:none}
+.cm-media-nav .cm-btn:disabled{opacity:.35;cursor:default}
+.cm-media-count{min-width:30px;text-align:center;font-size:12px;color:var(--cm-muted);font-variant-numeric:tabular-nums}
+@keyframes cm-wait{to{opacity:.55}}
+@media (min-width:720px) and (orientation:landscape){
+  .cm-sheet:has(>.cm-media){display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;padding-top:14px;max-height:62vh}
+  .cm-media{position:sticky;top:0;margin:0;height:min(54vh,420px);border-radius:14px;border:1px solid var(--cm-line)}
+  .cm-media-cap{padding:7px 10px 7px 12px}
+}
 .cm-photo{position:absolute;inset:0;z-index:5;background:#000;display:grid;grid-template-rows:auto 1fr auto;color:#f2f2f2}
 .cm-photo .cm-pano-box,.cm-photo iframe{width:100%;height:100%;min-height:0;border:0;display:block;background:#111}
 .cm-photo .cm-pano-box .pnlm-load-box{font-family:var(--cm-font)}
 .cm-pano{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;cursor:pointer;border:2px solid #fff;
   background:var(--cm-accent);color:var(--cm-on-accent);box-shadow:0 2px 8px rgba(0,0,0,.35)}
 .cm-pano svg{width:17px;height:17px}
+.cm-pano.cm-pano-g{width:24px;height:24px;opacity:.85}
+.cm-pano.cm-pano-g svg{width:14px;height:14px}
 .cm-photo header{display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px}
 .cm-photo header b{flex:1;font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cm-photo img{width:100%;height:100%;object-fit:contain;min-height:0}
@@ -140,7 +170,7 @@ const CSS = `
 .cm-pick span{color:var(--cm-muted);font-size:13px}
 .cm-pick i{margin-left:auto;font-style:normal;font-size:20px;color:var(--cm-accent);display:inline-block}
 @keyframes cm-nudge{50%{transform:scale(1.08)}}
-@media (prefers-reduced-motion:reduce){.cm-me::before{animation:none}.cm-arrow svg{transition:none}}
+@media (prefers-reduced-motion:reduce){.cm-me::before,.cm-media-wait{animation:none}.cm-arrow svg{transition:none}}
 `;
 
 const ICON = {
@@ -328,7 +358,7 @@ function campusStyle(c, campus, basemap) {
  * Open the 3D campus map.
  *   maplibreUrl  URL of maplibre-gl.mjs (its CSS sits next to it)
  *   campusUrl, pathsUrl  data/campus/campus.geojson and paths.json
- *   photosUrl    data/campus/photos.json (openly licensed real pictures; optional)
+ *   photosUrl    data/campus/photos.json: real pictures of the buildings (their files are relative to it)
  *   panoramasUrl data/campus/panoramas.json: 360° photos of the campus (their files are relative to it)
  *   pannellumUrl the Pannellum panorama viewer's script (its CSS sits next to it), loaded when first needed
  *   streetViewsUrl  data/campus/streetviews.json: Google Maps 360° views to open inside the map (no key)
@@ -616,7 +646,7 @@ export function openCampusMap(options) {
       map.on("click", "buildings", (event) => {
         const f = event.features?.[0];
         if (f?.properties?.code) select(f.properties.code);
-        else if (f) showOther(f.properties);
+        else if (f) showOther(f.properties, [event.lngLat.lng, event.lngLat.lat]);
       });
       map.on("mouseenter", "buildings", () => (map.getCanvas().style.cursor = "pointer"));
       map.on("mouseleave", "buildings", () => (map.getCanvas().style.cursor = ""));
@@ -716,8 +746,8 @@ export function openCampusMap(options) {
     focusCode = code;
     setFocusState(code);
     markFocusLabel();
+    buildingSheet(code); // first, so the camera knows how tall the sheet is
     cameraTo(f.properties.centre);
-    buildingSheet(code);
     if (navigate) beginNavigation(code);
   }
 
@@ -725,23 +755,27 @@ export function openCampusMap(options) {
     const f = buildings.get(code);
     const p = f.properties;
     const mine = byCode.get(code) || [];
+    // half picture (this building, or the nearest real picture), half options
     sheet.replaceChildren(
-      el("h2", {}, [p.code, el("small", { text: [p.name, p.zh].filter(Boolean).join(" · ") })]),
-      mine.length
-        ? el("ul", {}, mine.slice(0, 6).map((m) => el("li", {}, [el("b", { text: m.when }), ` ${m.title} · ${m.room}`])))
-        : el("p", { text: p.osmName ? `OpenStreetMap：${p.osmName}` : `${classLabel} 这周没有课在这里。` }),
-      el("div", { class: "cm-actions" }, [
-        el("button", { class: "cm-btn cm-primary", type: "button", onclick: () => select(code, { navigate: true }) }, [el("span", { html: ICON.flag }), "带我去"]),
-        el("button", { class: "cm-btn", type: "button", text: "看全校", onclick: overview }),
-      ]),
-      realViews(f)
+      mediaPane(code, p.centre),
+      el("div", { class: "cm-opts" }, [
+        el("h2", {}, [p.code, el("small", { text: [p.name, p.zh].filter(Boolean).join(" · ") })]),
+        mine.length
+          ? el("ul", {}, mine.slice(0, 6).map((m) => el("li", {}, [el("b", { text: m.when }), ` ${m.title} · ${m.room}`])))
+          : el("p", { text: p.osmName ? `OpenStreetMap：${p.osmName}` : `${classLabel} 这周没有课在这里。` }),
+        el("div", { class: "cm-actions" }, [
+          el("button", { class: "cm-btn cm-primary", type: "button", onclick: () => select(code, { navigate: true }) }, [el("span", { html: ICON.flag }), "带我去"]),
+          el("button", { class: "cm-btn", type: "button", text: "看全校", onclick: overview }),
+        ]),
+        realViews(f),
+      ])
     );
-    showPhotos(code);
+    sheet.scrollTop = 0;
   }
 
   // ----- real-world pictures -----
-  // Street View, satellite and the place in Google Maps open in the Maps app or site (plain Maps URLs, no
-  // key). Openly licensed photos found by the campus-photos job (data/campus/photos.json) show right here.
+  // A building's sheet starts with its pictures (mediaPane below). Street View, satellite and the place in
+  // Google Maps also open in the Maps app or site (plain Maps URLs, no key).
   // street view cars drive on roads: stand on the nearest one and look at the building
   const DRIVEN = new Set(["service", "residential", "unclassified", "living_street", "tertiary", "secondary", "primary", "trunk"]);
   let roads = null;
@@ -758,18 +792,18 @@ export function openCampusMap(options) {
     return best && best.d < 150 ? best.p : centre;
   }
   function realViews(f) {
+    const code = f.properties.code;
     const [lon, lat] = f.properties.centre;
     const [vlon, vlat] = roadsideSpot(f.properties.centre);
     const look = Math.round(bearingDeg([vlon, vlat], [lon, lat]));
     const at = (n) => n.toFixed(6);
     const link = (text, href) => el("a", { class: "cm-btn", href, target: "_blank", rel: "noopener" }, [text, el("span", { html: ICON.out })]);
-    const streetButton = el("span");
+    const street = googleEmbedKey
+      ? el("button", { class: "cm-btn cm-street", type: "button", text: "街景", onclick: () => streetViewHere([vlon, vlat], look, code) })
+      : link("街景", `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${at(vlat)},${at(vlon)}&heading=${look}&pitch=5&fov=80`);
     const row = el("div", { class: "cm-real" }, [
       el("span", { text: "看实景" }),
-      streetButton,
-      googleEmbedKey
-        ? el("button", { class: "cm-btn cm-street", type: "button", text: "街景", onclick: () => streetViewHere([vlon, vlat], look, f.properties.code) })
-        : link("街景", `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${at(vlat)},${at(vlon)}&heading=${look}&pitch=5&fov=80`),
+      street,
       link("卫星图", `https://www.google.com/maps/@?api=1&map_action=map&center=${at(lat)},${at(lon)}&zoom=19&basemap=satellite`),
       link("Google 地图", `https://www.google.com/maps/search/?api=1&query=${at(lat)},${at(lon)}`),
     ]);
@@ -780,19 +814,20 @@ export function openCampusMap(options) {
         .filter(({ d }) => d < 100)
         .sort((a, b) => a.d - b.d)[0];
       if (!near || !row.isConnected) return;
-      row.insertBefore(el("button", { class: "cm-btn cm-pano-btn", type: "button", onclick: () => openPanorama(near.x, f.properties.centre, f.properties.code) }, [el("span", { html: ICON.pano }), "360°"]), row.children[1]);
+      row.insertBefore(el("button", { class: "cm-btn cm-pano-btn", type: "button", onclick: () => openPanorama(near.x, f.properties.centre, code) }, [el("span", { html: ICON.pano }), "360°"]), row.children[1]);
     });
-    // a Google 360° view saved for this spot: opens inside the map instead of the link above
-    loadStreetViews().then((list) => {
-      const near = list
-        .map((x) => ({ x, d: metresBetween([x.lon, x.lat], f.properties.centre) }))
-        .filter(({ x, d }) => d < 120 || x.near === f.properties.code)
-        .sort((a, b) => (a.x.near === f.properties.code ? -1 : 0) - (b.x.near === f.properties.code ? -1 : 0) || a.d - b.d)[0];
-      if (!near || !row.isConnected) return;
-      row.querySelector("a.cm-btn")?.remove(); // the Google Maps link for 街景
-      row.querySelector("button.cm-street")?.remove();
-      streetButton.replaceWith(el("button", { class: "cm-btn cm-pano-btn", type: "button", onclick: () => openStreetView(near.x, f.properties.centre, f.properties.code) }, [el("span", { html: ICON.pano }), "街景"]));
-    });
+    // a Google 360° view we know of at (or near) this building, the same one the picture half shows
+    // first: 街景 opens that one in Google Maps (the roadside spot above often has none)
+    if (!googleEmbedKey) {
+      loadPictures().then(() => {
+        const found = picturesFor(code, f.properties.centre);
+        const view = found.list.find((pic) => pic.kind === "google" && (!found.near || pic.d < 150));
+        if (!view) return;
+        const x = view.x;
+        const heading = Math.round(bearingDeg([x.lon, x.lat], f.properties.centre));
+        street.href = `https://www.google.com/maps/@?api=1&map_action=pano&${x.pano ? `pano=${encodeURIComponent(x.pano)}` : `viewpoint=${at(x.lat)},${at(x.lon)}`}&heading=${heading}&pitch=0&fov=80`;
+      });
+    }
     return row;
   }
 
@@ -802,15 +837,17 @@ export function openCampusMap(options) {
     if (streetViews || !streetViewsUrl) return streetViews || [];
     try {
       const data = await fetch(new URL(streetViewsUrl, document.baseURI)).then((r) => (r.ok ? r.json() : null));
-      streetViews = (Array.isArray(data?.views) ? data.views : []).filter((x) => x.pano && Number.isFinite(x.lon) && Number.isFinite(x.lat));
+      // a view is found by its photo id, or by its exact position (Google shows the view nearest to it)
+      streetViews = (Array.isArray(data?.views) ? data.views : []).filter((x) => Number.isFinite(x.lon) && Number.isFinite(x.lat));
     } catch {
       streetViews = [];
     }
     return streetViews;
   }
+  const googleView = (x, heading) => (x.pano ? streetViewEmbed(x, heading, 0) : streetViewAt(x, heading, 0));
   function openStreetView(x, target, code) {
     const heading = target ? bearingDeg([x.lon, x.lat], target) : x.heading || 0;
-    const frame = el("iframe", { src: streetViewEmbed(x, heading, 0), title: x.title || "街景", allowfullscreen: true, loading: "eager", referrerpolicy: "strict-origin-when-cross-origin" });
+    const frame = el("iframe", { src: googleView(x, heading), title: x.title || "街景", allowfullscreen: true, loading: "eager", referrerpolicy: "strict-origin-when-cross-origin" });
     viewerLayer(x.title || (code ? `${code} 街景` : "街景"), frame, ["Google 地图 360° 实景 · 拖动看四周，点箭头往前走"]);
   }
 
@@ -823,7 +860,7 @@ export function openCampusMap(options) {
       const data = await fetch(base).then((r) => (r.ok ? r.json() : null));
       panoramas = (Array.isArray(data?.panoramas) ? data.panoramas : [])
         .filter((x) => x.file && Number.isFinite(x.lon) && Number.isFinite(x.lat))
-        .map((x) => ({ ...x, url: new URL(x.file, base).href }));
+        .map((x) => ({ ...x, url: new URL(x.file, base).href, thumb: x.thumb ? new URL(x.thumb, base).href : null }));
     } catch {
       panoramas = [];
     }
@@ -842,11 +879,15 @@ export function openCampusMap(options) {
     };
     panoramaMarkers = [
       ...ours.map((x) => spot(x, () => openPanorama(x, null, null))),
-      ...google.map((x) => spot(x, () => openStreetView(x, null, x.near))),
+      ...google.map((x) => {
+        const marker = spot(x, () => openStreetView(x, null, x.near));
+        marker.getElement().classList.add("cm-pano-g"); // there are many: smaller, and only close up
+        return marker;
+      }),
     ];
     const toggle = () => {
-      const show = map.getZoom() >= 16.6;
-      for (const m of panoramaMarkers) m.getElement().style.display = show ? "" : "none";
+      const zoom = map.getZoom();
+      for (const m of panoramaMarkers) m.getElement().style.display = zoom >= (m.getElement().classList.contains("cm-pano-g") ? 17.8 : 16.6) ? "" : "none";
     };
     map.on("zoomend", toggle);
     toggle();
@@ -932,40 +973,148 @@ export function openCampusMap(options) {
   async function loadPhotos() {
     if (photos || !photosUrl) return photos || [];
     try {
-      const data = await fetch(photosUrl).then((r) => (r.ok ? r.json() : null));
-      photos = Array.isArray(data?.photos) ? data.photos.filter((x) => x.thumb && x.full) : [];
+      const base = new URL(photosUrl, document.baseURI);
+      const data = await fetch(base).then((r) => (r.ok ? r.json() : null));
+      photos = (Array.isArray(data?.photos) ? data.photos : [])
+        .filter((x) => x.thumb && x.full)
+        .map((x) => ({ ...x, thumb: new URL(x.thumb, base).href, full: new URL(x.full, base).href }));
     } catch {
       photos = [];
     }
     return photos;
   }
-  function photosOf(code) {
-    const f = buildings.get(code);
-    const { centre, name, osmName } = f.properties;
-    const words = [code, name, osmName].filter(Boolean).map((w) => w.toLowerCase());
-    return photos
-      .map((x) => {
-        if (x.lat != null) {
-          const d = metresBetween([x.lon, x.lat], centre);
-          const facing = x.heading == null || Math.abs(((bearingDeg([x.lon, x.lat], centre) - x.heading + 540) % 360) - 180) < 50;
-          return d < 90 && facing ? { x, d } : null;
-        }
-        const text = `${x.title} ${x.description}`.toLowerCase();
-        return words.some((w) => w.length > 2 && text.includes(w)) ? { x, d: 999 } : null;
-      })
-      .filter(Boolean)
-      .sort((a, b) => a.d - b.d)
-      .slice(0, 12)
-      .map(({ x }) => x);
+
+  // ----- the picture half of a sheet -----
+  // Every real picture we have and the spot it shows: a photo filed under buildings ("codes") shows them;
+  // a located photo or a 360° view shows where it was taken.
+  let pictures = null;
+  async function loadPictures() {
+    if (pictures) return pictures;
+    const [ph, pa, gv] = await Promise.all([loadPhotos(), loadPanoramas(), loadStreetViews()]);
+    const spot = (x) => (Number.isFinite(x.lon) && Number.isFinite(x.lat) ? [x.lon, x.lat] : null);
+    const codesOf = (x) => [...(Array.isArray(x.codes) ? x.codes : []), ...(x.near ? [x.near] : [])].filter((k) => buildings.has(k));
+    const centreOf = (codes) => (codes.length ? buildings.get(codes[0]).properties.centre : null);
+    pictures = [
+      ...gv.map((x) => ({ kind: "google", x, codes: codesOf(x), from: spot(x), at: spot(x) })),
+      ...ph.map((x) => ({ kind: "photo", x, codes: codesOf(x), from: spot(x), at: centreOf(codesOf(x)) || spot(x) })),
+      ...pa.map((x) => ({ kind: "pano", x, codes: codesOf(x), from: spot(x), at: spot(x) })),
+    ];
+    return pictures;
   }
-  async function showPhotos(code) {
-    await loadPhotos();
-    const list = photosOf(code);
-    // the sheet may have moved on to something else while the list loaded
-    if (!list.length || focusCode !== code || nav || calibrating || !sheet.querySelector(".cm-real")) return;
-    sheet.querySelector(".cm-thumbs")?.remove();
-    sheet.append(el("div", { class: "cm-thumbs", "aria-label": `${code} 的照片` }, list.map((x, i) =>
-      el("button", { type: "button", "aria-label": `看照片：${x.title}`, onclick: () => photoViewer(list, i) }, [el("img", { src: x.thumb, alt: x.title, loading: "lazy", referrerpolicy: "no-referrer" })]))));
+  // metres from a point to a building's walls (0 inside it)
+  function fromBuilding(code, point) {
+    const g = buildings.get(code).geometry;
+    const polygons = g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [];
+    let best = Infinity;
+    for (const [outer] of polygons) {
+      if (pointInRing(point, outer)) return 0;
+      for (let i = 0; i < outer.length - 1; i++) best = Math.min(best, metresBetween(point, closestPointOnSegment(point, outer[i], outer[i + 1])));
+    }
+    return Number.isFinite(best) ? best : metresBetween(point, buildings.get(code).properties.centre);
+  }
+  // is this a picture of the building `code`?
+  function shows(pic, code, centre) {
+    if (!code) return false;
+    if (pic.codes.length) return pic.codes.includes(code);
+    if (!pic.from) {
+      const f = buildings.get(code).properties;
+      const text = `${pic.x.title || ""} ${pic.x.description || ""}`.toLowerCase();
+      return [code, f.name, f.osmName].some((w) => w && w.length > 2 && text.includes(w.toLowerCase()));
+    }
+    const d = fromBuilding(code, pic.from);
+    if (pic.kind !== "photo") return d < 30; // a 360° view taken right beside it
+    if (pic.x.heading == null) return d < 20;
+    return d < 60 && Math.abs(((bearingDeg(pic.from, centre) - pic.x.heading + 540) % 360) - 180) < 50;
+  }
+  const KIND_ORDER = { google: 0, pano: 1, photo: 2 };
+  // the building's own pictures; without any, the nearest real pictures (each with how far away it is)
+  function picturesFor(code, centre) {
+    const far = (pic) => (code ? fromBuilding(code, pic.at) : metresBetween(pic.at, centre));
+    // outside views first (they show what the building looks like), then the ones inside it
+    const rank = (pic) => (pic.kind !== "photo" && pic.d === 0 ? 25 : pic.d);
+    const own = pictures
+      .filter((pic) => shows(pic, code, centre))
+      .map((pic) => ({ ...pic, d: pic.at ? far(pic) : 0 }))
+      .sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind] || rank(a) - rank(b));
+    if (own.length) return { near: false, list: own.slice(0, 6) };
+    const near = pictures
+      .filter((pic) => pic.at)
+      .map((pic) => ({ ...pic, d: far(pic) }))
+      .sort((a, b) => a.d - b.d);
+    return { near: true, list: near.slice(0, 3) };
+  }
+  // The picture half of a sheet: the building's own pictures, or the nearest ones marked 在这附近, and
+  // last Google's satellite picture of it. `ownOnly`: leave it out unless the building has its own.
+  function mediaPane(code, centre, { ownOnly = false } = {}) {
+    const pane = el("figure", { class: "cm-media cm-media-wait", "aria-label": code ? `${code} 的实景` : "实景" });
+    loadPictures().then(() => {
+      if (!pane.isConnected) return; // the sheet moved on
+      const found = picturesFor(code, centre);
+      if (ownOnly && found.near) pane.remove();
+      else fillPane(pane, code, centre, found);
+    });
+    return pane;
+  }
+  function fillPane(pane, code, centre, { near, list }) {
+    pane.classList.remove("cm-media-wait");
+    const items = list.map((pic) => ({ ...pic, near }));
+    // the satellite picture is real too, and every building has one
+    const g = code ? buildings.get(code).geometry : null;
+    const corners = !g ? [] : g.type === "Polygon" ? g.coordinates.flat() : g.type === "MultiPolygon" ? g.coordinates.flat(2) : [];
+    const size = Math.max(180, 5 * Math.max(0, ...corners.map((p) => metresBetween(p, centre)))); // metres across
+    items.push({ kind: "satellite", x: { lat: centre[1], lon: centre[0], size }, codes: [], d: 0, near: false });
+    const photoList = items.filter((pic) => pic.kind === "photo").map((pic) => pic.x);
+    const frames = [];
+    const track = el("div", { class: "cm-media-track" }, items.map((pic, i) => {
+      const x = pic.x;
+      if (pic.kind === "google" || pic.kind === "satellite") {
+        // a live view: drag to look around (Google's own embed); loaded when it is shown
+        const src = pic.kind === "google" ? googleView(x, bearingDeg([x.lon, x.lat], centre)) : satelliteEmbed(x, x.size);
+        const frame = el("iframe", { title: pic.kind === "google" ? `${x.title || "Google 360° 实景"}（可以拖动）` : "卫星图", allowfullscreen: true, referrerpolicy: "strict-origin-when-cross-origin", "data-src": src });
+        frames[i] = frame;
+        return el("div", { class: `cm-media-item cm-media-${pic.kind}` }, [frame]);
+      }
+      const open = () => (pic.kind === "photo" ? photoViewer(photoList, photoList.indexOf(x)) : openPanorama(x, centre, code)); // turned towards the building
+      const label = x.title || (pic.kind === "photo" ? "实景照片" : "360° 实景");
+      return el("button", { class: `cm-media-item cm-media-${pic.kind}`, type: "button", "aria-label": `${label}，点开看大图`, onclick: open }, [
+        x.thumb
+          ? el("img", { src: x.thumb, alt: "", loading: i ? "lazy" : "eager", decoding: "async", referrerpolicy: "no-referrer" })
+          : el("span", { class: "cm-media-poster" }, [el("span", { html: ICON.pano }), el("b", { text: "360° 实景" }), el("small", { text: "点开，拖动看四周" })]),
+      ]);
+    }));
+    const text = el("div", { class: "cm-media-text" });
+    const count = el("span", { class: "cm-media-count", "aria-hidden": "true" });
+    const step = (by) => track.scrollTo({ left: (shown + by) * track.clientWidth, behavior: reduceMotion ? "auto" : "smooth" });
+    const prev = el("button", { class: "cm-btn", type: "button", "aria-label": "上一张", text: "‹", onclick: () => step(-1) });
+    const nextBtn = el("button", { class: "cm-btn", type: "button", "aria-label": "下一张", text: "›", onclick: () => step(1) });
+    const caption = (i) => {
+      const pic = items[i];
+      const x = pic.x;
+      const where = pic.kind === "google" && x.title ? x.title : pic.codes.length ? pic.codes[0] : "";
+      const line = pic.kind === "satellite"
+        ? `${code ? `${code} ` : "这里"}的卫星图，可以拖动、缩放`
+        : pic.near
+          ? `${code ? `${code} 还没有实景照片，` : ""}这是附近${where ? `的 ${where}` : "拍的"}${pic.kind === "photo" ? "" : `，已经转向${code ? ` ${code}` : "这里"}`}`
+          : pic.kind === "google" ? `${x.title || "360° 实景"} · 拖动看四周` : x.title || (pic.kind === "pano" ? "360° 实景" : "实景照片");
+      const credit = pic.kind === "satellite" ? "Google 卫星图" : pic.kind === "google" ? (x.author === "Google" ? "Google 街景" : ["Google 地图", x.author].filter(Boolean).join(" · ")) : [x.author, x.license].filter(Boolean).join(" · ");
+      text.replaceChildren(...[
+        pic.near ? el("b", { class: "cm-near", text: `在这附近 · 约 ${fmtMetres(pic.d)}` }) : null,
+        el("span", { text: line }),
+        credit ? el("small", {}, [x.page ? el("a", { href: x.page, target: "_blank", rel: "noopener", text: `© ${credit}` }) : `© ${credit}`]) : null,
+      ].filter(Boolean));
+      count.textContent = `${i + 1}/${items.length}`;
+      prev.disabled = i === 0;
+      nextBtn.disabled = i === items.length - 1;
+      const frame = frames[i];
+      if (frame && !frame.src) frame.src = frame.dataset.src;
+    };
+    let shown = 0;
+    track.addEventListener("scroll", () => {
+      const i = Math.min(items.length - 1, Math.max(0, Math.round(track.scrollLeft / Math.max(1, track.clientWidth))));
+      if (i !== shown) caption((shown = i));
+    }, { passive: true });
+    caption(0);
+    pane.replaceChildren(track, el("figcaption", { class: "cm-media-cap" }, [text, el("div", { class: "cm-media-nav" }, [prev, count, nextBtn])]));
   }
   function photoViewer(list, index) {
     const box = el("div", { class: "cm-photo", role: "dialog", "aria-label": "照片" });
@@ -996,7 +1145,7 @@ export function openCampusMap(options) {
     box.querySelector("button")?.focus();
   }
 
-  function showOther(props) {
+  function showOther(props, point) {
     if (nav && !nav.arrived) {
       say(props.osmName || "这栋楼没有课表代码。", 3000);
       return;
@@ -1007,10 +1156,14 @@ export function openCampusMap(options) {
     setFocusState(null);
     markFocusLabel();
     sheet.replaceChildren(
-      el("h2", { text: props.osmName || "校园建筑" }),
-      el("p", { text: "这栋楼没有课表代码。点有代码（比如 SK3、PA3）的楼可以导航。" }),
-      el("div", { class: "cm-actions" }, [el("button", { class: "cm-btn", type: "button", text: "看全校", onclick: overview })])
+      mediaPane(null, point),
+      el("div", { class: "cm-opts" }, [
+        el("h2", { text: props.osmName || "校园建筑" }),
+        el("p", { text: "这栋楼没有课表代码。点有代码（比如 SK3、PA3）的楼可以导航。" }),
+        el("div", { class: "cm-actions" }, [el("button", { class: "cm-btn", type: "button", text: "看全校", onclick: overview })]),
+      ])
     );
+    sheet.scrollTop = 0;
   }
 
   function idleSheet() {
@@ -1507,9 +1660,12 @@ export function openCampusMap(options) {
     const mine = (byCode.get(code) || []).find((m) => m.next) || (byCode.get(code) || [])[0];
     announcer.textContent = `到了 ${code}`;
     sheet.replaceChildren(
-      el("h2", {}, [`到了！${code}`, el("small", { text: [f?.properties.name, f?.properties.zh].filter(Boolean).join(" · ") })]),
-      el("p", { text: mine ? `${mine.title} 在 ${mine.room}。` : "你已经在这栋楼旁边了。" }),
-      el("div", { class: "cm-actions" }, [el("button", { class: "cm-btn cm-primary", type: "button", text: "好", onclick: endNavigation })])
+      ...(f ? [mediaPane(code, f.properties.centre, { ownOnly: true })] : []), // a photo, so it is easy to recognise
+      el("div", { class: "cm-opts" }, [
+        el("h2", {}, [`到了！${code}`, el("small", { text: [f?.properties.name, f?.properties.zh].filter(Boolean).join(" · ") })]),
+        el("p", { text: mine ? `${mine.title} 在 ${mine.room}。` : "你已经在这栋楼旁边了。" }),
+        el("div", { class: "cm-actions" }, [el("button", { class: "cm-btn cm-primary", type: "button", text: "好", onclick: endNavigation })]),
+      ])
     );
     releaseWakeLock();
   }

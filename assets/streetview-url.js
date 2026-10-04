@@ -1,8 +1,12 @@
-// Google Maps 360° views (Street View or a photo sphere someone uploaded) as embeddable links.
+// Google Maps 360° views (Street View or a photo sphere someone uploaded) and satellite pictures as
+// embeddable links, none of which needs an API key.
 // Google Maps' own "Share → Embed a map" gives an <iframe> whose address looks like
 //   https://www.google.com/maps/embed?pb=!4v…!6m8!1m7!1s<photo id>!2m2!1d<lat>!2d<lon>!3f<heading>!4f<pitch>!5f<zoom>
-// and needs no API key. parseStreetView() accepts that iframe code, its address, or the address shown in
-// the browser while looking at the view (https://www.google.com/maps/@lat,lon,3a,80y,319h,93t/data=…!1s<id>…).
+// parseStreetView() accepts that iframe code, its address, or the address shown in the browser while
+// looking at the view (https://www.google.com/maps/@lat,lon,3a,80y,319h,93t/data=…!1s<id>…).
+// Without a photo id, Google's older embed address (maps?layer=c&cbll=lat,lon&output=svembed) is
+// forwarded to the same embed with just a position, and Google shows the 360° view nearest to it:
+// streetViewAt() builds that address directly.
 
 const ZOOM = 0.7820865974627469; // Google's default for an embedded view
 
@@ -37,4 +41,15 @@ export function parseStreetView(text) {
 export function streetViewEmbed({ pano, lat, lon }, heading = 0, pitch = 0) {
   const h = ((heading % 360) + 360) % 360;
   return `https://www.google.com/maps/embed?pb=!4v1!6m8!1m7!1s${encodeURIComponent(pano)}!2m2!1d${lat}!2d${lon}!3f${h.toFixed(1)}!4f${pitch.toFixed(1)}!5f${ZOOM}`;
+}
+
+/** The 360° view Google has nearest to a position (no photo id needed), looking towards `heading`. */
+export function streetViewAt({ lat, lon }, heading = 0, pitch = 0) {
+  const h = ((heading % 360) + 360) % 360;
+  return `https://www.google.com/maps/embed?origin=mfe&pb=!6m7!1m6!2m2!1d${lat}!2d${lon}!3f${h.toFixed(1)}!4f${pitch.toFixed(1)}!5f1`;
+}
+
+/** Google's satellite picture of a place, about `metres` across, as an embeddable address. */
+export function satelliteEmbed({ lat, lon }, metres = 200) {
+  return `https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d${Math.round(metres)}!2d${lon}!3d${lat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e1!3m2!1szh-CN!2smy!4v1`;
 }

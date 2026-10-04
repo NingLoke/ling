@@ -27,9 +27,12 @@ SWS 把选了哪一科存在服务器会话里，网址里不带科目，所以�
 - **定位和带路**：手机 GPS（`watchPosition`）加指南针定朝向；路线在本机用 A* 算，偏离路线会自动重新规划，走到门口会震动提示。位置只在你的手机上用，不保存、不发给别人（显示地图时会像普通地图一样从 OpenFreeMap 下载附近的地图块）。GPS 在室内、楼之间可能偏差 10–30 米，室外最准。
 
 - **方向校准**：手机指南针在钢筋水泥旁边常常偏 10–40°。定位后点右边的指南针按钮（导航时点「校准方向」），手机顶端对准一栋认得的楼或脚下这条路的方向，点它就按差值修正（在这台手机上保留 6 小时）。没有指南针的手机会直接按你面对的方向摆好地图。
-- **看实景**：点一栋楼，「街景 / 卫星图 / Google 地图」会在 Google 地图里打开这栋楼的实景（用的是公开的 Maps 链接，不需要密钥）。`.github/workflows/campus-photos.yml` 每周在 Wikimedia Commons、Panoramax、KartaView、OpenAerialMap 找开放授权的校园照片，记在 `data/campus/photos.json`，有的话会直接显示在楼的卡片里（注明作者和授权）。目前这些开放图库里还没有这个校园的照片：把带位置的照片上传到 Wikimedia Commons 或 Panoramax，一周内就会自动出现。
-- **360° 全景（在地图里直接拖动看）**：全景照片放在 `panoramas/`，列在 `data/campus/panoramas.json`，地图上会出现相机图标，楼的卡片上会有「360°」按钮，用 [Pannellum](https://pannellum.org)（MIT，`assets/vendor/pannellum-2.5.7/`）在页面里打开，朝着那栋楼，手指拖动看四周。加一张手机拍的全景照：`node scripts/add-panorama.mjs 照片.jpg --author "名字" --license "CC BY 4.0"`，位置和朝向从照片自带的 GPS / Photo Sphere 信息读出；没有的话加 `--at SK3`（或 `--at 纬度,经度`）和 `--north 照片正中对着的方向`。手机相机的「全景」模式拍出来的是一圈里的一段（加 `--haov 角度`），Photo Sphere / 360° 相机拍的是整个球面。
-- **Google 的 360° 实景在网站里打开（不用密钥）**：Google 地图上有网友上传的校园 360° 照片（比如图书馆）。在 Google 地图里打开那张照片，把地址栏的网址（或「分享 → 嵌入地图」的 HTML）交给 `node scripts/add-streetview.mjs '网址'`，它会记进 `data/campus/streetviews.json`；附近那栋楼的「街景」按钮就会在网站里打开它（Google 自己的嵌入方式），朝着那栋楼，可以拖动、往前走，地图上也会出现相机图标。
+- **楼的实景（卡片上半是图，下半是选项）**：点一栋楼，卡片上半直接显示这栋楼的实景，左右滑或点 ‹ › 换下一张，最后一张是 Google 卫星图（正上方，可以拖动缩放）。这栋楼没有自己的实景时，显示离它最近的实景，标着「在这附近 · 约 N 米」，360° 的会自动转向这栋楼。实景的来源：
+  - **Google 地图上的 360° 实景**：校园里有 80 多个网友（主要是 Zee Ang Sim）和 Curtin Malaysia 自己上传的 360° 照片，28 栋有代码的楼里 23 栋旁边就有。用 Google 自己的嵌入网址按位置显示（不用密钥，不存 Google 的照片），可以直接在卡片里拖动看四周，点箭头往前走。位置、地点名和作者记在 `data/campus/streetviews.json`（是 Google 嵌入画面上「在 Google 地图上查看」链接的位置）。想加一张：在 Google 地图里打开那张照片，把地址栏的网址交给 `node scripts/add-streetview.mjs '网址'`。
+  - **照片**：`data/campus/photos.json`。自己在学校拍的照片可以这样加：`node scripts/add-photo.mjs 照片.jpg --code FN4 --author "名字" --license "CC BY 4.0"`（`--code` 是照片拍的哪栋楼；不加的话按照片里的 GPS 位置算），照片放进 `photos/`。`.github/workflows/campus-photos.yml` 每周还会在 Wikimedia Commons、Panoramax、KartaView、OpenAerialMap 找开放授权的校园照片（目前这些地方都没有这个校园的照片），手动加的照片会保留。
+  - 网上其他地方（Flickr、Openverse、学校官网、新闻）找到的校园照片大多是「保留所有权利」，或者是人物、活动照片、看不出是哪栋楼，所以没有拿来用。
+- **看实景（跳到 Google 地图）**：卡片下半的「街景 / 卫星图 / Google 地图」照旧在 Google 地图里打开（公开的 Maps 链接，不需要密钥）；「街景」会打开卡片上半第一张的那个 360° 实景。
+- **360° 全景（自己拍的，在地图里直接拖动看）**：全景照片放在 `panoramas/`，列在 `data/campus/panoramas.json`，地图上会出现相机图标，楼的卡片上会有「360°」按钮，用 [Pannellum](https://pannellum.org)（MIT，`assets/vendor/pannellum-2.5.7/`）在页面里打开，朝着那栋楼，手指拖动看四周。加一张手机拍的全景照：`node scripts/add-panorama.mjs 照片.jpg --author "名字" --license "CC BY 4.0"`，位置和朝向从照片自带的 GPS / Photo Sphere 信息读出；没有的话加 `--at SK3`（或 `--at 纬度,经度`）和 `--north 照片正中对着的方向`。手机相机的「全景」模式拍出来的是一圈里的一段（加 `--haov 角度`），Photo Sphere / 360° 相机拍的是整个球面。
 - **Google 街景在地图里打开**：Google 只允许用它的 Maps Embed API 把街景放进别的网页，需要一个 API 密钥。在 Google Cloud 建一个项目，启用 “Maps Embed API”，创建 API 密钥并限制只能用在 `ningloke.github.io/*` 和 `3e4.netlify.app/*`，把它填进 `index.html` 里的 `GOOGLE_EMBED_KEY`。不填的时候「街景」按钮照旧跳到 Google 地图。
 - **门**：OpenStreetMap 没有画这里的出入口，所以每栋楼取离路最近的一个角，再加上其他方向也靠近路的角（最多 3 个）当门，带路时走到最近的那个。
 

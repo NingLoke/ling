@@ -1,4 +1,579 @@
 {
- "about": "Google Maps 360° views (Street View or photo spheres people uploaded) shown inside the campus map through Google's own embed (no key). Add one with: node scripts/add-streetview.mjs '<Google Maps address of the view>'.",
- "views": []
+ "about": "Google Maps 360° views (Street View or photo spheres people uploaded) on campus, shown inside the campus map through Google's own embed (no key). Views with a photo id open that photo; views with only a position open the view Google has nearest to it. The positions, place names and authors are what Google's embed shows for each view. Add one with: node scripts/add-streetview.mjs '<Google Maps address of the view>'.",
+ "views": [
+  {
+   "id": "g1",
+   "lon": 114.0181194,
+   "lat": 4.5101417,
+   "title": "",
+   "author": "Curtin University Malaysia"
+  },
+  {
+   "id": "g2",
+   "lon": 114.0146413,
+   "lat": 4.5104557,
+   "title": "Australia Avenue Garden",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g3",
+   "lon": 114.0149719,
+   "lat": 4.5104566,
+   "title": "Australia Avenue Garden",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g4",
+   "lon": 114.01475,
+   "lat": 4.5104581,
+   "title": "Australia Avenue Garden",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g5",
+   "lon": 114.0149207,
+   "lat": 4.5104808,
+   "title": "Australia Avenue Garden",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g6",
+   "lon": 114.0134911,
+   "lat": 4.5107823,
+   "title": "Biotechnology Centre @ Curtin Malaysia",
+   "author": "HongHui Tan"
+  },
+  {
+   "id": "g7",
+   "lon": 114.015783,
+   "lat": 4.5108207,
+   "title": "Fakulti Kejuruteraan dan Sains",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g8",
+   "lon": 114.0159959,
+   "lat": 4.5108736,
+   "title": "Fakulti Kejuruteraan dan Sains",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g9",
+   "lon": 114.0157241,
+   "lat": 4.5110331,
+   "title": "Fakulti Kejuruteraan dan Sains",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g10",
+   "lon": 114.01613,
+   "lat": 4.5110798,
+   "title": "Fakulti Kejuruteraan dan Sains",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g11",
+   "lon": 114.0163838,
+   "lat": 4.5111473,
+   "title": "Skylark 3",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g12",
+   "lon": 114.0158441,
+   "lat": 4.5112429,
+   "title": "Fakulti Kejuruteraan dan Sains",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g13",
+   "lon": 114.0161233,
+   "lat": 4.5112837,
+   "title": "Fakulti Kejuruteraan dan Sains",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g14",
+   "lon": 114.0165304,
+   "lat": 4.5113402,
+   "title": "Fakulti Kejuruteraan dan Sains",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g15",
+   "lon": 114.0170361,
+   "lat": 4.5114611,
+   "title": "",
+   "author": "Curtin University Malaysia"
+  },
+  {
+   "id": "g16",
+   "lon": 114.0166079,
+   "lat": 4.5114764,
+   "title": "Fakulti Kejuruteraan dan Sains",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g17",
+   "lon": 114.0161502,
+   "lat": 4.5114859,
+   "title": "Fakulti Kejuruteraan dan Sains",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g18",
+   "lon": 114.0170226,
+   "lat": 4.5115302,
+   "title": "",
+   "author": "Keegan Frankie"
+  },
+  {
+   "id": "g19",
+   "lon": 114.0167788,
+   "lat": 4.5115594,
+   "title": "",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g20",
+   "lon": 114.015152,
+   "lat": 4.511699,
+   "title": "Curtin Lakeside Accommodation",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g21",
+   "lon": 114.0173296,
+   "lat": 4.5117929,
+   "title": "Bus Stop - Curtin",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g22",
+   "lon": 114.016003,
+   "lat": 4.5118238,
+   "title": "Skylark Laboratories",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g23",
+   "lon": 114.0181191,
+   "lat": 4.5118437,
+   "title": "科延大学图书馆",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g24",
+   "lon": 114.0170833,
+   "lat": 4.5118723,
+   "title": "",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g25",
+   "lon": 114.0140722,
+   "lat": 4.5118944,
+   "title": "",
+   "author": "Curtin University Malaysia"
+  },
+  {
+   "id": "g26",
+   "lon": 114.0144856,
+   "lat": 4.5119195,
+   "title": "Curtin Lakeside Accommodation",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g27",
+   "lon": 114.0179332,
+   "lat": 4.5120016,
+   "title": "The Auditorium",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g28",
+   "lon": 114.0171392,
+   "lat": 4.5120046,
+   "title": "Bus Stop - Curtin",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g29",
+   "lon": 114.0194184,
+   "lat": 4.5120053,
+   "title": "Football Field",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g30",
+   "lon": 114.0141749,
+   "lat": 4.5120303,
+   "title": "Curtin Lakeside Accommodation",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g31",
+   "lon": 114.0178667,
+   "lat": 4.5121056,
+   "title": "",
+   "author": "Curtin University Malaysia"
+  },
+  {
+   "id": "g32",
+   "lon": 114.0159393,
+   "lat": 4.5121727,
+   "title": "Skylark 2",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g33",
+   "lon": 114.0153806,
+   "lat": 4.5122333,
+   "title": "",
+   "author": "Curtin University Malaysia"
+  },
+  {
+   "id": "g34",
+   "lon": 114.017115,
+   "lat": 4.5122914,
+   "title": "LT Foyer",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g35",
+   "lon": 114.0180778,
+   "lat": 4.5122917,
+   "title": "",
+   "author": "Curtin University Malaysia"
+  },
+  {
+   "id": "g36",
+   "lon": 114.0139984,
+   "lat": 4.5122918,
+   "title": "Curtin Lakeside Accommodation",
+   "author": "HongHui Tan"
+  },
+  {
+   "id": "g37",
+   "lon": 114.0156109,
+   "lat": 4.5123051,
+   "title": "",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g38",
+   "lon": 114.0165748,
+   "lat": 4.5123137,
+   "title": "",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g39",
+   "lon": 114.0177806,
+   "lat": 4.5123583,
+   "title": "",
+   "author": "Curtin University Malaysia"
+  },
+  {
+   "id": "g40",
+   "lon": 114.0170979,
+   "lat": 4.5123828,
+   "title": "LT Foyer",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g41",
+   "lon": 114.0148051,
+   "lat": 4.5123918,
+   "title": "",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g42",
+   "lon": 114.0175903,
+   "lat": 4.5124077,
+   "title": "The Auditorium",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g43",
+   "lon": 114.0148778,
+   "lat": 4.5125501,
+   "title": "Lakeside Outdoor Excercise Corner",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g44",
+   "lon": 114.0174632,
+   "lat": 4.512585,
+   "title": "LT Foyer",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g45",
+   "lon": 114.0149694,
+   "lat": 4.5126667,
+   "title": "",
+   "author": "Curtin University Malaysia"
+  },
+  {
+   "id": "g46",
+   "lon": 114.0164791,
+   "lat": 4.5127366,
+   "title": "Prinia 2",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g47",
+   "lon": 114.0173292,
+   "lat": 4.5127925,
+   "title": "",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g48",
+   "lon": 114.0160335,
+   "lat": 4.5128105,
+   "title": "Prinia 3",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g49",
+   "lon": 114.0148056,
+   "lat": 4.51285,
+   "title": "",
+   "author": "Curtin University Malaysia"
+  },
+  {
+   "id": "g50",
+   "lon": 114.0168237,
+   "lat": 4.5128673,
+   "title": "大学预科生图书空间",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g51",
+   "lon": 114.014447,
+   "lat": 4.5128804,
+   "title": "Curtin Lakeside Accommodation",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g52",
+   "lon": 114.0168412,
+   "lat": 4.5128863,
+   "title": "大学预科生图书空间",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g53",
+   "lon": 114.0177335,
+   "lat": 4.5129407,
+   "title": "",
+   "author": "KK Pau"
+  },
+  {
+   "id": "g54",
+   "lon": 114.0179779,
+   "lat": 4.5130039,
+   "title": "Heron 1 (John Curtin Building)",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g55",
+   "lon": 114.0160306,
+   "lat": 4.5130528,
+   "title": "",
+   "author": "Curtin University Malaysia"
+  },
+  {
+   "id": "g56",
+   "lon": 114.0172435,
+   "lat": 4.5130532,
+   "title": "",
+   "author": "Kenny Ken"
+  },
+  {
+   "id": "g57",
+   "lon": 114.0175576,
+   "lat": 4.5130822,
+   "title": "Heron 1 (John Curtin Building)",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g58",
+   "lon": 114.0197186,
+   "lat": 4.5130864,
+   "title": "Football Field",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g59",
+   "lon": 114.0188509,
+   "lat": 4.5131458,
+   "title": "",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g60",
+   "lon": 114.0151907,
+   "lat": 4.5131946,
+   "title": "Prinia 3",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g61",
+   "lon": 114.0180643,
+   "lat": 4.5134495,
+   "title": "Fakulti Perniagaan",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g62",
+   "lon": 114.0177518,
+   "lat": 4.5134729,
+   "title": "Fakulti Perniagaan",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g63",
+   "lon": 114.0175394,
+   "lat": 4.5135066,
+   "title": "Fakulti Perniagaan",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g64",
+   "lon": 114.0182023,
+   "lat": 4.513576,
+   "title": "Fakulti Perniagaan",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g65",
+   "lon": 114.0147679,
+   "lat": 4.513578,
+   "title": "Curtin Lakeside Accommodation",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g66",
+   "lon": 114.0179707,
+   "lat": 4.5135856,
+   "title": "Fakulti Perniagaan",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g67",
+   "lon": 114.0158016,
+   "lat": 4.513623,
+   "title": "",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g68",
+   "lon": 114.0158919,
+   "lat": 4.5136557,
+   "title": "",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g69",
+   "lon": 114.0160969,
+   "lat": 4.5136908,
+   "title": "",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g70",
+   "lon": 114.0178534,
+   "lat": 4.5137076,
+   "title": "Fakulti Perniagaan",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g71",
+   "lon": 114.0178524,
+   "lat": 4.5138359,
+   "title": "Fakulti Perniagaan",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g72",
+   "lon": 114.0162335,
+   "lat": 4.5139225,
+   "title": "",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g73",
+   "lon": 114.0164737,
+   "lat": 4.5140481,
+   "title": "",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g74",
+   "lon": 114.017347,
+   "lat": 4.514153,
+   "title": "",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g75",
+   "lon": 114.0175867,
+   "lat": 4.5142373,
+   "title": "礼堂",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g76",
+   "lon": 114.0178004,
+   "lat": 4.5142447,
+   "title": "礼堂",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g77",
+   "lon": 114.0179865,
+   "lat": 4.5142587,
+   "title": "",
+   "author": "Jason Karul"
+  },
+  {
+   "id": "g78",
+   "lon": 114.0168568,
+   "lat": 4.5142835,
+   "title": "礼堂",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g79",
+   "lon": 114.0179201,
+   "lat": 4.5143493,
+   "title": "礼堂",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g80",
+   "lon": 114.0168405,
+   "lat": 4.5145951,
+   "title": "礼堂",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g81",
+   "lon": 114.0177941,
+   "lat": 4.5146329,
+   "title": "礼堂",
+   "author": "Zee Ang Sim"
+  },
+  {
+   "id": "g82",
+   "lon": 114.0188526,
+   "lat": 4.5149581,
+   "title": "",
+   "author": "Google"
+  }
+ ]
 }
