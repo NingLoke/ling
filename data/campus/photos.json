@@ -1,0 +1,26 @@
+{
+ "meta": {
+  "sources": {
+   "commons": {
+    "found": 0,
+    "kept": 0,
+    "located": 0
+   },
+   "panoramax": {
+    "found": 0,
+    "kept": 0,
+    "located": 0
+   },
+   "kartaview": {
+    "error": "400 Bad Request for https://api.openstreetcam.org/2.0/photo/?lat=4.5117&lng=114.0167&radius=1200&itemsPerPage=200"
+   },
+   "openaerialmap": {
+    "found": 0,
+    "finest": null
+   }
+  },
+  "note": "Pictures stay on their own servers; credit the author and licence when showing them."
+ },
+ "photos": [],
+ "aerial": []
+}
