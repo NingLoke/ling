@@ -279,6 +279,54 @@ a { color: inherit; }
 .unit-row p { font-size: 13px; color: var(--ink-2); line-height: 1.5; overflow-wrap: anywhere; }
 .unit-row p span { color: var(--ink-3); }
 
+.units-hint { margin: 0 0 12px; font-size: 13px; color: var(--ink-3); }
+.check-btn {
+  margin-top: 6px; min-height: 44px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line-2);
+  background: var(--paper-hi); color: var(--ink); font-size: 13px; cursor: pointer;
+}
+.check-btn:hover { border-color: var(--seal); color: var(--seal); }
+
+/* ---------- SWS check sheet ---------- */
+html.lock { overflow: hidden; }
+dialog.sheet {
+  width: 100%; max-width: 560px; max-height: min(90vh, 900px); margin: auto auto 0; padding: 0; border: 0;
+  border-radius: 22px 22px 0 0; background: var(--paper-hi); color: var(--ink); overflow: auto; overscroll-behavior: contain;
+  box-shadow: 0 -20px 60px -20px rgba(29, 28, 26, .4);
+}
+dialog.sheet::backdrop { background: rgba(29, 28, 26, .4); }
+.sheet-head {
+  position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px 12px; background: var(--paper-hi); border-bottom: 1px solid var(--line);
+}
+.sheet-title { min-width: 0; margin-right: auto; }
+.sheet-title h2 { font-family: var(--serif); font-weight: 700; font-size: 18px; line-height: 1.3; }
+.sheet-title p { font-size: 12.5px; color: var(--ink-3); overflow-wrap: anywhere; }
+.sheet-body { padding: 16px 16px calc(env(safe-area-inset-bottom) + 22px); }
+.steps { margin: 0; padding-left: 22px; display: grid; gap: 12px; font-size: 14px; line-height: 1.6; }
+.steps b { font-weight: 600; }
+.step-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.mini-btn {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 14px; border-radius: 999px;
+  border: 1px solid var(--line-2); background: var(--paper); color: var(--ink); font-size: 13.5px; cursor: pointer; text-decoration: none; white-space: nowrap;
+}
+.mini-btn.primary { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+.code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; padding: 6px 10px; border-radius: 8px; background: var(--wash-2); }
+.rule { margin: 18px 0 12px; padding: 10px 12px; border-radius: 12px; background: var(--seal-wash); color: var(--ink-2); font-size: 13.5px; line-height: 1.6; }
+.rule b { color: var(--seal); }
+.sws-rows { display: grid; gap: 10px; }
+.sws-row { padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--paper); }
+.sws-top { display: flex; align-items: baseline; gap: 8px; font-family: var(--serif); font-weight: 700; font-size: 15px; }
+.sws-top span { margin-left: auto; font-family: var(--sans); font-weight: 400; font-size: 12.5px; color: var(--ink-3); }
+.sws-row dl { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 3px 8px; margin: 6px 0 0; font-size: 13px; line-height: 1.45; }
+.sws-row dt { color: var(--ink-3); }
+.sws-row dd { margin: 0; overflow-wrap: anywhere; }
+.sws-row dd.key { font-weight: 700; color: var(--seal); }
+.sws-row dd.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; color: var(--ink-2); }
+.sheet-note { margin-top: 14px; font-size: 12.5px; color: var(--ink-3); line-height: 1.6; }
+@media (min-width: 640px) {
+  dialog.sheet { margin: auto; border-radius: 22px; }
+}
+
 /* ---------- footer ---------- */
 .foot { margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--ink-3); line-height: 1.7; }
 .foot p + p { margin-top: 2px; }
@@ -405,6 +453,7 @@ a { color: inherit; }
     <summary>科目 <span class="count" id="unit-count"></span>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
     </summary>
+    <p class="units-hint">每一科都可以点「去 SWS 核对」，照着步骤在官方课表里找到同样的几行，对一对有没有错。</p>
     <div class="unit-list" id="unit-list"></div>
   </details>
 
@@ -419,6 +468,7 @@ a { color: inherit; }
     </div>
   </footer>
 </div>
+<dialog class="sheet" id="check" aria-labelledby="check-title"></dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <noscript><p style="text-align:center;padding:20px">这个课表需要开启 JavaScript。</p></noscript>
 
@@ -851,9 +901,98 @@ function renderUnits() {
         h("h3", null, unit.short || unit.name, h("small", null, unit.code)),
         h("p", null, unit.name, h("span", null, ` · 每周 ${core.fmtDurationZh(hours)}`)),
         h("p", null, h("span", null, "组别 "), groups.join("、") || "—"),
-        staff.length ? h("p", null, h("span", null, "老师 "), staff.join("、")) : null));
+        staff.length ? h("p", null, h("span", null, "老师 "), staff.join("、")) : null,
+        h("button", { class: "check-btn", type: "button", dataset: { key: `check-${unit.code}` }, onclick: () => openCheck(unit.code) }, "去 SWS 核对")));
   }));
 }
+
+// ---------- check one unit against Curtin SWS by hand ----------
+// SWS keeps the selected unit in its server session, so a plain link cannot open one unit's
+// timetable. Instead: the exact steps to click in SWS, then our rows written the way SWS writes them.
+const SWS_URL = "http://sws.curtin.edu.my/login.aspx";
+const swsDate = (iso) => {
+  const [y, m, d] = iso.split("-").map(Number);
+  return `${d}/${m}/${String(y).slice(2)}`;
+};
+const swsTime = (minutes) => `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`;
+function weekRanges(weeks) {
+  const sorted = [...new Set(weeks)].sort((a, b) => a - b);
+  const parts = [];
+  for (let i = 0; i < sorted.length; i++) {
+    let j = i;
+    while (j + 1 < sorted.length && sorted[j + 1] === sorted[j] + 1) j++;
+    parts.push(i === j ? String(sorted[i]) : `${sorted[i]}-${sorted[j]}`);
+    i = j;
+  }
+  return parts.join(", ");
+}
+
+async function copyText(text, button) {
+  let ok = false;
+  try {
+    await navigator.clipboard.writeText(text);
+    ok = true;
+  } catch {
+    const area = h("textarea", { readonly: true, class: "sr" }, text);
+    button.after(area);
+    area.select();
+    try { ok = document.execCommand("copy"); } catch { ok = false; }
+    area.remove();
+  }
+  button.textContent = ok ? "已复制" : "复制不了，请手动选";
+  setTimeout(() => { button.textContent = "复制代码"; }, 1600);
+}
+
+function openCheck(code) {
+  const dialog = $("check");
+  const unit = unitOf(code);
+  const events = data.events.filter((e) => e.unit === code).sort((a, b) => a.day - b.day || a.start - b.start);
+  const label = `${unit.code} ${unit.name}`;
+  const copyBtn = h("button", { class: "mini-btn", type: "button", onclick: (event) => copyText(unit.code, event.currentTarget) }, "复制代码");
+  const example = unit.group && unit.group !== "*" ? events.find((e) => e.group && e.group !== unit.group) : null;
+  const rule = unit.group && unit.group !== "*"
+    ? ["这一科我们只取 Group 包含 ", h("b", null, unit.group), " 的课", example ? ["（SWS 常把几个班写在一起，比如 ", h("b", null, example.group), " 也包含 ", unit.group, "）"] : null, "。SWS 会列出所有班的课，只看下面这几行就好。"]
+    : ["这一科不按 Group 分，我们按老师挑出了下面这几行。SWS 会列出所有班的课，只看这几行就好。"];
+  const rows = events.map((e) => h("article", { class: "sws-row" },
+    h("p", { class: "sws-top" }, `${core.DAY_NAMES_ZH[e.day]} ${swsDate(e.firstDate)} · ${swsTime(e.start)}–${swsTime(e.end)}`, h("span", null, e.type)),
+    h("dl", null,
+      h("dt", null, "Group"), h("dd", { class: "key" }, e.group || "—"),
+      h("dt", null, "Weeks"), h("dd", null, weekRanges(e.weeks)),
+      h("dt", null, "Room"), h("dd", null, e.rooms?.length ? e.rooms.join(", ") : "—"),
+      h("dt", null, "Staff"), h("dd", null, e.staff?.length ? e.staff.join("; ") : "—"),
+      h("dt", null, "Activity"), h("dd", { class: "mono" }, e.id || "—"))));
+  dialog.replaceChildren(
+    h("div", { class: "sheet-head" },
+      seal(code),
+      h("div", { class: "sheet-title" }, h("h2", { id: "check-title" }, `核对 ${unit.short || unit.name}`), h("p", null, label)),
+      h("button", { class: "mini-btn", type: "button", onclick: () => dialog.close() }, "关闭")),
+    h("div", { class: "sheet-body" },
+      h("ol", { class: "steps" },
+        h("li", null, "打开 Curtin SWS，点 ", h("b", null, "Student - Click here"), "，再点 ", h("b", null, "Units"), "。",
+          h("div", { class: "step-actions" }, h("a", { class: "mini-btn primary", href: SWS_URL, target: "_blank", rel: "noopener" }, "打开 SWS ↗"))),
+        h("li", null, "在 Units 列表里选 ", h("b", null, label), "。",
+          h("div", { class: "step-actions" }, h("code", { class: "code" }, unit.code), copyBtn)),
+        h("li", null, "Weeks 选 ", h("b", null, data.semester || "Semester Two"), "，Days 选整周（周一到周日），Period 选全天（", h("b", null, "Day and Evening"), "），Type 选 ", h("b", null, "List"), "。"),
+        h("li", null, "点 ", h("b", null, "View Timetable"), "，在表里找到下面这些行，一行一行对。")),
+      h("p", { class: "rule" }, rule),
+      h("div", { class: "sws-rows" }, rows),
+      h("p", { class: "sheet-note" }, `一共 ${events.length} 行。对不上的话，可能是 SWS 刚改了课表、网站还没同步（每天 06:17 和 18:17 自动检查），也可能是网站抓错了，截个图记下来。`)));
+  dialog.showModal();
+  document.documentElement.classList.add("lock");
+  dialog.scrollTop = 0;
+  try { history.pushState({ ...(history.state || {}), check: true }, ""); } catch { /* ignore */ }
+}
+
+$("check").addEventListener("close", () => {
+  document.documentElement.classList.remove("lock");
+  if (history.state?.check) history.back();
+});
+$("check").addEventListener("click", (event) => {
+  if (event.target === event.currentTarget) event.currentTarget.close(); // tap on the backdrop
+});
+window.addEventListener("popstate", () => {
+  if ($("check").open) $("check").close();
+});
 
 // ---------- footer ----------
 function renderFooter(now) {
