@@ -1,0 +1,49 @@
+name: Campus photos
+
+# Looks for openly licensed real pictures of the campus (Wikimedia Commons, Panoramax, KartaView,
+# OpenAerialMap) and lists them in data/campus/photos.json for the 3D campus map.
+# Runs when the script changes, every Monday, or by hand from the Actions tab.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "41 22 * * 0" # Monday 06:41 Malaysia time
+  push:
+    branches: [main]
+    paths:
+      - "scripts/fetch-campus-photos.mjs"
+      - ".github/workflows/campus-photos.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-timetables
+  cancel-in-progress: false
+
+jobs:
+  photos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Look for campus pictures
+        run: node scripts/fetch-campus-photos.mjs
+
+      - name: Commit changes
+        shell: bash
+        run: |
+          if [ -z "$(git status --porcelain -- data/campus/photos.json)" ]; then
+            echo "Nothing changed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- data/campus/photos.json
+          git commit -m "Update campus photos"
+          git pull --rebase origin main
+          git push origin HEAD:main
