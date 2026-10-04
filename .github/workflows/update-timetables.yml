@@ -52,7 +52,9 @@ jobs:
           exit 1
 
       - name: Refresh the snapshot baked into index.html
-        run: node scripts/embed-data.mjs index.html data/2E3.json
+        run: |
+          node scripts/embed-data.mjs index.html data/2E3.json
+          node scripts/stamp-assets.mjs index.html
 
       - name: Commit changes
         shell: bash
