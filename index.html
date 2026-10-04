@@ -285,6 +285,16 @@ a { color: inherit; }
   background: var(--paper-hi); color: var(--ink); font-size: 13px; cursor: pointer;
 }
 .check-btn:hover { border-color: var(--seal); color: var(--seal); }
+.check-btn.primary { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+.check-btn.primary:hover { color: var(--on-ink); background: #000; }
+.unit-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.unit-actions .check-btn { margin-top: 0; }
+.verify-btn {
+  margin: 6px 0 -6px -8px; min-height: 40px; min-width: 44px; padding: 0 8px; border: 0; border-radius: 10px;
+  background: none; color: var(--seal); font-size: 12.5px; cursor: pointer; text-align: left;
+}
+.verify-btn::after { content: " ›"; }
+.verify-btn:hover { background: var(--seal-wash); }
 
 /* ---------- SWS check sheet ---------- */
 html.lock { overflow: hidden; }
@@ -323,6 +333,33 @@ dialog.sheet::backdrop { background: rgba(29, 28, 26, .4); }
 .sws-row dd.key { font-weight: 700; color: var(--seal); }
 .sws-row dd.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; color: var(--ink-2); }
 .sheet-note { margin-top: 14px; font-size: 12.5px; color: var(--ink-3); line-height: 1.6; }
+.step-actions.lead { margin: 0 0 16px; padding-bottom: 14px; border-bottom: 1px dashed var(--line-2); font-size: 13px; color: var(--ink-3); }
+
+/* ---------- 核准查看 (SWS screenshot viewer) ---------- */
+dialog.viewer {
+  width: 100%; max-width: 100%; height: 100%; max-height: 100%; margin: 0; padding: 0; border: 0;
+  background: var(--paper-hi); color: var(--ink); flex-direction: column; overflow: hidden;
+}
+dialog.viewer[open] { display: flex; }
+dialog.viewer::backdrop { background: rgba(29, 28, 26, .5); }
+dialog.viewer .sheet-head { position: static; padding-top: calc(env(safe-area-inset-top) + 12px); }
+.shot-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.shot-tools { display: flex; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+.shot-tools::-webkit-scrollbar { display: none; }
+.shot-tools .mini-btn { flex: none; padding: 0 12px; font-size: 13px; }
+.shot-tools .mini-btn[aria-pressed="true"] { border-color: #d9a400; background: #fff3b8; color: #3a2f1b; }
+.shot-stage { flex: 1; min-height: 0; overflow: auto; background: #fff; overscroll-behavior: contain; touch-action: pan-x pan-y pinch-zoom; }
+.shot-frame { position: relative; }
+.shot-frame img { display: block; width: 100%; height: auto; }
+.shot-mark { position: absolute; border: 2px solid #e0a800; background: rgba(255, 214, 0, .2); border-radius: 3px; pointer-events: none; }
+.shot-mark.focus { border-color: var(--seal); background: rgba(181, 65, 46, .14); box-shadow: 0 0 0 3px rgba(181, 65, 46, .22); }
+.hide-marks .shot-mark { display: none; }
+.shot-note { margin: 0; padding: 10px 16px calc(env(safe-area-inset-bottom) + 12px); font-size: 12.5px; color: var(--ink-3); line-height: 1.6; border-top: 1px solid var(--line); }
+.shot-wait { padding: 30px 20px; text-align: center; color: var(--ink-2); font-size: 14px; }
+.shot-wait p { margin-bottom: 14px; }
+@media (min-width: 900px) {
+  dialog.viewer { width: min(1240px, 94vw); height: 92vh; margin: auto; border-radius: 22px; box-shadow: 0 30px 80px -30px rgba(0, 0, 0, .5); }
+}
 @media (min-width: 640px) {
   dialog.sheet { margin: auto; border-radius: 22px; }
 }
@@ -453,7 +490,7 @@ dialog.sheet::backdrop { background: rgba(29, 28, 26, .4); }
     <summary>科目 <span class="count" id="unit-count"></span>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
     </summary>
-    <p class="units-hint">每一科都可以点「去 SWS 核对」，照着步骤在官方课表里找到同样的几行，对一对有没有错。</p>
+    <p class="units-hint">点「核准查看」看 SWS 官网这一科 List 页面的原样截图（每天自动更新），你课表用到的行会框出来。</p>
     <div class="unit-list" id="unit-list"></div>
   </details>
 
@@ -469,6 +506,7 @@ dialog.sheet::backdrop { background: rgba(29, 28, 26, .4); }
   </footer>
 </div>
 <dialog class="sheet" id="check" aria-labelledby="check-title"></dialog>
+<dialog class="viewer" id="shot" aria-labelledby="shot-title"></dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <noscript><p style="text-align:center;padding:20px">这个课表需要开启 JavaScript。</p></noscript>
 
@@ -767,7 +805,8 @@ function renderDayView(now, events) {
       h("div", { class: "t" },
         h("span", { class: "s num" }, core.fmtTime(e.start)),
         h("span", { class: "e num" }, core.fmtTime(e.end)),
-        h("span", { class: "d" }, core.fmtDurationZh(e.end - e.start))),
+        h("span", { class: "d" }, core.fmtDurationZh(e.end - e.start)),
+        h("button", { class: "verify-btn", type: "button", "aria-label": `核准 ${unit.short}：看 SWS 截图`, onclick: () => openShot(e.unit, e.id) }, "核准")),
       h("div", null,
         h("div", { class: "lesson-head" },
           seal(e.unit),
@@ -902,7 +941,9 @@ function renderUnits() {
         h("p", null, unit.name, h("span", null, ` · 每周 ${core.fmtDurationZh(hours)}`)),
         h("p", null, h("span", null, "组别 "), groups.join("、") || "—"),
         staff.length ? h("p", null, h("span", null, "老师 "), staff.join("、")) : null,
-        h("button", { class: "check-btn", type: "button", dataset: { key: `check-${unit.code}` }, onclick: () => openCheck(unit.code) }, "去 SWS 核对")));
+        h("div", { class: "unit-actions" },
+          h("button", { class: "check-btn primary", type: "button", dataset: { key: `shot-${unit.code}` }, onclick: () => openShot(unit.code) }, "核准查看"),
+          h("button", { class: "check-btn", type: "button", dataset: { key: `check-${unit.code}` }, onclick: () => openCheck(unit.code) }, "自己去 SWS 查"))));
   }));
 }
 
@@ -967,6 +1008,9 @@ function openCheck(code) {
       h("div", { class: "sheet-title" }, h("h2", { id: "check-title" }, `核对 ${unit.short || unit.name}`), h("p", null, label)),
       h("button", { class: "mini-btn", type: "button", onclick: () => dialog.close() }, "关闭")),
     h("div", { class: "sheet-body" },
+      h("div", { class: "step-actions lead" },
+        h("button", { class: "mini-btn primary", type: "button", onclick: () => openShot(code) }, "核准查看：SWS 原页截图"),
+        h("span", null, "或者自己去 SWS 官网查：")),
       h("ol", { class: "steps" },
         h("li", null, "打开 Curtin SWS，点 ", h("b", null, "Student - Click here"), "，再点 ", h("b", null, "Units"), "。",
           h("div", { class: "step-actions" }, h("a", { class: "mini-btn primary", href: SWS_URL, target: "_blank", rel: "noopener" }, "打开 SWS ↗"))),
@@ -977,22 +1021,132 @@ function openCheck(code) {
       h("p", { class: "rule" }, rule),
       h("div", { class: "sws-rows" }, rows),
       h("p", { class: "sheet-note" }, `一共 ${events.length} 行。对不上的话，可能是 SWS 刚改了课表、网站还没同步（每天 06:17 和 18:17 自动检查），也可能是网站抓错了，截个图记下来。`)));
-  dialog.showModal();
-  document.documentElement.classList.add("lock");
+  openModal(dialog, "check");
   dialog.scrollTop = 0;
-  try { history.pushState({ ...(history.state || {}), check: true }, ""); } catch { /* ignore */ }
 }
 
-$("check").addEventListener("close", () => {
-  document.documentElement.classList.remove("lock");
-  if (history.state?.check) history.back();
-});
-$("check").addEventListener("click", (event) => {
-  if (event.target === event.currentTarget) event.currentTarget.close(); // tap on the backdrop
-});
+// Dialogs push a history entry so the phone's back button closes them.
+function openModal(dialog, flag) {
+  if (dialog.open) return;
+  dialog.showModal();
+  document.documentElement.classList.add("lock");
+  try { history.pushState({ ...(history.state || {}), [flag]: true }, ""); } catch { /* ignore */ }
+}
+for (const [id, flag] of [["check", "check"], ["shot", "shot"]]) {
+  const dialog = $(id);
+  dialog.addEventListener("close", () => {
+    if (!$("check").open && !$("shot").open) document.documentElement.classList.remove("lock");
+    if (history.state?.[flag]) history.back();
+  });
+  dialog.addEventListener("click", (event) => {
+    if (event.target === event.currentTarget && id === "check") event.currentTarget.close(); // tap on the backdrop
+  });
+}
 window.addEventListener("popstate", () => {
-  if ($("check").open) $("check").close();
+  if ($("shot").open && !history.state?.shot) $("shot").close();
+  if ($("check").open && !history.state?.check) $("check").close();
 });
+
+// ---------- 核准查看: the real SWS list page, as a screenshot ----------
+// The update workflow opens each unit's List page in SWS and saves a 3840 px wide screenshot
+// (sws/<UNIT>.png) plus where each row sits on it (sws/index.json).
+const SHOT_BASES = ["sws/", "https://raw.githubusercontent.com/NingLoke/ling/main/sws/"];
+let shots = null; // { base, index }
+let showMarks = true;
+let fitShot = false;
+
+async function loadShots() {
+  if (shots) return shots;
+  let lastError = null;
+  for (const base of SHOT_BASES) {
+    try {
+      const response = await fetch(`${base}index.json?t=${Math.floor(Date.now() / 600000)}`, { cache: "no-store" });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      shots = { base, index: await response.json() };
+      return shots;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError;
+}
+
+async function openShot(code, focusId = null) {
+  const dialog = $("shot");
+  const unit = unitOf(code);
+  const sub = h("p", null, "正在载入 SWS 截图…");
+  const body = h("div", { class: "shot-body" }, h("p", { class: "shot-wait" }, "载入中…"));
+  dialog.replaceChildren(
+    h("div", { class: "sheet-head" },
+      seal(code),
+      h("div", { class: "sheet-title" }, h("h2", { id: "shot-title" }, `核准 ${unit.short || unit.name}`), sub),
+      h("button", { class: "mini-btn", type: "button", onclick: () => dialog.close() }, "关闭")),
+    body);
+  openModal(dialog, "shot");
+
+  let loaded;
+  try {
+    loaded = await loadShots();
+  } catch {
+    sub.textContent = unit.code;
+    body.replaceChildren(h("div", { class: "shot-wait" }, h("p", null, "暂时载入不了截图，检查一下网络再试。"),
+      h("button", { class: "mini-btn primary", type: "button", onclick: () => openShot(code, focusId) }, "重试")));
+    return;
+  }
+  const shot = loaded.index?.units?.[code];
+  if (!shot) {
+    sub.textContent = unit.code;
+    body.replaceChildren(h("div", { class: "shot-wait" },
+      h("p", null, "这一科的 SWS 截图还没准备好，下一次自动检查（每天 06:17、18:17）会补上。"),
+      h("button", { class: "mini-btn", type: "button", onclick: () => openCheck(code) }, "自己去 SWS 查")));
+    return;
+  }
+
+  const when = core.malaysiaNow(new Date(shot.capturedAt));
+  sub.textContent = `${shot.label} · 截于 ${core.formatDateZh(when.iso)} ${core.fmtTime(when.minutes)}`;
+  const mine = new Set(data.events.filter((e) => e.unit === code).map((e) => e.id));
+  const pageWidth = shot.width / shot.scale;
+  const pageHeight = shot.height / shot.scale;
+  const src = `${loaded.base}${shot.image}?v=${shot.hash}`;
+  const img = h("img", { src, alt: `Curtin SWS 上 ${shot.label} 的 List 页面截图`, width: String(shot.width), height: String(shot.height), decoding: "async" });
+  const marks = shot.rows.filter((row) => mine.has(row.id)).map((row) => {
+    const mark = h("i", { class: `shot-mark${row.id === focusId ? " focus" : ""}`, "aria-hidden": "true" });
+    mark.style.left = `${(row.x / pageWidth) * 100}%`;
+    mark.style.top = `${(row.y / pageHeight) * 100}%`;
+    mark.style.width = `${(row.w / pageWidth) * 100}%`;
+    mark.style.height = `${(row.h / pageHeight) * 100}%`;
+    return mark;
+  });
+  const frame = h("div", { class: "shot-frame" }, img, marks);
+  const stage = h("div", { class: "shot-stage", tabindex: "0", "aria-label": "SWS 截图，可以滚动" }, frame);
+  const markBtn = h("button", { class: "mini-btn", type: "button" });
+  const fitBtn = h("button", { class: "mini-btn", type: "button" });
+  const apply = () => {
+    frame.style.width = fitShot ? "100%" : `${Math.round(pageWidth)}px`;
+    stage.classList.toggle("hide-marks", !showMarks);
+    markBtn.setAttribute("aria-pressed", String(showMarks));
+    markBtn.textContent = showMarks ? `框出我的课（${marks.length} 行）` : "不框";
+    fitBtn.textContent = fitShot ? "看原大" : "看全图";
+  };
+  const scrollToMark = () => {
+    const target = marks.find((m) => m.classList.contains("focus")) || marks[0];
+    if (!target || fitShot) return;
+    stage.scrollTop = Math.max(0, target.offsetTop - stage.clientHeight / 3);
+    stage.scrollLeft = 0;
+  };
+  markBtn.addEventListener("click", () => { showMarks = !showMarks; apply(); });
+  fitBtn.addEventListener("click", () => { fitShot = !fitShot; apply(); scrollToMark(); });
+  apply();
+  body.replaceChildren(
+    h("div", { class: "shot-tools" },
+      markBtn, fitBtn,
+      h("a", { class: "mini-btn", href: src, target: "_blank", rel: "noopener" }, "打开原图 ↗"),
+      h("button", { class: "mini-btn", type: "button", onclick: () => openCheck(code) }, "自己去 SWS 查")),
+    stage,
+    h("p", { class: "shot-note" }, `SWS 官网 List 页面原样截图，没有修改过。黄色框是网站加的，标出 ${CLASS} 用到的 ${marks.length} 行。`));
+  if (img.complete) scrollToMark();
+  else img.addEventListener("load", scrollToMark, { once: true });
+}
 
 // ---------- footer ----------
 function renderFooter(now) {
