@@ -366,6 +366,29 @@ const DEFAULT_THEME = {
 
 let current = null; // only one overlay at a time
 
+/**
+ * How many px at the bottom of the screen are covered by something drawn on top of `layer`
+ * (hosts can float a badge there, e.g. Netlify's "Powered by Netlify" on free projects).
+ */
+export function coveredBottom(layer) {
+  if (typeof document.elementsFromPoint !== "function") return 0;
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  let covered = 0;
+  for (let dy = 4; dy <= 100; dy += 24) {
+    const y = height - dy;
+    for (let fx = 0.06; fx < 1; fx += 0.08) {
+      for (const el of document.elementsFromPoint(width * fx, y)) {
+        if (layer.contains(el) || el === document.body || el === document.documentElement) break;
+        const box = el.getBoundingClientRect();
+        const top = box.height > 0 && box.top > height / 2 ? box.top : y - 8;
+        covered = Math.max(covered, height - top);
+      }
+    }
+  }
+  return Math.min(140, Math.ceil(covered));
+}
+
 const CSS = `
 .tt-overlay{position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;
   background:var(--tt-bg);color:var(--tt-text);font-family:var(--tt-font);font-size:14px;line-height:1.3;
@@ -683,9 +706,13 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "ä¿
     width: body.style.width,
     overflow: body.style.overflow,
   };
+  body.append(overlay);
+  // Measure anything the host floats over the bottom of the screen before the page goes inert
+  // (inert elements are invisible to hit testing, but still drawn on top of us).
+  const hostCovered = coveredBottom(overlay);
   const inerted = [];
   for (const child of body.children) {
-    if (!child.inert && child.tagName !== "SCRIPT") {
+    if (child !== overlay && !child.inert && child.tagName !== "SCRIPT") {
       child.inert = true;
       inerted.push(child);
     }
@@ -697,7 +724,6 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "ä¿
   body.style.right = "0";
   body.style.width = "100%";
   body.style.overflow = "hidden";
-  body.append(overlay);
 
   // Android back button / gesture closes the overlay.
   let historyPushed = false;
@@ -719,6 +745,8 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "ä¿
   let slots = 3;
 
   function layout() {
+    // Keep the touch buttons clear of anything the host floats over the bottom of the screen.
+    overlay.style.paddingBottom = hostCovered ? `calc(max(10px, env(safe-area-inset-bottom)) + ${hostCovered + 8}px)` : "";
     const rect = main.getBoundingClientRect();
     const gap = 10;
     const sideCells = 3.7;

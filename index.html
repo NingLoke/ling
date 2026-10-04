@@ -67,7 +67,7 @@ a { color: inherit; }
   padding:
     calc(env(safe-area-inset-top) + 8px)
     calc(env(safe-area-inset-right) + var(--gutter))
-    calc(env(safe-area-inset-bottom) + 28px)
+    calc(env(safe-area-inset-bottom) + 28px + var(--host-inset, 0px))
     calc(env(safe-area-inset-left) + var(--gutter));
 }
 
@@ -311,7 +311,7 @@ dialog.sheet::backdrop { background: rgba(29, 28, 26, .4); }
 .sheet-title { min-width: 0; margin-right: auto; }
 .sheet-title h2 { font-family: var(--serif); font-weight: 700; font-size: 18px; line-height: 1.3; }
 .sheet-title p { font-size: 12.5px; color: var(--ink-3); overflow-wrap: anywhere; }
-.sheet-body { padding: 16px 16px calc(env(safe-area-inset-bottom) + 22px); }
+.sheet-body { padding: 16px 16px calc(env(safe-area-inset-bottom) + 22px + var(--host-inset, 0px)); }
 .steps { margin: 0; padding-left: 22px; display: grid; gap: 12px; font-size: 14px; line-height: 1.6; }
 .steps b { font-weight: 600; }
 .step-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
@@ -354,7 +354,7 @@ dialog.viewer .sheet-head { position: static; padding-top: calc(env(safe-area-in
 .shot-mark { position: absolute; border: 2px solid #e0a800; background: rgba(255, 214, 0, .2); border-radius: 3px; pointer-events: none; }
 .shot-mark.focus { border-color: var(--seal); background: rgba(181, 65, 46, .14); box-shadow: 0 0 0 3px rgba(181, 65, 46, .22); }
 .hide-marks .shot-mark { display: none; }
-.shot-note { margin: 0; padding: 10px 16px calc(env(safe-area-inset-bottom) + 12px); font-size: 12.5px; color: var(--ink-3); line-height: 1.6; border-top: 1px solid var(--line); }
+.shot-note { margin: 0; padding: 10px 16px calc(env(safe-area-inset-bottom) + 12px + var(--host-inset, 0px)); font-size: 12.5px; color: var(--ink-3); line-height: 1.6; border-top: 1px solid var(--line); }
 .shot-wait { padding: 30px 20px; text-align: center; color: var(--ink-2); font-size: 14px; }
 .shot-wait p { margin-bottom: 14px; }
 @media (min-width: 900px) {
@@ -390,7 +390,7 @@ dialog.viewer .sheet-head { position: static; padding-top: calc(env(safe-area-in
   color: var(--on-ink); cursor: pointer; font-size: 15px;
 }
 .toast {
-  position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 18px); z-index: 50;
+  position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 18px + var(--host-inset, 0px)); z-index: 50;
   transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
   padding: 10px 16px; border-radius: 999px; background: var(--ink); color: var(--on-ink); font-size: 14px;
   box-shadow: 0 10px 30px -12px rgba(0, 0, 0, .5); transition: opacity .25s, transform .25s;
@@ -1270,10 +1270,40 @@ const doRefresh = () => {
 };
 setInterval(renderAll, 30 * 1000);
 setInterval(doRefresh, 30 * 60 * 1000);
+// Some hosts float a badge over the bottom of the page (Netlify's "Powered by Netlify" on free
+// projects). Measure it and pad the page so the footer and the game button stay reachable.
+function fitAroundHostBadge() {
+  if (document.querySelector("dialog[open], .tt-overlay")) return;
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  const app = document.querySelector(".app");
+  let covered = 0;
+  for (let dy = 4; dy <= 100; dy += 24) {
+    const y = height - dy;
+    for (let fx = 0.06; fx < 1; fx += 0.08) {
+      for (const el of document.elementsFromPoint(width * fx, y)) {
+        if (app.contains(el) || el === document.body || el === document.documentElement) break;
+        const box = el.getBoundingClientRect();
+        const top = box.height > 0 && box.top > height / 2 ? box.top : y - 8;
+        covered = Math.max(covered, height - top);
+      }
+    }
+  }
+  document.documentElement.style.setProperty("--host-inset", `${Math.min(140, Math.ceil(covered))}px`);
+}
+window.addEventListener("load", () => {
+  fitAroundHostBadge();
+  setTimeout(fitAroundHostBadge, 1500); // badges can be injected late
+  setTimeout(fitAroundHostBadge, 5000);
+});
+
 let resizeTimer = 0;
 window.addEventListener("resize", () => {
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => { if (data && view === "week") renderSchedule(getNow()); }, 150);
+  resizeTimer = setTimeout(() => {
+    fitAroundHostBadge();
+    if (data && view === "week") renderSchedule(getNow());
+  }, 150);
 });
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) return;
