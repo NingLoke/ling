@@ -1,586 +1,992 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>2E3 课表</title>
-  <style>
-    :root {
-      --bg: #f7f7f5;
-      --card-bg: #ffffff;
-      --ink: #111111;
-      --ink-muted: #555555;
-      --ink-light: #888888;
-      --border: #222222;
-      --border-light: #d8d8d4;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2E3 课表</title>
+<meta name="description" content="Curtin Malaysia 2E3 课表：现在上什么课、下一节在哪里。">
+<meta name="theme-color" content="#f3efe6">
+<meta name="color-scheme" content="light">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="2E3 课表">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap&text=%E8%AF%BE%E8%A1%A8">
+<style>
+:root {
+  --paper: #f3efe6;
+  --paper-hi: #f9f6ef;
+  --ink: #1d1c1a;
+  --ink-2: #4f4b45;
+  --ink-3: #6b665d;
+  --wash: rgba(29, 28, 26, .045);
+  --wash-2: rgba(29, 28, 26, .08);
+  --line: rgba(29, 28, 26, .12);
+  --line-2: rgba(29, 28, 26, .22);
+  --seal: #b5412e;
+  --seal-wash: rgba(181, 65, 46, .07);
+  --on-ink: #f8f4ec;
+  --serif: "Noto Serif SC", "Songti SC", "STSong", "SimSun", serif;
+  --sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", Roboto, "Segoe UI", sans-serif;
+  --brush: "Ma Shan Zheng", var(--serif);
+  --radius: 16px;
+  --gutter: 16px;
+  --hour: 56px;
+}
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      -webkit-tap-highlight-color: transparent;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-    }
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--paper);
+  /* very faint paper grain */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .11 0 0 0 0 .1 0 0 0 0 .09 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+button { font: inherit; color: inherit; }
+h1, h2, h3, p { margin: 0; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--seal); outline-offset: 2px; border-radius: 8px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.num { font-family: var(--serif); font-variant-numeric: tabular-nums lining-nums; }
 
-    body {
-      background: var(--bg);
-      color: var(--ink);
-      padding: env(safe-area-inset-top, 14px) 14px calc(env(safe-area-inset-bottom, 20px) + 20px) 14px;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-    }
+.app {
+  max-width: 560px;
+  margin: 0 auto;
+  padding:
+    calc(env(safe-area-inset-top) + 8px)
+    calc(env(safe-area-inset-right) + var(--gutter))
+    calc(env(safe-area-inset-bottom) + 28px)
+    calc(env(safe-area-inset-left) + var(--gutter));
+}
 
-    .app {
-      width: 100%;
-      max-width: 520px;
-    }
+/* ---------- masthead ---------- */
+.mast { position: relative; padding: 22px 0 20px; isolation: isolate; }
+.mist {
+  position: absolute; z-index: -1; pointer-events: none;
+  top: 0; right: calc(-1 * var(--gutter)); width: min(118%, 560px); height: 150px;
+}
+.kicker { font-size: 12px; letter-spacing: .14em; color: var(--ink-3); }
+.title-row { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
+.title {
+  font-family: var(--serif); font-weight: 700; font-size: 46px; line-height: 1.05; letter-spacing: .02em;
+}
+.stamp {
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 30px; height: 46px; border-radius: 5px; background: var(--seal); color: var(--on-ink);
+  font-family: var(--brush); font-size: 17px; line-height: 1.05; transform: rotate(-4deg) translateY(2px);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .16), 0 1px 0 rgba(0, 0, 0, .08);
+}
+.today-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin-top: 12px; }
+.today-date { font-family: var(--serif); font-weight: 500; font-size: 17px; }
+.chip {
+  display: inline-flex; align-items: center; min-height: 26px; padding: 0 10px; border-radius: 999px;
+  border: 1px solid var(--line-2); font-size: 13px; color: var(--ink-2); background: rgba(249, 246, 239, .6);
+}
+.chip:empty { display: none; }
 
-    
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      padding-bottom: 12px;
-      border-bottom: 2px solid var(--border);
-      margin-bottom: 12px;
-    }
+/* ---------- now card ---------- */
+.now {
+  position: relative; overflow: hidden;
+  min-height: 196px; padding: 18px 18px 16px;
+  border-radius: 20px; background: var(--paper-hi);
+  border: 1px solid var(--line);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .7) inset, 0 12px 30px -24px rgba(29, 28, 26, .45);
+}
+.now::after { /* an ink wash in the corner */
+  content: ""; position: absolute; right: -60px; bottom: -70px; width: 220px; height: 180px; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(29, 28, 26, .06), transparent); border-radius: 50%;
+}
+.now[data-kind="live"] { border-color: rgba(181, 65, 46, .45); }
+.now-label { display: flex; align-items: center; gap: 8px; font-size: 13px; letter-spacing: .08em; color: var(--ink-2); }
+.now-label .when { margin-left: auto; letter-spacing: 0; color: var(--ink-3); font-size: 13px; }
+.now[data-kind="live"] .now-label > span:first-of-type { color: var(--seal); font-weight: 600; }
+.pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--seal); box-shadow: 0 0 0 0 rgba(181, 65, 46, .4); animation: pulse 2.4s ease-out infinite; }
+.calm-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); opacity: .55; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(181, 65, 46, .38); } 70%, 100% { box-shadow: 0 0 0 9px rgba(181, 65, 46, 0); } }
+.now-caption { margin-top: 14px; font-size: 13px; color: var(--ink-3); }
+.now-big { margin-top: 12px; font-family: var(--serif); font-weight: 500; font-size: 28px; line-height: 1.2; letter-spacing: .01em; }
+.now-big small { font-size: 15px; color: var(--ink-2); margin-right: 6px; font-family: var(--sans); font-weight: 400; }
+.now .lesson-head { margin-top: 12px; }
+.now .rooms { margin-top: 8px; }
+.now-after { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line-2); font-size: 14px; color: var(--ink-2); }
+.now-after b { font-family: var(--serif); font-weight: 500; color: var(--ink); margin: 0 4px; }
+.now-quiet { margin-top: 16px; display: flex; align-items: center; gap: 14px; color: var(--ink-2); }
+.now-quiet svg { width: 54px; height: 54px; flex: none; }
+.now-title { font-family: var(--serif); font-weight: 700; font-size: 22px; color: var(--ink); }
+.link-btn {
+  display: inline-flex; align-items: center; gap: 4px; min-height: 44px; margin: 6px -8px -10px auto; padding: 0 8px;
+  border: 0; background: none; color: var(--ink-2); font-size: 13px; cursor: pointer; border-radius: 10px;
+}
+.link-btn:hover { color: var(--seal); }
+.now-foot { display: flex; }
+.bar { position: relative; height: 4px; margin-top: 12px; border-radius: 4px; background: var(--wash-2); overflow: hidden; }
+.bar i { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: var(--seal); }
 
-    .title {
-      font-size: 20px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-    }
+/* ---------- lesson pieces (shared by cards) ---------- */
+.lesson-head { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.seal {
+  flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 7px;
+  background: var(--tone, var(--ink)); color: var(--on-ink);
+  font-family: var(--serif); font-weight: 700; font-size: 18px; line-height: 1;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .12);
+}
+.seal.lg { width: 46px; height: 46px; font-size: 25px; border-radius: 9px; }
+.unit-name { min-width: 0; }
+.unit-name h3 { font-family: var(--serif); font-weight: 700; font-size: 18px; line-height: 1.3; overflow-wrap: anywhere; }
+.now .unit-name h3 { font-size: 22px; }
+.unit-name .sub { font-size: 13px; color: var(--ink-3); line-height: 1.4; }
+.rooms { display: grid; gap: 2px; font-size: 14px; color: var(--ink-2); }
+.rooms span { display: flex; align-items: flex-start; gap: 6px; overflow-wrap: anywhere; }
+.rooms svg { flex: none; width: 14px; height: 14px; margin-top: 3px; color: var(--ink-3); }
 
-    .date-badge {
-      font-size: 13px;
-      color: var(--ink-muted);
-      font-weight: 600;
-    }
+/* ---------- schedule ---------- */
+.sched { margin-top: 26px; min-height: 420px; }
+.sched-top { display: flex; align-items: center; gap: 8px; }
+.sec-title { font-family: var(--serif); font-weight: 700; font-size: 20px; letter-spacing: .08em; margin-right: auto; }
+.back-btn {
+  min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(181, 65, 46, .35);
+  background: var(--seal-wash); color: var(--seal); font-size: 13px; cursor: pointer; white-space: nowrap;
+}
+.back-btn[hidden] { display: none; }
+.seg { display: inline-flex; padding: 2px; border-radius: 999px; background: var(--wash-2); }
+.seg button {
+  min-width: 48px; min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent;
+  color: var(--ink-2); font-size: 14px; cursor: pointer;
+}
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+.weeknav { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 4px; margin-top: 12px; }
+.icon-btn {
+  width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--paper-hi); color: var(--ink); cursor: pointer;
+}
+.icon-btn:disabled { opacity: .35; cursor: default; }
+.icon-btn svg { width: 18px; height: 18px; }
+.week-label { text-align: center; font-size: 15px; color: var(--ink-2); line-height: 1.3; }
+.week-label b { font-family: var(--serif); font-weight: 700; color: var(--ink); font-size: 16px; margin-right: 2px; }
 
-    
-    .status-bar {
-      border: 1.5px solid var(--border);
-      background: var(--card-bg);
-      border-radius: 6px;
-      padding: 8px 12px;
-      margin-bottom: 12px;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 6px 10px;
-    }
+.days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; margin-top: 12px; }
+.day {
+  position: relative; min-height: 66px; padding: 6px 0 8px; border: 1px solid transparent; border-radius: 14px;
+  background: transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 1px;
+}
+.day .dn { font-size: 12px; color: var(--ink-3); }
+.day .dd { font-family: var(--serif); font-weight: 500; font-size: 19px; line-height: 1.25; }
+.day .dots { display: flex; gap: 3px; height: 6px; margin-top: 3px; }
+.day .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--ink-3); opacity: .7; }
+.day.weekend .dd { color: var(--ink-3); }
+.day.today .dd, .day.today .dn { color: var(--seal); }
+.day.today::after { content: ""; position: absolute; top: 5px; right: 7px; width: 5px; height: 5px; border-radius: 50%; background: var(--seal); }
+.day[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); }
+.day[aria-pressed="true"] .dn, .day[aria-pressed="true"] .dd { color: var(--on-ink); }
+.day[aria-pressed="true"] .dots i { background: var(--on-ink); opacity: .8; }
+.day[aria-pressed="true"].today::after { background: #f0a493; }
+.day:not([aria-pressed="true"]):hover { background: var(--wash); }
 
-    .status-tag {
-      background: var(--ink);
-      color: #fff;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 3px;
-      letter-spacing: 0.5px;
-    }
+.dayhead { display: flex; align-items: baseline; gap: 8px; margin: 18px 2px 10px; font-size: 14px; color: var(--ink-3); }
+.dayhead strong { font-family: var(--serif); font-weight: 700; font-size: 17px; color: var(--ink); }
+.dayhead .tag { color: var(--seal); }
+.list { display: grid; gap: 10px; }
+.card {
+  display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 12px;
+  padding: 14px 14px 14px 12px; border-radius: var(--radius);
+  background: var(--paper-hi); border: 1px solid var(--line); position: relative;
+  scroll-margin: 90px;
+}
+.card::before { /* brush stroke in the subject's ink */
+  content: ""; position: absolute; left: -1px; top: 14px; bottom: 14px; width: 3px; border-radius: 3px;
+  background: var(--tone, var(--ink)); opacity: .55;
+}
+.card .t { display: flex; flex-direction: column; align-items: flex-start; }
+.card .t .s { font-family: var(--serif); font-weight: 700; font-size: 18px; line-height: 1.25; }
+.card .t .e { font-family: var(--serif); font-size: 14px; color: var(--ink-3); }
+.card .t .d { margin-top: 4px; font-size: 12px; color: var(--ink-3); }
+.card .rooms { margin-top: 8px; }
+.card .staff { margin-top: 6px; font-size: 12.5px; color: var(--ink-3); overflow-wrap: anywhere; }
+.card.live { border-color: rgba(181, 65, 46, .5); background: linear-gradient(180deg, var(--seal-wash), transparent 70%), var(--paper-hi); }
+.card.live::before { background: var(--seal); opacity: 1; }
+.card .live-meta { margin-top: 10px; font-size: 13px; color: var(--seal); }
+.card .live-meta .bar { margin-top: 6px; }
+.card.past { background: transparent; border-style: dashed; }
+.card.past::before, .card.past .seal { opacity: .4; }
+.card.past .unit-name h3 { color: var(--ink-2); }
+.card .done-tag { font-size: 12px; color: var(--ink-3); margin-top: 6px; }
+.card.flash { animation: flash 1.4s ease-out; }
+@keyframes flash { 0% { box-shadow: 0 0 0 3px rgba(181, 65, 46, .45); } 100% { box-shadow: 0 0 0 3px rgba(181, 65, 46, 0); } }
+.gap {
+  display: flex; align-items: center; gap: 10px; padding: 0 6px; font-size: 12.5px; color: var(--ink-3);
+}
+.gap::before, .gap::after { content: ""; flex: 1; height: 1px; background: repeating-linear-gradient(90deg, var(--line-2) 0 6px, transparent 6px 11px); }
+.empty { padding: 34px 12px 30px; text-align: center; color: var(--ink-3); border-radius: var(--radius); border: 1px dashed var(--line-2); }
+.empty svg { width: 76px; height: 76px; display: block; margin: 0 auto 10px; }
+.empty strong { display: block; font-family: var(--serif); font-weight: 700; font-size: 17px; color: var(--ink-2); margin-bottom: 2px; }
 
-    .status-main {
-      font-size: 13px;
-      font-weight: 700;
-    }
+/* week grid */
+.wk { margin-top: 14px; }
+.wk-head, .wk-body { display: grid; grid-template-columns: 30px repeat(var(--cols), minmax(0, 1fr)); }
+.wk-head { position: sticky; top: 0; z-index: 2; background: var(--paper); padding: 4px 0 6px; border-bottom: 1px solid var(--line); }
+.wk-head div { text-align: center; font-size: 12px; color: var(--ink-3); line-height: 1.25; }
+.wk-head div b { display: block; font-family: var(--serif); font-weight: 500; font-size: 15px; color: var(--ink); }
+.wk-head .today, .wk-head .today b { color: var(--seal); }
+.wk-body { position: relative; }
+.wk-axis { position: relative; }
+.wk-axis span { position: absolute; right: 6px; transform: translateY(-50%); font-size: 10.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.wk-col { position: relative; border-left: 1px solid var(--line); }
+.wk-col.today { background: linear-gradient(180deg, var(--seal-wash), rgba(181, 65, 46, .02)); }
+.wk-lines { position: absolute; inset: 0 0 0 30px; pointer-events: none; }
+.wk-lines i { position: absolute; left: 0; right: 0; height: 1px; background: var(--line); opacity: .6; }
+.blk {
+  position: absolute; left: 2px; right: 2px; padding: 4px 4px 3px 6px; overflow: hidden; text-align: left;
+  border: 0; border-radius: 8px; cursor: pointer; color: var(--ink);
+  background: var(--tint); box-shadow: inset 3px 0 0 var(--tone);
+  display: flex; flex-direction: column; gap: 1px; font-size: 10.5px; line-height: 1.25;
+}
+.blk b { font-family: var(--serif); font-weight: 700; font-size: 11.5px; line-height: 1.2; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.blk span { color: var(--ink-2); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.blk.live { box-shadow: inset 3px 0 0 var(--seal), 0 0 0 1.5px var(--seal); }
+.blk.past { opacity: .55; }
+.blk:hover { filter: brightness(.97); }
+.now-line { position: absolute; left: 0; right: 0; height: 0; border-top: 1.5px solid var(--seal); z-index: 1; pointer-events: none; }
+.now-line::before { content: ""; position: absolute; left: -4px; top: -4.75px; width: 8px; height: 8px; border-radius: 50%; background: var(--seal); }
+.wk-note { margin-top: 10px; font-size: 12.5px; color: var(--ink-3); text-align: center; }
 
-    .status-sub {
-      font-size: 12px;
-      color: var(--ink-muted);
-    }
+/* ---------- units ---------- */
+.units { margin-top: 28px; border-top: 1px solid var(--line); }
+.units summary {
+  list-style: none; display: flex; align-items: center; gap: 8px; min-height: 52px; cursor: pointer;
+  font-family: var(--serif); font-weight: 700; font-size: 18px; letter-spacing: .08em;
+}
+.units summary::-webkit-details-marker { display: none; }
+.units summary .count { font-family: var(--sans); font-weight: 400; font-size: 13px; color: var(--ink-3); letter-spacing: 0; }
+.units summary svg { margin-left: auto; width: 18px; height: 18px; color: var(--ink-3); transition: transform .2s; }
+.units[open] summary svg { transform: rotate(180deg); }
+.unit-list { display: grid; gap: 14px; padding: 4px 0 8px; }
+.unit-row { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; }
+.unit-row h3 { font-family: var(--serif); font-weight: 700; font-size: 16px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+.unit-row h3 small { font-family: var(--sans); font-weight: 400; font-size: 12px; color: var(--ink-3); letter-spacing: .04em; }
+.unit-row p { font-size: 13px; color: var(--ink-2); line-height: 1.5; overflow-wrap: anywhere; }
+.unit-row p span { color: var(--ink-3); }
 
-    
-    .nav-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
+/* ---------- footer ---------- */
+.foot { margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--ink-3); line-height: 1.7; }
+.foot p + p { margin-top: 2px; }
+.foot .note { color: var(--ink-2); }
+.foot .note:empty { display: none; }
+.foot-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; }
+.foot a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; }
+.foot a span { border-bottom: 1px solid var(--line-2); }
+.foot #fresh span { white-space: nowrap; }
+.foot a:hover { color: var(--seal); }
+.foot a:hover span { border-color: currentColor; }
+.egg {
+  width: 44px; height: 44px; margin-right: -12px; display: grid; place-items: center; border: 0; background: none;
+  color: var(--ink); opacity: .32; cursor: pointer; border-radius: 10px;
+}
+.egg:hover, .egg:focus-visible { opacity: .7; }
+.egg svg { width: 13px; height: 13px; }
 
-    .view-toggle {
-      display: flex;
-      border: 1.5px solid var(--border);
-      border-radius: 6px;
-      overflow: hidden;
-      background: var(--card-bg);
-    }
+/* ---------- error / toast ---------- */
+.problem { text-align: center; padding: 14px 6px 4px; }
+.problem p { color: var(--ink-2); margin: 6px 0 14px; font-size: 14px; }
+.btn {
+  min-height: 44px; padding: 0 20px; border-radius: 999px; border: 1px solid var(--ink); background: var(--ink);
+  color: var(--on-ink); cursor: pointer; font-size: 15px;
+}
+.toast {
+  position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 18px); z-index: 50;
+  transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+  padding: 10px 16px; border-radius: 999px; background: var(--ink); color: var(--on-ink); font-size: 14px;
+  box-shadow: 0 10px 30px -12px rgba(0, 0, 0, .5); transition: opacity .25s, transform .25s;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+[hidden] { display: none !important; }
 
-    .toggle-btn {
-      border: none;
-      background: transparent;
-      padding: 5px 12px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      color: var(--ink-muted);
-    }
-
-    .toggle-btn.active {
-      background: var(--ink);
-      color: #ffffff;
-    }
-
-    .today-jump-btn {
-      border: 1px solid var(--border-light);
-      background: var(--card-bg);
-      padding: 4px 10px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 600;
-      cursor: pointer;
-      color: var(--ink);
-    }
-
-    
-    .day-selector {
-      display: grid;
-      grid-template-columns: repeat(7, minmax(0, 1fr));
-      gap: 4px;
-      margin-bottom: 14px;
-      width: 100%;
-    }
-
-    .day-btn {
-      min-width: 0;
-      border: 1.5px solid var(--border-light);
-      background: var(--card-bg);
-      border-radius: 6px;
-      padding: 6px 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-
-    .day-btn .name {
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .day-btn .info {
-      font-size: 9px;
-      font-weight: 600;
-      color: var(--ink-light);
-      margin-top: 1px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 100%;
-      padding: 0 1px;
-    }
-
-    .day-btn.active {
-      border-color: var(--border);
-      background: var(--ink);
-      color: #ffffff;
-    }
-
-    .day-btn.active .info {
-      color: #cccccc;
-    }
-
-    .day-btn.is-today:not(.active) {
-      border-color: var(--border);
-      background: #eeeeea;
-    }
-
-    
-    .timeline {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .course-card {
-      border: 1.5px solid var(--border);
-      background: var(--card-bg);
-      border-radius: 6px;
-      padding: 12px 14px;
-    }
-
-    .card-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 6px;
-    }
-
-    .time-txt {
-      font-size: 16px;
-      font-weight: 800;
-      font-variant-numeric: tabular-nums;
-      letter-spacing: -0.3px;
-    }
-
-    .type-pill {
-      font-size: 11px;
-      font-weight: 700;
-      border: 1px solid var(--border);
-      padding: 1px 6px;
-      border-radius: 3px;
-      text-transform: uppercase;
-    }
-
-    .course-name {
-      font-size: 16px;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-
-    .course-meta {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-      color: var(--ink-muted);
-      border-top: 1px dashed var(--border-light);
-      padding-top: 6px;
-      margin-top: 4px;
-    }
-
-    .loc-txt {
-      font-weight: 600;
-      color: var(--ink);
-    }
-
-    
-    .gap-card {
-      text-align: center;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--ink-light);
-      padding: 6px 0;
-      position: relative;
-    }
-
-    .gap-card::before, .gap-card::after {
-      content: "";
-      position: absolute;
-      top: 50%;
-      width: 25%;
-      height: 1px;
-      background: var(--border-light);
-    }
-    .gap-card::before { left: 5%; }
-    .gap-card::after { right: 5%; }
-
-    
-    .empty-state {
-      border: 1.5px dashed var(--border-light);
-      background: var(--card-bg);
-      border-radius: 6px;
-      padding: 40px 14px;
-      text-align: center;
-      color: var(--ink-muted);
-      font-size: 13px;
-      font-weight: 600;
-    }
-
-    
-    .week-view {
-      display: none;
-      background: var(--card-bg);
-      border: 1.5px solid var(--border);
-      border-radius: 6px;
-      overflow-x: auto;
-    }
-
-    .week-table {
-      width: 100%;
-      min-width: 560px;
-      border-collapse: collapse;
-    }
-
-    .week-th {
-      border-bottom: 1.5px solid var(--border);
-      border-right: 1px solid var(--border-light);
-      padding: 8px 4px;
-      font-size: 12px;
-      font-weight: 700;
-      background: #f0f0ee;
-      text-align: center;
-    }
-    .week-th:last-child { border-right: none; }
-
-    .week-td {
-      border-right: 1px solid var(--border-light);
-      vertical-align: top;
-      padding: 6px 4px;
-      width: 20%;
-    }
-    .week-td:last-child { border-right: none; }
-
-    .mini-box {
-      border: 1px solid var(--border);
-      background: #ffffff;
-      border-radius: 4px;
-      padding: 5px;
-      margin-bottom: 6px;
-      font-size: 11px;
-    }
-
-    .mini-time {
-      font-weight: 700;
-      font-size: 10px;
-      color: var(--ink-muted);
-      margin-bottom: 2px;
-    }
-
-    .mini-name {
-      font-weight: 700;
-      line-height: 1.2;
-      margin-bottom: 2px;
-    }
-
-    .mini-loc {
-      font-size: 9px;
-      color: var(--ink-light);
-    }
-  </style>
+/* ---------- wider screens ---------- */
+@media (min-width: 600px) {
+  :root { --gutter: 24px; --hour: 60px; }
+  .title { font-size: 52px; }
+}
+@media (min-width: 900px) {
+  .app {
+    max-width: 1140px;
+    display: grid; grid-template-columns: 360px minmax(0, 1fr); grid-template-rows: auto auto auto 1fr;
+    column-gap: 48px; padding-top: calc(env(safe-area-inset-top) + 24px);
+  }
+  .mast { grid-column: 1; grid-row: 1; }
+  .now { grid-column: 1; grid-row: 2; }
+  .units { grid-column: 1; grid-row: 3; }
+  .foot { grid-column: 1; grid-row: 4; align-self: start; }
+  .sched { grid-column: 2; grid-row: 1 / span 4; margin-top: 30px; }
+  .mist { right: -40px; width: 460px; }
+  .wk-head { top: 0; }
+  :root { --hour: 64px; }
+}
+@media (max-width: 345px) {
+  :root { --gutter: 12px; }
+  .title { font-size: 40px; }
+  .day .dd { font-size: 17px; }
+  .wk-head, .wk-body { grid-template-columns: 24px repeat(var(--cols), minmax(0, 1fr)); }
+  .wk-lines { left: 24px; }
+  .blk { padding-left: 5px; }
+  .blk b { font-size: 10.5px; }
+  .seg button { min-width: 44px; padding: 0 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+</style>
 </head>
 <body>
-
 <div class="app">
-
-  <div class="header">
-    <div class="title">2E3 TIMETABLE</div>
-    <div class="date-badge" id="headerDate">--</div>
-  </div>
-
-  <div class="status-bar" id="statusBar">
-    <span class="status-tag" id="statusTag"></span>
-    <span class="status-main" id="statusMain"></span>
-    <span class="status-sub" id="statusSub"></span>
-  </div>
-
-  <div class="nav-row">
-    <div class="view-toggle">
-      <button class="toggle-btn active" id="btnDayView" onclick="setViewMode('day')">按日</button>
-      <button class="toggle-btn" id="btnWeekView" onclick="setViewMode('week')">全周</button>
+  <header class="mast">
+    <svg class="mist" viewBox="0 0 460 150" preserveAspectRatio="xMaxYMin slice" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#1d1c1a" stop-opacity="1"/>
+          <stop offset="1" stop-color="#1d1c1a" stop-opacity="0"/>
+        </linearGradient>
+        <filter id="soft-far" x="-10%" y="-20%" width="120%" height="140%"><feGaussianBlur stdDeviation="3.2"/></filter>
+        <filter id="soft-near" x="-10%" y="-20%" width="120%" height="140%"><feGaussianBlur stdDeviation="1.1"/></filter>
+      </defs>
+      <circle cx="432" cy="24" r="12" fill="#b5412e" opacity=".2"/>
+      <path d="M90 128C130 104 160 66 200 82S258 52 300 72 360 30 404 62 446 68 460 64V150H90Z" fill="url(#fade)" opacity=".075" filter="url(#soft-far)"/>
+      <path d="M190 140C228 112 254 98 292 112S344 74 380 100 430 98 460 94V150H190Z" fill="url(#fade)" opacity=".11" filter="url(#soft-near)"/>
+      <path d="M300 150C324 130 350 122 376 132S424 118 460 124V150Z" fill="url(#fade)" opacity=".15"/>
+    </svg>
+    <p class="kicker">CURTIN MALAYSIA · <span id="semester">Semester Two</span></p>
+    <div class="title-row">
+      <h1 class="title" id="class-title">2E3</h1>
+      <span class="stamp" aria-hidden="true"><span>课</span><span>表</span></span>
     </div>
-    <button class="today-jump-btn" onclick="goToday()">回到今天</button>
-  </div>
-
-  <div id="dayViewContainer">
-    <div class="day-selector">
-      <button class="day-btn" id="d-0" onclick="selectDay(0)"><span class="name">一</span><span class="info">08:00</span></button>
-      <button class="day-btn" id="d-1" onclick="selectDay(1)"><span class="name">二</span><span class="info">08:00</span></button>
-      <button class="day-btn" id="d-2" onclick="selectDay(2)"><span class="name">三</span><span class="info">11:00</span></button>
-      <button class="day-btn" id="d-3" onclick="selectDay(3)"><span class="name">四</span><span class="info">11:00</span></button>
-      <button class="day-btn" id="d-4" onclick="selectDay(4)"><span class="name">五</span><span class="info">10:00</span></button>
-      <button class="day-btn" id="d-5" onclick="selectDay(5)"><span class="name">六</span><span class="info">无课</span></button>
-      <button class="day-btn" id="d-6" onclick="selectDay(6)"><span class="name">日</span><span class="info">无课</span></button>
+    <div class="today-row">
+      <span class="today-date" id="today"></span>
+      <span class="chip" id="week-chip"></span>
     </div>
+  </header>
 
-    <div class="timeline" id="timelineList"></div>
-  </div>
+  <section class="now" id="now" aria-label="此刻"></section>
 
-  <div class="week-view" id="weekViewContainer">
-    <table class="week-table">
-      <thead>
-        <tr>
-          <th class="week-th">周一</th>
-          <th class="week-th">周二</th>
-          <th class="week-th">周三</th>
-          <th class="week-th">周四</th>
-          <th class="week-th">周五</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td class="week-td" id="w-col-0"></td>
-          <td class="week-td" id="w-col-1"></td>
-          <td class="week-td" id="w-col-2"></td>
-          <td class="week-td" id="w-col-3"></td>
-          <td class="week-td" id="w-col-4"></td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  <section class="sched" id="sched" aria-label="课表">
+    <div class="sched-top">
+      <h2 class="sec-title">课表</h2>
+      <button class="back-btn" id="back" type="button" hidden>回到本周</button>
+      <div class="seg" role="group" aria-label="显示方式">
+        <button type="button" id="view-day" aria-pressed="true">日</button>
+        <button type="button" id="view-week" aria-pressed="false">周</button>
+      </div>
+    </div>
+    <div class="weeknav">
+      <button class="icon-btn" id="prev" type="button" aria-label="上一周">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <div class="week-label" id="week-label" aria-live="polite"></div>
+      <button class="icon-btn" id="next" type="button" aria-label="下一周">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+    <div class="days" id="days" aria-label="选择日期"></div>
+    <div id="day-view"></div>
+    <div id="week-view" hidden></div>
+  </section>
 
+  <details class="units" id="units">
+    <summary>科目 <span class="count" id="unit-count"></span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+    </summary>
+    <div class="unit-list" id="unit-list"></div>
+  </details>
+
+  <footer class="foot">
+    <p id="fresh">课表来自 Curtin SWS</p>
+    <p class="note" id="net-note"></p>
+    <div class="foot-row">
+      <a href="http://sws.curtin.edu.my" target="_blank" rel="noopener"><span>打开 Curtin SWS 官方课表</span></a>
+      <button class="egg" id="egg" type="button" aria-label="小游戏" title="小游戏">
+        <svg viewBox="0 0 13 13" fill="currentColor" aria-hidden="true"><rect x="0" y="0" width="4" height="4" rx=".6"/><rect x="4.5" y="0" width="4" height="4" rx=".6"/><rect x="9" y="0" width="4" height="4" rx=".6"/><rect x="4.5" y="4.5" width="4" height="4" rx=".6"/></svg>
+      </button>
+    </div>
+  </footer>
 </div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<noscript><p style="text-align:center;padding:20px">这个课表需要开启 JavaScript。</p></noscript>
 
-<script>
-  const SCHEDULE = {
-    "0": [
-      {"start": 480, "end": 600, "name": "Mathematics 2", "type": "Lecture", "loc": "SK3 102"},
-      {"start": 600, "end": 720, "name": "Physics 2", "type": "Lecture", "loc": "SK3 102"},
-      {"start": 780, "end": 900, "name": "Programming", "type": "Lecture", "loc": "Auditorium"},
-      {"start": 1020, "end": 1200, "name": "Academic English", "type": "Seminar", "loc": "LTCL 9 (HL2-109)"}
-    ],
-    "1": [
-      {"start": 480, "end": 570, "name": "Engineering Communication (ECS)", "type": "Seminar", "loc": "LTCL 9 (HL2-109)"}
-    ],
-    "2": [
-      {"start": 660, "end": 840, "name": "Programming", "type": "Lab", "loc": "PA3 106 Lab"},
-      {"start": 960, "end": 1140, "name": "Physics 2", "type": "Workshop", "loc": "SK2 101 / SK3 205"}
-    ],
-    "3": [
-      {"start": 660, "end": 780, "name": "Physics 2", "type": "Clinic", "loc": "Auditorium"},
-      {"start": 930, "end": 1020, "name": "Mathematics 2", "type": "Tutorial", "loc": "PA3 209"},
-      {"start": 1020, "end": 1110, "name": "Engineering Communication (ECS)", "type": "Seminar", "loc": "PA3 203"}
-    ],
-    "4": [
-      {"start": 600, "end": 690, "name": "Mathematics 2", "type": "Tutorial", "loc": "PA3 210"},
-      {"start": 900, "end": 1080, "name": "Academic English", "type": "Seminar", "loc": "LTCL 10 (HL2-110)"}
-    ],
-    "5": [],
-    "6": []
+<script type="application/json" id="embedded-timetable">{"schema":1,"class":"2E3","title":"2E3","semester":"Semester Two","timezone":"Asia/Kuching","source":"http://sws.curtin.edu.my","weeks":[{"week":39,"start":"2026-09-21"},{"week":40,"start":"2026-09-28"},{"week":41,"start":"2026-10-05"},{"week":42,"start":"2026-10-12"},{"week":43,"start":"2026-10-19"},{"week":44,"start":"2026-10-26"},{"week":45,"start":"2026-11-02"},{"week":46,"start":"2026-11-09"},{"week":47,"start":"2026-11-16"},{"week":48,"start":"2026-11-23"},{"week":49,"start":"2026-11-30"},{"week":50,"start":"2026-12-07"},{"week":51,"start":"2026-12-14"},{"week":52,"start":"2026-12-21"}],"units":{"CMFP0042":{"code":"CMFP0042","name":"Mathematics 2","short":"Maths 2","group":"K"},"CMFP0051":{"code":"CMFP0051","name":"Physics 2","short":"Physics 2","group":"2E3"},"CMFP0061":{"code":"CMFP0061","name":"Programming","short":"Programming","group":"2E3"},"FP-070":{"code":"FP-070","name":"Academic English 060","short":"Academic English","group":"*"},"CMFP0021":{"code":"CMFP0021","name":"Effective Communication Skills","short":"ECS","group":"2E3"}},"events":[{"id":"CMFP0042/CSM/1/3/LEC/2","unit":"CMFP0042","type":"Lecture","day":0,"firstDate":"2026-10-05","start":480,"end":600,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["Auditorium"],"staff":["Jameson Malang"],"group":"K-Q;V-W"},{"id":"CMFP0051/CSM/1/3/LEC/1","unit":"CMFP0051","type":"Lecture","day":0,"firstDate":"2026-10-05","start":600,"end":720,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["SK3 102 Lecture 1"],"staff":["Lukman Mohd Najib"],"group":"3E1-3; 2E1-7"},{"id":"CMFP0061/CSM/1/3/LEC/1","unit":"CMFP0061","type":"Lecture","day":0,"firstDate":"2026-10-05","start":780,"end":900,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["Auditorium"],"staff":["Kamaroizan Mohamad"],"group":"2E1-7; 2F1-3; 3E4"},{"id":"FP-070/CSM/1/3/SEM/01/2","unit":"FP-070","type":"Seminar","day":0,"firstDate":"2026-10-05","start":1020,"end":1200,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["SK3 206 Collaborative Room 2"],"staff":["Grace Abigail","Harith Firajudeen Bin Jeferie"],"group":"Group 1 & 2"},{"id":"CMFP0021/CSM/1/3/SEM/03/1","unit":"CMFP0021","type":"Seminar","day":1,"firstDate":"2026-10-06","start":480,"end":570,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["LTCL 9 (HL2-109)"],"staff":["Chai Kang Ming"],"group":"2E3"},{"id":"CMFP0051/CSM/1/3/WS/06","unit":"CMFP0051","type":"Workshop","day":1,"firstDate":"2026-10-06","start":840,"end":1020,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["SK2 101 (ME 101) Physic Lab","SK3 206 Collaborative Room 2"],"staff":["John Wong Sze Yong"],"group":"2E3"},{"id":"CMFP0042/CSM/1/3/C/1","unit":"CMFP0042","type":"Clinic","day":1,"firstDate":"2026-10-06","start":1020,"end":1110,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["SK3 205 Collaborative Room 1"],"staff":["Fong Ai Ling","Puteri Nurul Fatihah Binti Mohamad Azli","Jameson Malang","Bejay Anak Ugon"],"group":"A-F; K-Q; V-W"},{"id":"CMFP0061/CSM/1/3/LAB/03","unit":"CMFP0061","type":"Lab","day":2,"firstDate":"2026-10-07","start":660,"end":840,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["PA3 106 (Computer Lab)"],"staff":[],"group":"2E3"},{"id":"CMFP0051/CSM/1/3/C/1","unit":"CMFP0051","type":"Clinic","day":3,"firstDate":"2026-10-08","start":660,"end":780,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["Auditorium"],"staff":["Lukman Mohd Najib"],"group":"3E1-3; 2E1-7"},{"id":"CMFP0042/CSM/1/3/TUT/06/1","unit":"CMFP0042","type":"Tutorial","day":3,"firstDate":"2026-10-08","start":930,"end":1020,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["PA3 209"],"staff":["Shubashini Krishnan"],"group":"K"},{"id":"CMFP0021/CSM/1/3/SEM/03/2","unit":"CMFP0021","type":"Seminar","day":3,"firstDate":"2026-10-08","start":1020,"end":1110,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["PA3 203"],"staff":["Chai Kang Ming"],"group":"2E3"},{"id":"CMFP0042/CSM/1/3/TUT/06/2","unit":"CMFP0042","type":"Tutorial","day":4,"firstDate":"2026-10-09","start":600,"end":690,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["PA3 210"],"staff":["Shubashini Krishnan"],"group":"K"},{"id":"FP-070/CSM/1/3/SEM/01/1","unit":"FP-070","type":"Seminar","day":4,"firstDate":"2026-10-09","start":960,"end":1140,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["LTBS LT II (HL2-111)"],"staff":["Grace Abigail","Harith Firajudeen Bin Jeferie"],"group":"Group 1 & 2"}],"updatedAt":"2026-10-04T08:21:39.200Z"}</script>
+<script type="module">
+import * as core from "./assets/timetable-core.js";
+
+const CLASS = "2E3";
+const VIEW_KEY = `tt:${CLASS}:view`;
+const SUBJECTS = {
+  CMFP0042: { glyph: "数", tone: "#2f3e52" },
+  CMFP0051: { glyph: "理", tone: "#2c4a46" },
+  CMFP0061: { glyph: "码", tone: "#3d4a2e", abbr: "Prog." },
+  "FP-070": { glyph: "英", tone: "#5c432f", abbr: "Acad. Eng." },
+  CMFP0021: { glyph: "言", tone: "#4e3a4b" },
+};
+const FALLBACK_TONES = ["#3b3a37", "#4a3f35", "#33433f", "#463c4c", "#3c4552"];
+
+const $ = (id) => document.getElementById(id);
+const store = {
+  get(key) { try { return localStorage.getItem(key); } catch { return null; } },
+  set(key, value) { try { localStorage.setItem(key, value); } catch { /* private mode */ } },
+};
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// ?now=2026-10-05T08:30 pretends it is that Malaysia time (for testing)
+const override = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})$/.exec(new URLSearchParams(location.search).get("now") || "");
+function getNow() {
+  if (!override) return core.malaysiaNow();
+  const iso = override[1];
+  return { iso, day: core.dayIndexOf(iso), minutes: Number(override[2]) * 60 + Number(override[3]), epoch: Date.now() };
+}
+
+/** Tiny DOM builder. Strings become text nodes, so data never reaches innerHTML. */
+function h(tag, props, ...children) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(props || {})) {
+    if (value == null || value === false) continue;
+    if (key === "class") node.className = value;
+    else if (key === "dataset") Object.assign(node.dataset, value);
+    else if (key === "vars") for (const [name, v] of Object.entries(value)) node.style.setProperty(name, v);
+    else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
+    else node.setAttribute(key, value === true ? "" : value);
+  }
+  for (const child of children.flat(Infinity)) if (child != null && child !== false) node.append(child);
+  return node;
+}
+function svg(markup) { // static, trusted icon markup only
+  const template = document.createElement("template");
+  template.innerHTML = markup;
+  return template.content.firstElementChild;
+}
+const pinIcon = () => svg('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg>');
+const ensoIcon = () => svg('<svg viewBox="0 0 80 80" aria-hidden="true"><path d="M62 22c-7-9-21-12-32-6C17 23 12 39 18 52c6 13 23 19 36 13 11-5 17-17 14-29" fill="none" stroke="#1d1c1a" stroke-opacity=".55" stroke-width="5.5" stroke-linecap="round"/><path d="M66 30c1 4 1 8 0 12" fill="none" stroke="#1d1c1a" stroke-opacity=".25" stroke-width="3" stroke-linecap="round"/></svg>');
+
+// ---------- state ----------
+let data = null;
+let info = { source: "embedded", checkedAt: null, error: null };
+let view = store.get(VIEW_KEY) === "week" ? "week" : "day";
+let week = null;
+let day = 0;
+let follow = true; // keep following "today" until the user navigates
+let lastRefresh = Date.now();
+let refresh = () => Promise.resolve();
+
+const unitOf = (code) => data?.units?.[code] || { code, name: code, short: code, group: "" };
+const typeZh = (type) => core.TYPE_LABELS_ZH[type] || type;
+const subjectOf = (code) => {
+  if (SUBJECTS[code]) return SUBJECTS[code];
+  const codes = Object.keys(data?.units || {});
+  const index = Math.max(0, codes.indexOf(code));
+  const short = unitOf(code).short || code;
+  return { glyph: short.trim().charAt(0).toUpperCase() || "课", tone: FALLBACK_TONES[index % FALLBACK_TONES.length] };
+};
+function tint(hex, alpha) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+}
+/** Name for narrow week-grid columns: "Programming" -> "Prog." so words are never cut in half. */
+function gridName(code, roomy) {
+  const unit = unitOf(code);
+  const name = unit.short || unit.name;
+  if (roomy) return name;
+  return SUBJECTS[code]?.abbr || name.split(/\s+/).map((word) => (word.length > 8 ? `${word.slice(0, 4)}.` : word)).join(" ");
+}
+const fmtRange = (e) => `${core.fmtTime(e.start)}–${core.fmtTime(e.end)}`;
+const roomsOf = (e) => (e.rooms && e.rooms.length ? e.rooms : ["地点待定"]);
+
+function seal(code, size = "") {
+  const s = subjectOf(code);
+  return h("span", { class: `seal ${size}`.trim(), vars: { "--tone": s.tone }, "aria-hidden": "true" }, s.glyph);
+}
+function lessonHead(e, size = "") {
+  const unit = unitOf(e.unit);
+  return h("div", { class: "lesson-head" },
+    seal(e.unit, size),
+    h("div", { class: "unit-name" },
+      h("h3", null, unit.short || unit.name),
+      h("div", { class: "sub" }, `${typeZh(e.type)} · ${e.type}`)));
+}
+function roomsBlock(e) {
+  return h("div", { class: "rooms" }, roomsOf(e).map((room) => h("span", null, pinIcon(), room)));
+}
+function progressBar(fraction) {
+  const pct = Math.round(fraction * 100);
+  const bar = h("div", { class: "bar", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": String(pct), "aria-label": "本节进度" }, h("i"));
+  bar.firstChild.style.width = `${pct}%`;
+  return bar;
+}
+function relDay(iso, todayIso) {
+  const diff = core.daysBetween(todayIso, iso);
+  if (diff === -1) return "昨天";
+  return core.relativeDayZh(iso, todayIso);
+}
+function stampText(isoString, now) {
+  const t = core.malaysiaNow(new Date(isoString));
+  if (!Number.isFinite(t.minutes)) return "";
+  const diff = core.daysBetween(now.iso, t.iso);
+  const when = diff === 0 ? "今天" : diff === -1 ? "昨天" : core.formatDateZh(t.iso);
+  return `${when} ${core.fmtTime(t.minutes)}`;
+}
+
+// ---------- header ----------
+function renderHeader(now) {
+  $("today").textContent = `${core.formatDateZh(now.iso)} ${core.DAY_NAMES_ZH[now.day]}`;
+  $("class-title").textContent = data?.title || CLASS;
+  if (data?.semester) $("semester").textContent = data.semester;
+  let chip = "";
+  if (data) {
+    const range = core.classDateRange(data);
+    const current = core.weekOf(data, now.iso);
+    if (range && core.daysBetween(now.iso, range.first) > 0) chip = "开学前";
+    else if (range && core.daysBetween(range.last, now.iso) > 0) chip = "学期结束";
+    else if (current) chip = `第 ${current.week} 周`;
+  }
+  $("week-chip").textContent = chip;
+}
+
+// ---------- now card ----------
+function jumpTo(iso) {
+  const w = core.weekOf(data, iso);
+  if (!w) return;
+  week = w.week;
+  day = core.dayIndexOf(iso);
+  setView("day", false);
+  syncFollow();
+  renderSchedule(getNow());
+  $("sched").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+}
+
+function nextBlock(next, now, caption) {
+  if (!next) return [];
+  const e = next.event;
+  return [
+    h("p", { class: "now-caption" }, caption),
+    h("p", { class: "now-big num" }, `${relDay(next.iso, now.iso)} ${core.fmtTime(e.start)}`),
+    lessonHead(e, "lg"),
+    roomsBlock(e),
+    next.iso !== now.iso
+      ? h("div", { class: "now-foot" }, h("button", { class: "link-btn", type: "button", onclick: () => jumpTo(next.iso) }, "看那天的课 →"))
+      : null,
+  ];
+}
+
+function renderNow(now) {
+  const card = $("now");
+  const s = core.currentStatus(data, now);
+  card.dataset.kind = s.kind;
+  const label = (text, when, live = false) =>
+    h("div", { class: "now-label" }, h("i", { class: live ? "pulse" : "calm-dot", "aria-hidden": "true" }), h("span", null, text), when ? h("span", { class: "when num" }, when) : null);
+  let content;
+  if (s.kind === "live") {
+    const e = s.event;
+    const after = s.after;
+    content = [
+      label("上课中", fmtRange(e), true),
+      lessonHead(e, "lg"),
+      roomsBlock(e),
+      h("p", { class: "now-big num" }, h("small", null, "还剩"), core.fmtCountdownZh(s.remaining)),
+      progressBar(s.progress),
+      after
+        ? h("p", { class: "now-after" }, "接下来", h("b", null, core.fmtTime(after.start)), `${unitOf(after.unit).short} · ${typeZh(after.type)} · ${roomsOf(after).join(" / ")}`)
+        : h("p", { class: "now-after" }, "这是今天最后一节课"),
+    ];
+  } else if (s.kind === "next") {
+    const e = s.event;
+    content = [
+      label("下一节", fmtRange(e)),
+      lessonHead(e, "lg"),
+      roomsBlock(e),
+      h("p", { class: "now-big num" }, h("small", null, "还有"), core.fmtCountdownZh(s.minutesUntil)),
+      h("p", { class: "now-after" }, `今天还有 ${s.today.filter((x) => x.start > now.minutes).length} 节课`),
+    ];
+  } else if (s.kind === "done") {
+    content = [label("今天的课上完了"), ...nextBlock(s.next, now, "下一节")];
+  } else if (s.kind === "free") {
+    content = [label("今天没课"), ...nextBlock(s.next, now, "下一节")];
+  } else if (s.kind === "before") {
+    content = [label("还没开学"), ...nextBlock(s.next, now, "第一节课")];
+  } else {
+    content = [
+      label("学期结束"),
+      h("div", { class: "now-quiet" }, ensoIcon(), h("div", null, h("p", { class: "now-title" }, "本学期课程已结束"), h("p", null, "假期愉快，下学期见。"))),
+    ];
+  }
+  card.replaceChildren(...content.flat());
+}
+
+// ---------- schedule ----------
+function syncFollow() {
+  const now = getNow();
+  const dw = core.defaultWeek(data, now);
+  follow = week === dw && day === core.defaultDay(data, dw, now);
+}
+
+function setView(next, remember = true) {
+  view = next;
+  if (remember) store.set(VIEW_KEY, next);
+  $("view-day").setAttribute("aria-pressed", String(next === "day"));
+  $("view-week").setAttribute("aria-pressed", String(next === "week"));
+}
+
+function weekRangeText(weekNo) {
+  const start = core.weekStart(data, weekNo);
+  if (!start) return "";
+  const end = core.addDays(start, 6);
+  const [, m1, d1] = start.split("-").map(Number);
+  const [, m2, d2] = end.split("-").map(Number);
+  return m1 === m2 ? `${m1}月${d1}日–${d2}日` : `${m1}月${d1}日–${m2}月${d2}日`;
+}
+
+function buildDays() {
+  const wrap = $("days");
+  wrap.replaceChildren(
+    ...core.DAY_SHORT_ZH.map((name, i) =>
+      h("button", {
+        class: `day${i >= 5 ? " weekend" : ""}`, type: "button", dataset: { key: `day-${i}`, day: String(i) },
+        onclick: () => { day = i; syncFollow(); renderSchedule(getNow()); },
+      }, h("span", { class: "dn" }, name), h("span", { class: "dd num" }), h("span", { class: "dots", "aria-hidden": "true" })))
+  );
+}
+
+function renderSchedule(now) {
+  const weeks = core.teachingWeeks(data);
+  const index = weeks.indexOf(week);
+  $("prev").disabled = index <= 0;
+  $("next").disabled = index < 0 || index >= weeks.length - 1;
+  $("week-label").replaceChildren(h("b", null, `第 ${week} 周`), ` · ${weekRangeText(week)}`);
+  $("back").hidden = week === core.defaultWeek(data, now);
+
+  const perDay = core.eventsInWeek(data, week);
+  [...$("days").children].forEach((button, i) => {
+    const iso = core.dateInWeek(data, week, i);
+    const count = perDay[i].length;
+    button.querySelector(".dd").textContent = iso ? String(Number(iso.slice(8))) : "";
+    button.querySelector(".dots").replaceChildren(...Array.from({ length: Math.min(count, 4) }, () => h("i")));
+    button.classList.toggle("today", iso === now.iso);
+    button.setAttribute("aria-pressed", String(i === day));
+    button.setAttribute("aria-label", `${core.DAY_NAMES_ZH[i]} ${iso ? core.formatDateZh(iso) : ""}，${count ? `${count} 节课` : "没课"}${iso === now.iso ? "，今天" : ""}`);
+  });
+
+  const keep = document.activeElement?.dataset?.key;
+  $("days").hidden = view !== "day";
+  $("day-view").hidden = view !== "day";
+  $("week-view").hidden = view !== "week";
+  if (view === "day") renderDayView(now, perDay[day]);
+  else renderWeekView(now, perDay);
+  if (keep) document.querySelector(`[data-key="${CSS.escape(keep)}"]`)?.focus({ preventScroll: true });
+}
+
+function renderDayView(now, events) {
+  const iso = core.dateInWeek(data, week, day);
+  const isToday = iso === now.iso;
+  const diff = iso ? core.daysBetween(now.iso, iso) : null;
+  const tag = diff === 0 ? "今天" : diff === 1 ? "明天" : diff === -1 ? "昨天" : "";
+  const totalMinutes = events.reduce((sum, e) => sum + (e.end - e.start), 0);
+  const head = h("div", { class: "dayhead" },
+    h("strong", null, `${core.DAY_NAMES_ZH[day]} · ${iso ? core.formatDateZh(iso) : ""}`),
+    tag ? h("span", { class: "tag" }, tag) : null,
+    h("span", null, events.length ? `${events.length} 节课 · 共 ${core.fmtDurationZh(totalMinutes)}` : ""));
+
+  if (!events.length) {
+    $("day-view").replaceChildren(head, h("div", { class: "empty" }, ensoIcon(), h("strong", null, "这天没有课"), day >= 5 ? "周末愉快" : "好好休息，或者去图书馆坐坐"));
+    return;
+  }
+  const gaps = new Map(core.gapsBetween(events).filter((g) => g.minutes >= 30).map((g) => [g.after, g]));
+  const items = [];
+  for (const e of events) {
+    const live = isToday && now.minutes >= e.start && now.minutes < e.end;
+    const past = isToday && now.minutes >= e.end;
+    const unit = unitOf(e.unit);
+    items.push(h("article", {
+      class: `card${live ? " live" : ""}${past ? " past" : ""}`, vars: { "--tone": subjectOf(e.unit).tone }, dataset: { id: e.id },
+      "aria-label": `${fmtRange(e)} ${unit.short} ${typeZh(e.type)}${live ? "，正在上课" : past ? "，已结束" : ""}`,
+    },
+      h("div", { class: "t" },
+        h("span", { class: "s num" }, core.fmtTime(e.start)),
+        h("span", { class: "e num" }, core.fmtTime(e.end)),
+        h("span", { class: "d" }, core.fmtDurationZh(e.end - e.start))),
+      h("div", null,
+        h("div", { class: "lesson-head" },
+          seal(e.unit),
+          h("div", { class: "unit-name" },
+            h("h3", null, unit.short || unit.name),
+            h("div", { class: "sub" }, [typeZh(e.type), e.type, unit.name !== unit.short ? unit.name : null].filter(Boolean).join(" · ")))),
+        roomsBlock(e),
+        e.staff?.length ? h("p", { class: "staff" }, e.staff.join("、")) : null,
+        live ? h("div", { class: "live-meta" }, `上课中 · 还剩 ${core.fmtCountdownZh(e.end - now.minutes)}`, progressBar((now.minutes - e.start) / (e.end - e.start))) : null,
+        past ? h("p", { class: "done-tag" }, "已结束") : null)));
+    const gap = gaps.get(e);
+    if (gap) items.push(h("div", { class: "gap" }, `空 ${core.fmtDurationZh(gap.minutes)} · ${core.fmtTime(gap.after.end)}–${core.fmtTime(gap.before.start)}`));
+  }
+  $("day-view").replaceChildren(head, h("div", { class: "list" }, items));
+}
+
+function lanes(events) {
+  const out = [];
+  let cluster = [];
+  let clusterEnd = -1;
+  const flush = () => {
+    const count = Math.max(1, ...cluster.map((c) => c.lane + 1));
+    for (const c of cluster) out.push({ ...c, lanes: count });
+    cluster = [];
   };
+  for (const e of events) {
+    if (cluster.length && e.start >= clusterEnd) flush();
+    const used = new Set(cluster.filter((c) => c.event.end > e.start).map((c) => c.lane));
+    let lane = 0;
+    while (used.has(lane)) lane++;
+    cluster.push({ event: e, lane });
+    clusterEnd = Math.max(clusterEnd, e.end);
+  }
+  if (cluster.length) flush();
+  return out;
+}
 
-  const DAY_NAMES = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
-  let activeDay = (new Date().getDay() + 6) % 7;
+function renderWeekView(now, perDay) {
+  const bounds = core.timeBounds(data);
+  const hour = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--hour")) || 56;
+  const ppm = hour / 60;
+  const height = (bounds.end - bounds.start) * ppm;
+  const lastDay = perDay[6].length ? 6 : perDay[5].length ? 5 : 4;
+  const cols = Array.from({ length: lastDay + 1 }, (_, i) => i);
+  const todayCol = cols.find((i) => core.dateInWeek(data, week, i) === now.iso);
+  const roomy = ($("week-view").clientWidth - 30) / cols.length >= 86;
 
-  function toTime(m) {
-    const h = String(Math.floor(m / 60)).padStart(2, '0');
-    const min = String(m % 60).padStart(2, '0');
-    return `${h}:${min}`;
+  const head = h("div", { class: "wk-head", vars: { "--cols": String(cols.length) } }, h("div"),
+    cols.map((i) => {
+      const iso = core.dateInWeek(data, week, i);
+      return h("div", { class: i === todayCol ? "today" : "" }, core.DAY_SHORT_ZH[i], h("b", { class: "num" }, String(Number(iso.slice(8)))));
+    }));
+
+  const axis = h("div", { class: "wk-axis" });
+  const lines = h("div", { class: "wk-lines", "aria-hidden": "true" });
+  for (let m = bounds.start; m <= bounds.end; m += 60) {
+    const top = (m - bounds.start) * ppm;
+    if (m > bounds.start && m < bounds.end) {
+      const label = h("span", null, String(m / 60).padStart(2, "0"));
+      label.style.top = `${top}px`;
+      axis.append(label);
+    }
+    const line = h("i");
+    line.style.top = `${top}px`;
+    lines.append(line);
   }
 
-  function renderDay() {
-    const today = (new Date().getDay() + 6) % 7;
-    for (let d = 0; d < 7; d++) {
-      const btn = document.getElementById(`d-${d}`);
-      if (btn) {
-        btn.classList.toggle('active', d === activeDay);
-        btn.classList.toggle('is-today', d === today);
+  const columns = cols.map((i) => {
+    const iso = core.dateInWeek(data, week, i);
+    const isToday = i === todayCol;
+    const col = h("div", { class: `wk-col${isToday ? " today" : ""}`, role: "list", "aria-label": `${core.DAY_NAMES_ZH[i]} ${core.formatDateZh(iso)}` });
+    for (const { event: e, lane, lanes: count } of lanes(perDay[i])) {
+      const tone = subjectOf(e.unit).tone;
+      const unit = unitOf(e.unit);
+      const live = isToday && now.minutes >= e.start && now.minutes < e.end;
+      const past = isToday && now.minutes >= e.end;
+      const block = h("button", {
+        class: `blk${live ? " live" : ""}${past ? " past" : ""}`, type: "button", role: "listitem",
+        vars: { "--tone": tone, "--tint": tint(tone, 0.11) }, dataset: { key: `blk-${e.id}` },
+        "aria-label": `${core.DAY_NAMES_ZH[i]} ${fmtRange(e)} ${unit.short} ${typeZh(e.type)} ${roomsOf(e).join("、")}`,
+        onclick: () => {
+          day = i;
+          setView("day", false);
+          syncFollow();
+          renderSchedule(getNow());
+          const card = document.querySelector(`.card[data-id="${CSS.escape(e.id)}"]`);
+          if (card) {
+            card.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+            card.classList.remove("flash");
+            void card.offsetWidth;
+            card.classList.add("flash");
+          }
+        },
+      }, h("b", null, gridName(e.unit, roomy)), h("span", null, typeZh(e.type)), h("span", null, roomsOf(e).map(core.shortRoom).join(" / ")));
+      block.style.top = `${(e.start - bounds.start) * ppm + 1}px`;
+      block.style.height = `${(e.end - e.start) * ppm - 2}px`;
+      if (count > 1) {
+        block.style.left = `calc(${(lane / count) * 100}% + 1px)`;
+        block.style.right = "auto";
+        block.style.width = `calc(${100 / count}% - 2px)`;
       }
+      col.append(block);
     }
-
-    const container = document.getElementById('timelineList');
-    container.innerHTML = '';
-    const list = SCHEDULE[String(activeDay)] || [];
-
-    if (list.length === 0) {
-      container.innerHTML = `<div class="empty-state">今日全天无排课</div>`;
-      return;
+    if (isToday && now.minutes >= bounds.start && now.minutes <= bounds.end) {
+      const line = h("div", { class: "now-line", "aria-hidden": "true" });
+      line.style.top = `${(now.minutes - bounds.start) * ppm}px`;
+      col.append(line);
     }
+    return col;
+  });
 
-    for (let i = 0; i < list.length; i++) {
-      const c = list[i];
-      const durH = (c.end - c.start) / 60;
-      const durStr = durH === 1 ? '1h' : (durH % 1 === 0 ? `${durH}h` : `${durH.toFixed(1)}h`);
+  const body = h("div", { class: "wk-body", vars: { "--cols": String(cols.length) } }, lines, axis, columns);
+  body.style.height = `${height}px`;
+  const total = perDay.reduce((n, list) => n + list.length, 0);
+  $("week-view").replaceChildren(h("div", { class: "wk" }, head, body),
+    h("p", { class: "wk-note" }, total ? `这周 ${total} 节课 · 点一节课看详细` : "这周没有课"));
+}
 
-      const card = document.createElement('div');
-      card.className = 'course-card';
-      card.innerHTML = `
-        <div class="card-head">
-          <span class="time-txt">${toTime(c.start)} — ${toTime(c.end)}</span>
-          <span class="type-pill">${c.type}</span>
-        </div>
-        <div class="course-name">${c.name}</div>
-        <div class="course-meta">
-          <span class="loc-txt">📍 ${c.loc}</span>
-          <span>${durStr}</span>
-        </div>
-      `;
-      container.appendChild(card);
+// ---------- units ----------
+function renderUnits() {
+  const units = Object.values(data.units || {});
+  $("unit-count").textContent = `${units.length} 科`;
+  $("unit-list").replaceChildren(...units.map((unit) => {
+    const events = data.events.filter((e) => e.unit === unit.code);
+    const staff = [...new Set(events.flatMap((e) => e.staff || []))];
+    const groups = unit.group && unit.group !== "*" ? [unit.group] : [...new Set(events.map((e) => e.group).filter(Boolean))];
+    const hours = events.reduce((sum, e) => sum + (e.end - e.start), 0);
+    return h("div", { class: "unit-row" },
+      seal(unit.code),
+      h("div", null,
+        h("h3", null, unit.short || unit.name, h("small", null, unit.code)),
+        h("p", null, unit.name, h("span", null, ` · 每周 ${core.fmtDurationZh(hours)}`)),
+        h("p", null, h("span", null, "组别 "), groups.join("、") || "—"),
+        staff.length ? h("p", null, h("span", null, "老师 "), staff.join("、")) : null));
+  }));
+}
 
-      if (i < list.length - 1) {
-        const gap = list[i + 1].start - c.end;
-        if (gap >= 60) {
-          const gapH = (gap / 60).toFixed(1).replace('.0', '');
-          const gapEl = document.createElement('div');
-          gapEl.className = 'gap-card';
-          gapEl.textContent = `课间 ${gapH} 小时 (${toTime(c.end)} - ${toTime(list[i + 1].start)})`;
-          container.appendChild(gapEl);
-        }
-      }
-    }
+// ---------- footer ----------
+function renderFooter(now) {
+  const parts = ["课表来自 Curtin SWS"];
+  if (info.checkedAt) parts.push(`最近检查 ${stampText(info.checkedAt, now)}`);
+  if (data?.updatedAt) parts.push(info.checkedAt ? `内容更新于 ${core.formatDateZh(core.malaysiaNow(new Date(data.updatedAt)).iso)}` : `更新于 ${stampText(data.updatedAt, now)}`);
+  $("fresh").replaceChildren(...parts.flatMap((part, i) => (i ? [" · ", h("span", null, part)] : [h("span", null, part)])));
+  let note = "";
+  if (info.error && data) note = info.source === "cache" ? "暂时连不上网络，显示的是上次保存的课表。" : "暂时连不上网络，显示的是网页里自带的课表。";
+  $("net-note").textContent = note;
+}
+
+// ---------- everything ----------
+function renderAll() {
+  const now = getNow();
+  renderHeader(now);
+  if (!data) return;
+  if (follow || week == null || !core.teachingWeeks(data).includes(week)) {
+    week = core.defaultWeek(data, now);
+    day = core.defaultDay(data, week, now);
   }
+  renderNow(now);
+  renderSchedule(now);
+  renderFooter(now);
+}
 
-  function renderWeek() {
-    for (let d = 0; d < 5; d++) {
-      const col = document.getElementById(`w-col-${d}`);
-      col.innerHTML = '';
-      const list = SCHEDULE[String(d)] || [];
-      if (list.length === 0) {
-        col.innerHTML = '<div style="text-align:center; padding:15px 0; color:#888; font-size:10px;">无课</div>';
-      } else {
-        list.forEach(c => {
-          const box = document.createElement('div');
-          box.className = 'mini-box';
-          box.innerHTML = `
-            <div class="mini-time">${toTime(c.start)}-${toTime(c.end)}</div>
-            <div class="mini-name">${c.name}</div>
-            <div class="mini-loc">${c.loc}</div>
-          `;
-          col.appendChild(box);
-        });
-      }
-    }
+function renderProblem() {
+  $("now").dataset.kind = "error";
+  $("now").replaceChildren(h("div", { class: "problem" },
+    h("p", { class: "now-title" }, "暂时拿不到课表"),
+    h("p", null, "检查一下网络，再试一次。"),
+    h("button", { class: "btn", type: "button", onclick: () => { lastRefresh = Date.now(); refresh(); } }, "重试")));
+  $("sched").hidden = true;
+  $("units").hidden = true;
+  renderFooter(getNow());
+}
+
+let toastTimer = 0;
+function toast(text) {
+  const el = $("toast");
+  el.textContent = text;
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 3500);
+}
+
+function onData(next, nextInfo) {
+  const hadData = Boolean(data);
+  info = nextInfo;
+  if (!next) {
+    if (!data) renderProblem();
+    else renderFooter(getNow());
+    return;
   }
+  const changedUnits = !data || JSON.stringify(data.units) !== JSON.stringify(next.units) || data.events !== next.events;
+  data = next;
+  $("sched").hidden = false;
+  $("units").hidden = false;
+  if (changedUnits) renderUnits();
+  renderAll();
+  if (nextInfo.changed && hadData) toast("课表已更新");
+}
 
-  function selectDay(d) {
-    activeDay = d;
-    renderDay();
-  }
+// ---------- wire up ----------
+buildDays();
+setView(view, false);
+$("view-day").addEventListener("click", () => { setView("day"); renderSchedule(getNow()); });
+$("view-week").addEventListener("click", () => { setView("week"); renderSchedule(getNow()); });
+$("prev").addEventListener("click", () => {
+  const weeks = core.teachingWeeks(data);
+  const i = weeks.indexOf(week);
+  if (i > 0) { week = weeks[i - 1]; syncFollow(); renderSchedule(getNow()); }
+});
+$("next").addEventListener("click", () => {
+  const weeks = core.teachingWeeks(data);
+  const i = weeks.indexOf(week);
+  if (i >= 0 && i < weeks.length - 1) { week = weeks[i + 1]; syncFollow(); renderSchedule(getNow()); }
+});
+$("back").addEventListener("click", () => {
+  follow = true;
+  renderAll();
+});
+$("egg").addEventListener("click", async () => {
+  const { openTetris } = await import("./assets/tetris.js");
+  openTetris({
+    title: "墨块",
+    storageKey: `tt:${CLASS}:tetris-best`,
+    theme: {
+      style: "ink",
+      background: "#efe9dd",
+      panel: "#f8f4ec",
+      grid: "rgba(29,28,26,.09)",
+      text: "#1d1c1a",
+      muted: "#5f5a52",
+      accent: "#b5412e",
+      font: getComputedStyle(document.body).fontFamily,
+      pieces: { I: "#2f3e52", O: "#5c432f", T: "#b5412e", S: "#2c4a46", Z: "#4e3a4b", J: "#1d1c1a", L: "#3d4a2e" },
+    },
+  });
+});
 
-  function goToday() {
-    activeDay = (new Date().getDay() + 6) % 7;
-    selectDay(activeDay);
-  }
+let embedded = null;
+try {
+  embedded = JSON.parse($("embedded-timetable").textContent || "null");
+} catch {
+  embedded = null;
+}
+lastRefresh = Date.now();
+refresh = core.startTimetable({
+  embedded,
+  urls: ["data/2E3.json", "https://raw.githubusercontent.com/NingLoke/ling/main/data/2E3.json"],
+  statusUrls: ["data/status.json", "https://raw.githubusercontent.com/NingLoke/ling/main/data/status.json"],
+  cacheKey: `tt:${CLASS}`,
+  onData,
+});
+if (!data) renderHeader(getNow()); // nothing embedded or cached: wait for the network
 
-  function setViewMode(mode) {
-    const isDay = mode === 'day';
-    document.getElementById('btnDayView').classList.toggle('active', isDay);
-    document.getElementById('btnWeekView').classList.toggle('active', !isDay);
-    document.getElementById('dayViewContainer').style.display = isDay ? 'block' : 'none';
-    document.getElementById('weekViewContainer').style.display = isDay ? 'none' : 'block';
-  }
-
-  function updateStatus() {
-    const now = new Date();
-    const curMin = now.getHours() * 60 + now.getMinutes();
-    const today = (now.getDay() + 6) % 7;
-
-    const m = now.getMonth() + 1;
-    const dt = now.getDate();
-    document.getElementById('headerDate').textContent = `${m}月${dt}日 · ${DAY_NAMES[today]}`;
-
-    const tag = document.getElementById('statusTag');
-    const main = document.getElementById('statusMain');
-    const sub = document.getElementById('statusSub');
-
-    const todayList = SCHEDULE[String(today)] || [];
-
-    const ongoing = todayList.find(c => curMin >= c.start && curMin < c.end);
-    if (ongoing) {
-      tag.textContent = '上课中';
-      main.textContent = `${ongoing.name} (${ongoing.type})`;
-      sub.textContent = `剩 ${ongoing.end - curMin} 分钟 · ${ongoing.loc}`;
-      return;
-    }
-
-    const next = todayList.find(c => c.start > curMin);
-    if (next) {
-      const wait = next.start - curMin;
-      const waitStr = wait >= 60 ? `${Math.floor(wait / 60)}h ${wait % 60}m` : `${wait}分钟`;
-      tag.textContent = '待命中';
-      main.textContent = `下节: ${next.name}`;
-      sub.textContent = `${toTime(next.start)} · 剩 ${waitStr} · ${next.loc}`;
-      return;
-    }
-
-    tag.textContent = '已结束';
-    main.textContent = '今日全部课程已完成';
-    const tomorrow = (today + 1) % 7;
-    const tomList = SCHEDULE[String(tomorrow)] || [];
-    if (tomList.length > 0) {
-      sub.textContent = `明日首节: ${toTime(tomList[0].start)} ${tomList[0].name}`;
-    } else {
-      sub.textContent = '明日全天无课';
-    }
-  }
-
-  renderDay();
-  renderWeek();
-  updateStatus();
-  setInterval(updateStatus, 30000);
+const doRefresh = () => {
+  lastRefresh = Date.now();
+  refresh();
+};
+setInterval(renderAll, 30 * 1000);
+setInterval(doRefresh, 30 * 60 * 1000);
+let resizeTimer = 0;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { if (data && view === "week") renderSchedule(getNow()); }, 150);
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) return;
+  renderAll();
+  if (Date.now() - lastRefresh > 10 * 60 * 1000) doRefresh();
+});
 </script>
 </body>
 </html>

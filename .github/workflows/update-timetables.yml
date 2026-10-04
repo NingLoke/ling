@@ -1,0 +1,70 @@
+name: Update timetables
+
+on:
+  schedule:
+    - cron: "17 22 * * *" # 06:17 Malaysia time (UTC+8)
+    - cron: "47 22 * * *" # 06:47 backup (GitHub sometimes skips scheduled runs)
+    - cron: "17 10 * * *" # 18:17 Malaysia time
+    - cron: "47 10 * * *" # 18:47 backup
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/update-timetables.mjs"
+      - "scripts/lib/timetable.mjs"
+      - "scripts/timetables.config.mjs"
+      - ".github/workflows/update-timetables.yml"
+
+permissions:
+  contents: write
+
+# Never let two runs push at the same time.
+concurrency:
+  group: update-timetables
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run tests
+        run: node --test "scripts/**/*.test.mjs"
+
+      - name: Install browser
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Fetch timetables from Curtin SWS
+        run: |
+          for attempt in 1 2 3; do
+            if node scripts/update-timetables.mjs; then exit 0; fi
+            echo "Attempt $attempt failed, retrying in 30s"
+            sleep 30
+          done
+          exit 1
+
+      - name: Refresh the snapshot baked into index.html
+        run: node scripts/embed-data.mjs index.html data/2E3.json
+
+      - name: Commit changes
+        shell: bash
+        run: |
+          rm -rf node_modules
+          if [ -z "$(git status --porcelain -- data index.html)" ]; then
+            echo "Nothing changed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- data index.html
+          git commit -m "Update Curtin timetables"
+          git pull --rebase origin main
+          git push origin HEAD:main

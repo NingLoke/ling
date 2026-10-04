@@ -1,0 +1,395 @@
+{
+  "schema": 1,
+  "class": "3E4",
+  "title": "3E4",
+  "semester": "Semester Two",
+  "timezone": "Asia/Kuching",
+  "source": "http://sws.curtin.edu.my",
+  "weeks": [
+    {
+      "week": 39,
+      "start": "2026-09-21"
+    },
+    {
+      "week": 40,
+      "start": "2026-09-28"
+    },
+    {
+      "week": 41,
+      "start": "2026-10-05"
+    },
+    {
+      "week": 42,
+      "start": "2026-10-12"
+    },
+    {
+      "week": 43,
+      "start": "2026-10-19"
+    },
+    {
+      "week": 44,
+      "start": "2026-10-26"
+    },
+    {
+      "week": 45,
+      "start": "2026-11-02"
+    },
+    {
+      "week": 46,
+      "start": "2026-11-09"
+    },
+    {
+      "week": 47,
+      "start": "2026-11-16"
+    },
+    {
+      "week": 48,
+      "start": "2026-11-23"
+    },
+    {
+      "week": 49,
+      "start": "2026-11-30"
+    },
+    {
+      "week": 50,
+      "start": "2026-12-07"
+    },
+    {
+      "week": 51,
+      "start": "2026-12-14"
+    },
+    {
+      "week": 52,
+      "start": "2026-12-21"
+    }
+  ],
+  "units": {
+    "CMFP0043": {
+      "code": "CMFP0043",
+      "name": "Mathematics 3",
+      "short": "Maths 3",
+      "group": "3E4"
+    },
+    "CMFP0061": {
+      "code": "CMFP0061",
+      "name": "Programming",
+      "short": "Programming",
+      "group": "3E4"
+    },
+    "CMFP0023": {
+      "code": "CMFP0023",
+      "name": "Critical Thinking",
+      "short": "Critical Thinking",
+      "group": "3E4"
+    },
+    "CMFP0032": {
+      "code": "CMFP0032",
+      "name": "Introduction to Management",
+      "short": "Management",
+      "group": "3E4"
+    }
+  },
+  "events": [
+    {
+      "id": "CMFP0043/CSM/1/3/LEC/1",
+      "unit": "CMFP0043",
+      "type": "Lecture",
+      "day": 0,
+      "firstDate": "2026-10-05",
+      "start": 480,
+      "end": 600,
+      "weeks": [
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "rooms": [
+        "SK3 103 Lecture 2"
+      ],
+      "staff": [
+        "Puteri Nurul Fatihah Binti Mohamad Azli",
+        "Shubashini Krishnan"
+      ],
+      "group": "3E1-4"
+    },
+    {
+      "id": "CMFP0061/CSM/1/3/LEC/1",
+      "unit": "CMFP0061",
+      "type": "Lecture",
+      "day": 0,
+      "firstDate": "2026-10-05",
+      "start": 780,
+      "end": 900,
+      "weeks": [
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "rooms": [
+        "Auditorium"
+      ],
+      "staff": [
+        "Kamaroizan Mohamad"
+      ],
+      "group": "2E1-7; 2F1-3; 3E4"
+    },
+    {
+      "id": "CMFP0023/CSM/1/3/SEM/04/1",
+      "unit": "CMFP0023",
+      "type": "Seminar",
+      "day": 0,
+      "firstDate": "2026-10-05",
+      "start": 930,
+      "end": 1020,
+      "weeks": [
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "rooms": [
+        "PA3 211"
+      ],
+      "staff": [
+        "Chai Kang Ming"
+      ],
+      "group": "3E4"
+    },
+    {
+      "id": "CMFP0032/CSM/1/3/LEC/1",
+      "unit": "CMFP0032",
+      "type": "Lecture",
+      "day": 1,
+      "firstDate": "2026-10-06",
+      "start": 600,
+      "end": 720,
+      "weeks": [
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "rooms": [
+        "Harry Perkins LT"
+      ],
+      "staff": [
+        "Siti Nurhurun"
+      ],
+      "group": "All"
+    },
+    {
+      "id": "CMFP0043/CSM/1/3/TUT/4/1",
+      "unit": "CMFP0043",
+      "type": "Tutorial",
+      "day": 1,
+      "firstDate": "2026-10-06",
+      "start": 930,
+      "end": 1020,
+      "weeks": [
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "rooms": [
+        "PA3 207"
+      ],
+      "staff": [
+        "Shubashini Krishnan"
+      ],
+      "group": "3E4"
+    },
+    {
+      "id": "CMFP0032/CSM/1/3/TUT/8",
+      "unit": "CMFP0032",
+      "type": "Tutorial",
+      "day": 2,
+      "firstDate": "2026-10-07",
+      "start": 600,
+      "end": 720,
+      "weeks": [
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "rooms": [
+        "Harry Perkins LT"
+      ],
+      "staff": [
+        "Siti Nurhurun"
+      ],
+      "group": "3E4; 1F1"
+    },
+    {
+      "id": "CMFP0023/CSM/1/3/SEM/04/2",
+      "unit": "CMFP0023",
+      "type": "Seminar",
+      "day": 2,
+      "firstDate": "2026-10-07",
+      "start": 930,
+      "end": 1020,
+      "weeks": [
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "rooms": [
+        "PA3 202"
+      ],
+      "staff": [
+        "Chai Kang Ming"
+      ],
+      "group": "3E4"
+    },
+    {
+      "id": "CMFP0043/CSM/1/3/C/1",
+      "unit": "CMFP0043",
+      "type": "Clinic",
+      "day": 2,
+      "firstDate": "2026-10-07",
+      "start": 1020,
+      "end": 1110,
+      "weeks": [
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "rooms": [
+        "SK3 206 Collaborative Room 2"
+      ],
+      "staff": [
+        "Puteri Nurul Fatihah Binti Mohamad Azli",
+        "Shubashini Krishnan"
+      ],
+      "group": "3E1-4"
+    },
+    {
+      "id": "CMFP0043/CSM/1/3/TUT/4/2",
+      "unit": "CMFP0043",
+      "type": "Tutorial",
+      "day": 3,
+      "firstDate": "2026-10-08",
+      "start": 570,
+      "end": 660,
+      "weeks": [
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "rooms": [
+        "PA3 206"
+      ],
+      "staff": [
+        "Shubashini Krishnan"
+      ],
+      "group": "3E4"
+    },
+    {
+      "id": "CMFP0061/CSM/1/3/LAB/12",
+      "unit": "CMFP0061",
+      "type": "Lab",
+      "day": 4,
+      "firstDate": "2026-10-09",
+      "start": 480,
+      "end": 660,
+      "weeks": [
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "rooms": [
+        "PA2 103 (Computer Lab)"
+      ],
+      "staff": [],
+      "group": "3E4; 3E1; 3E2"
+    }
+  ],
+  "updatedAt": "2026-10-04T08:21:39.200Z"
+}

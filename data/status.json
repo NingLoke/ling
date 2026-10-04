@@ -1,0 +1,14 @@
+{
+  "checkedAt": "2026-10-04T08:21:39.200Z",
+  "semester": "Semester Two",
+  "classes": {
+    "2E3": {
+      "events": 13,
+      "updatedAt": "2026-10-04T08:21:39.200Z"
+    },
+    "3E4": {
+      "events": 10,
+      "updatedAt": "2026-10-04T08:21:39.200Z"
+    }
+  }
+}

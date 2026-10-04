@@ -1,0 +1,10 @@
+{
+  "name": "ling-timetable",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"scripts/**/*.test.mjs\"",
+    "update": "node scripts/update-timetables.mjs",
+    "seed": "node scripts/update-timetables.mjs --fixture scripts/fixtures/sws-2026-sem2.json"
+  }
+}
