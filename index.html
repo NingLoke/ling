@@ -1313,13 +1313,14 @@ async function openMap(code = null, navigate = false) {
     }
   }
   try {
-    const { openCampusMap } = await import("./assets/campus-map.js?v=cf34e31fa0");
+    const { openCampusMap } = await import("./assets/campus-map.js?v=6542e4f9d1");
     openCampusMap({
       maplibreUrl: "./assets/vendor/maplibre-gl-6.12.0/maplibre-gl.mjs",
       campusUrl: "data/campus/campus.geojson",
       pathsUrl: "data/campus/paths.json",
       photosUrl: "data/campus/photos.json",
       panoramasUrl: "data/campus/panoramas.json",
+      streetViewsUrl: "data/campus/streetviews.json",
       pannellumUrl: "./assets/vendor/pannellum-2.5.7/pannellum.js",
       googleEmbedKey: GOOGLE_EMBED_KEY,
       style: MAP_STYLE,

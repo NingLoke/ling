@@ -1,0 +1,4 @@
+{
+ "about": "Google Maps 360° views (Street View or photo spheres people uploaded) shown inside the campus map through Google's own embed (no key). Add one with: node scripts/add-streetview.mjs '<Google Maps address of the view>'.",
+ "views": []
+}

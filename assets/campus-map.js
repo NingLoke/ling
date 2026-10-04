@@ -4,6 +4,7 @@
 import {
   createRouter, buildingForRoom, metresBetween, bearingDeg, progressOnRoute, walkMinutes, TURN_ZH, pointInRing, createPositionFilter, closestPointOnSegment,
 } from "./campus-geo.js?v=29383000af";
+import { streetViewEmbed } from "./streetview-url.js?v=86b7c353a5";
 
 let current = null;
 
@@ -330,6 +331,7 @@ function campusStyle(c, campus, basemap) {
  *   photosUrl    data/campus/photos.json (openly licensed real pictures; optional)
  *   panoramasUrl data/campus/panoramas.json: 360° photos of the campus (their files are relative to it)
  *   pannellumUrl the Pannellum panorama viewer's script (its CSS sits next to it), loaded when first needed
+ *   streetViewsUrl  data/campus/streetviews.json: Google Maps 360° views to open inside the map (no key)
  *   googleEmbedKey  a Google Maps Embed API key; with it, Street View opens inside the map instead of Google Maps
  *   style        "ink" | "neon"
  *   focus        building code to show ("SK3"), or null
@@ -346,7 +348,7 @@ export function openCampusMap(options) {
     current.focus(options.focus, options.navigate, options.compassPermission);
     return current.close;
   }
-  const { maplibreUrl, campusUrl, pathsUrl, photosUrl = null, panoramasUrl = null, pannellumUrl = null, googleEmbedKey = "", style = "ink", classes = [], classLabel = "", basemap = OPENFREEMAP } = options;
+  const { maplibreUrl, campusUrl, pathsUrl, photosUrl = null, panoramasUrl = null, pannellumUrl = null, streetViewsUrl = null, googleEmbedKey = "", style = "ink", classes = [], classLabel = "", basemap = OPENFREEMAP } = options;
   const c = { ...PALETTES[style === "neon" ? "neon" : "ink"], ...(options.palette || {}) };
   const reduceMotion = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
   const html = document.documentElement;
@@ -761,10 +763,12 @@ export function openCampusMap(options) {
     const look = Math.round(bearingDeg([vlon, vlat], [lon, lat]));
     const at = (n) => n.toFixed(6);
     const link = (text, href) => el("a", { class: "cm-btn", href, target: "_blank", rel: "noopener" }, [text, el("span", { html: ICON.out })]);
+    const streetButton = el("span");
     const row = el("div", { class: "cm-real" }, [
       el("span", { text: "看实景" }),
+      streetButton,
       googleEmbedKey
-        ? el("button", { class: "cm-btn", type: "button", text: "街景", onclick: () => streetViewHere([vlon, vlat], look, f.properties.code) })
+        ? el("button", { class: "cm-btn cm-street", type: "button", text: "街景", onclick: () => streetViewHere([vlon, vlat], look, f.properties.code) })
         : link("街景", `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${at(vlat)},${at(vlon)}&heading=${look}&pitch=5&fov=80`),
       link("卫星图", `https://www.google.com/maps/@?api=1&map_action=map&center=${at(lat)},${at(lon)}&zoom=19&basemap=satellite`),
       link("Google 地图", `https://www.google.com/maps/search/?api=1&query=${at(lat)},${at(lon)}`),
@@ -778,7 +782,36 @@ export function openCampusMap(options) {
       if (!near || !row.isConnected) return;
       row.insertBefore(el("button", { class: "cm-btn cm-pano-btn", type: "button", onclick: () => openPanorama(near.x, f.properties.centre, f.properties.code) }, [el("span", { html: ICON.pano }), "360°"]), row.children[1]);
     });
+    // a Google 360° view saved for this spot: opens inside the map instead of the link above
+    loadStreetViews().then((list) => {
+      const near = list
+        .map((x) => ({ x, d: metresBetween([x.lon, x.lat], f.properties.centre) }))
+        .filter(({ x, d }) => d < 120 || x.near === f.properties.code)
+        .sort((a, b) => (a.x.near === f.properties.code ? -1 : 0) - (b.x.near === f.properties.code ? -1 : 0) || a.d - b.d)[0];
+      if (!near || !row.isConnected) return;
+      row.querySelector("a.cm-btn")?.remove(); // the Google Maps link for 街景
+      row.querySelector("button.cm-street")?.remove();
+      streetButton.replaceWith(el("button", { class: "cm-btn cm-pano-btn", type: "button", onclick: () => openStreetView(near.x, f.properties.centre, f.properties.code) }, [el("span", { html: ICON.pano }), "街景"]));
+    });
     return row;
+  }
+
+  // ----- Google 360° views inside the map (Google's own embed, no key) -----
+  let streetViews = null;
+  async function loadStreetViews() {
+    if (streetViews || !streetViewsUrl) return streetViews || [];
+    try {
+      const data = await fetch(new URL(streetViewsUrl, document.baseURI)).then((r) => (r.ok ? r.json() : null));
+      streetViews = (Array.isArray(data?.views) ? data.views : []).filter((x) => x.pano && Number.isFinite(x.lon) && Number.isFinite(x.lat));
+    } catch {
+      streetViews = [];
+    }
+    return streetViews;
+  }
+  function openStreetView(x, target, code) {
+    const heading = target ? bearingDeg([x.lon, x.lat], target) : x.heading || 0;
+    const frame = el("iframe", { src: streetViewEmbed(x, heading, 0), title: x.title || "街景", allowfullscreen: true, loading: "eager", referrerpolicy: "strict-origin-when-cross-origin" });
+    viewerLayer(x.title || (code ? `${code} 街景` : "街景"), frame, ["Google 地图 360° 实景 · 拖动看四周，点箭头往前走"]);
   }
 
   // ----- 360° photos (Pannellum) and Street View inside the map -----
@@ -798,15 +831,19 @@ export function openCampusMap(options) {
   }
   let panoramaMarkers = [];
   async function showPanoramaSpots() {
-    const list = await loadPanoramas();
-    if (closed || !list.length) return;
-    panoramaMarkers = list.map((x) => {
+    const [ours, google] = await Promise.all([loadPanoramas(), loadStreetViews()]);
+    if (closed || !(ours.length + google.length)) return;
+    const spot = (x, open) => {
       const node = el("button", { class: "cm-pano", type: "button", "aria-label": `360° 实景：${x.title || ""}`, html: ICON.pano, onclick: (event) => {
         event.stopPropagation();
-        openPanorama(x, null, null);
+        open();
       } });
       return new maplibre.Marker({ element: node }).setLngLat([x.lon, x.lat]).addTo(map);
-    });
+    };
+    panoramaMarkers = [
+      ...ours.map((x) => spot(x, () => openPanorama(x, null, null))),
+      ...google.map((x) => spot(x, () => openStreetView(x, null, x.near))),
+    ];
     const toggle = () => {
       const show = map.getZoom() >= 16.6;
       for (const m of panoramaMarkers) m.getElement().style.display = show ? "" : "none";
