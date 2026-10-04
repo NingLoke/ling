@@ -458,22 +458,25 @@ const CSS = `
 .tt-boardwrap.tt-hit::after{opacity:1;transition:opacity .05s}
 .tt-ink .tt-boardwrap::after{box-shadow:0 0 0 2px color-mix(in srgb,var(--tt-glow) 70%,transparent),0 0 40px 4px color-mix(in srgb,var(--tt-glow) 30%,transparent)}
 /* level up: a band of light sweeps across; new skin: a burst from the middle */
-.tt-sweep,.tt-burst{position:absolute;inset:0;pointer-events:none;z-index:2;opacity:0}
+.tt-sweep,.tt-burst{position:absolute;inset:0;pointer-events:none;z-index:0;opacity:0}
 .tt-sweep{background:linear-gradient(100deg,transparent 35%,color-mix(in srgb,var(--tt-glow) 45%,transparent) 50%,transparent 65%);background-size:250% 100%}
 .tt-levelup .tt-sweep{animation:tt-sweep .9s ease-out}
 @keyframes tt-sweep{0%{opacity:1;background-position:120% 0}100%{opacity:0;background-position:-20% 0}}
 .tt-burst{background:radial-gradient(circle at 50% 45%,color-mix(in srgb,var(--tt-glow) 70%,transparent),transparent 60%)}
 .tt-newskin .tt-burst{animation:tt-burst 1.2s ease-out}
-@keyframes tt-burst{0%{opacity:.95;transform:scale(.3)}100%{opacity:0;transform:scale(1.8)}}
+@keyframes tt-burst{0%{opacity:.75;transform:scale(.3)}100%{opacity:0;transform:scale(1.8)}}
 /* "四消！" style call-outs over the board */
-.tt-pops{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;z-index:3}
-.tt-pop{font-weight:800;font-size:calc(var(--tt-cell,24px) * 1.25);letter-spacing:.08em;white-space:nowrap;animation:tt-pop 1.1s ease-out forwards}
-.tt-pop.tt-big{font-size:calc(var(--tt-cell,24px) * 1.8)}
+.tt-pops{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  gap:4px;padding-top:34%;z-index:3}
+.tt-pop{font-weight:800;font-size:calc(var(--tt-cell,24px) * 1.1);letter-spacing:.08em;white-space:nowrap;animation:tt-pop .9s ease-out forwards}
+.tt-pop.tt-big{font-size:calc(var(--tt-cell,24px) * 1.5)}
 .tt-pop.tt-small{font-size:calc(var(--tt-cell,24px) * .85)}
 .tt-neon .tt-pop{color:#fff;text-shadow:0 0 6px var(--tt-glow),0 0 18px var(--tt-glow),0 0 36px var(--tt-glow)}
 .tt-ink .tt-pop{color:var(--tt-glow);font-family:"Ma Shan Zheng","Noto Serif SC",serif;font-weight:700;
   text-shadow:0 0 1px #fff,0 1px 0 #fff,0 0 14px rgba(255,255,255,.9)}
-@keyframes tt-pop{0%{opacity:0;transform:scale(.5) translateY(10px)}18%{opacity:1;transform:scale(1.12)}32%{transform:scale(1)}75%{opacity:1}100%{opacity:0;transform:translateY(-26px)}}
+@keyframes tt-pop{0%{opacity:0;transform:scale(.5) translateY(10px)}18%{opacity:.72;transform:scale(1.1)}32%{transform:scale(1)}60%{opacity:.6}100%{opacity:0;transform:translateY(-22px)}}
+.tt-title small.tt-chip-new{animation:tt-chip 1.6s ease-out}
+@keyframes tt-chip{0%{transform:scale(1)}15%{transform:scale(1.35);box-shadow:0 0 0 4px color-mix(in srgb,var(--tt-glow) 35%,transparent),0 0 24px var(--tt-glow)}100%{transform:scale(1);box-shadow:none}}
 @media (prefers-reduced-motion:reduce){
   .tt-aura i,.tt-neon .tt-board{animation:none}
   .tt-levelup .tt-sweep,.tt-newskin .tt-burst{animation:none}
@@ -1182,7 +1185,6 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
   const dpr = () => Math.min(3, window.devicePixelRatio || 1);
   let cell = 20;
   let tiles = null;
-  let tileKey = "";
   let mini = 12;
   let slots = 3;
 
@@ -1215,12 +1217,29 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
       canvas.height = Math.round(mini * rowsTall * ratio);
     }
     overlay.style.setProperty("--tt-cell", `${cell}px`);
-    const key = `${cell}@${ratio}@${stage}`;
-    if (key !== tileKey) {
-      tileKey = key;
-      tiles = makeTiles({ ...t, pieces: skin.pieces }, Math.round(cell * ratio));
-    }
+    tiles = tilesFor(stage);
     draw(performance.now(), true);
+    prepareTiles(stage + 1);
+  }
+
+  // Block images per skin and size. Drawing them takes a moment on a phone, so the next skin's
+  // set is prepared while the game idles and a skin change never stalls a falling piece.
+  const tileCache = new Map();
+  function tilesFor(index) {
+    const ratio = dpr();
+    const key = `${cell}@${ratio}@${index % skins.length}`;
+    if (!tileCache.has(key)) {
+      if (tileCache.size > 16) tileCache.clear();
+      tileCache.set(key, makeTiles({ ...t, pieces: skins[index % skins.length].pieces }, Math.round(cell * ratio)));
+    }
+    return tileCache.get(key);
+  }
+  function prepareTiles(index) {
+    const run = () => {
+      if (!closed) tilesFor(index);
+    };
+    if (typeof requestIdleCallback === "function") requestIdleCallback(run, { timeout: 2000 });
+    else setTimeout(run, 400);
   }
 
   function applySkin(next, announce = true) {
@@ -1230,11 +1249,14 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
     overlay.style.setProperty("--tt-glow2", skin.glow2);
     overlay.style.setProperty("--tt-accent", skin.accent);
     skinChip.textContent = skin.name;
-    tileKey = "";
-    layout();
+    tiles = tilesFor(stage);
+    lastShown = "";
+    draw(performance.now(), true);
+    prepareTiles(stage + 1);
     if (!announce) return;
+    // Announce it off the board (the chip and the light behind the board), never over the pieces.
     sound.sfx("skin");
-    popup(`新皮肤 · ${skin.name}`, "tt-small");
+    flashClass(skinChip, "tt-chip-new", 1600);
     flashClass(overlay, "tt-newskin", 1200);
     live.textContent = `新皮肤：${skin.name}`;
   }
@@ -1922,7 +1944,10 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
   current = { close: () => close() };
   game.pause();
   overlay.classList.add("tt-paused");
-  applySkin(0, false);
+  overlay.style.setProperty("--tt-glow", skin.glow);
+  overlay.style.setProperty("--tt-glow2", skin.glow2);
+  overlay.style.setProperty("--tt-accent", skin.accent);
+  layout();
   setBeat();
   showMessage("start");
   return current.close;
