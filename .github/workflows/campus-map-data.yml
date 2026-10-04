@@ -1,0 +1,47 @@
+name: Campus map data
+
+# Downloads the campus from OpenStreetMap into data/campus/ for the 3D campus map.
+# Runs when the fetch script changes, or by hand from the Actions tab.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/fetch-campus-osm.mjs"
+      - ".github/workflows/campus-map-data.yml"
+
+permissions:
+  contents: write
+
+# Same group as the timetable updater, so the two never push at the same time.
+concurrency:
+  group: update-timetables
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Download the campus from OpenStreetMap
+        run: node scripts/fetch-campus-osm.mjs
+
+      - name: Commit changes
+        shell: bash
+        run: |
+          if [ -z "$(git status --porcelain -- data/campus)" ]; then
+            echo "Nothing changed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- data/campus
+          git commit -m "Update campus map data from OpenStreetMap"
+          git pull --rebase origin main
+          git push origin HEAD:main
