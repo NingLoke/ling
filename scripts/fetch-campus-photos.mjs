@@ -34,15 +34,22 @@ async function commons() {
   const ids = new Set();
   const geo = await getJson(`${api}?action=query&list=geosearch&gscoord=${CENTER.lat}|${CENTER.lon}&gsradius=${RADIUS}&gsnamespace=6&gslimit=500&format=json&origin=*`);
   for (const p of geo.query?.geosearch || []) ids.add(p.pageid);
+  // files whose title or description mention the campus (many have no location)
+  for (const words of ["Curtin Miri", "Curtin Malaysia", "Curtin Sarawak", "Curtin University Miri"]) {
+    const found = await getJson(`${api}?action=query&list=search&srsearch=${encodeURIComponent(words)}&srnamespace=6&srlimit=100&format=json&origin=*`).catch(() => null);
+    for (const r of found?.query?.search || []) ids.add(r.pageid);
+  }
   // files filed under the university's category (one level of subcategories), with or without a location
-  const categories = ["Category:Curtin University Malaysia"];
-  for (let i = 0; i < categories.length && i < 12; i++) {
+  const categories = ["Category:Curtin University Malaysia", "Category:Curtin University, Malaysia", "Category:Curtin University Sarawak", "Category:Curtin Malaysia"];
+  const roots = categories.length;
+  for (let i = 0; i < categories.length && i < 20; i++) {
     const members = await getJson(`${api}?action=query&list=categorymembers&cmtitle=${encodeURIComponent(categories[i])}&cmtype=file|subcat&cmlimit=500&format=json&origin=*`).catch(() => null);
     for (const m of members?.query?.categorymembers || []) {
-      if (m.ns === 14 && i === 0) categories.push(m.title);
+      if (m.ns === 14 && i < roots) categories.push(m.title);
       else if (m.ns === 6) ids.add(m.pageid);
     }
   }
+  console.log(`commons: ${ids.size} candidate files`);
   const photos = [];
   const list = [...ids];
   for (let i = 0; i < list.length; i += 50) {
@@ -53,6 +60,9 @@ async function commons() {
       if (!ii || !/^image\/(jpeg|png|webp)$/.test(ii.mime)) continue;
       const meta = ii.extmetadata || {};
       const coord = page.coordinates?.[0];
+      const words = `${page.title} ${plain(meta.ImageDescription?.value)} ${plain(meta.Categories?.value)}`;
+      if (!coord && !/curtin/i.test(words)) continue;
+      if (!coord && !/miri|malaysia|sarawak/i.test(words)) continue;
       photos.push({
         id: `commons:${page.pageid}`,
         source: "Wikimedia Commons",
@@ -103,18 +113,27 @@ async function panoramax() {
 
 // ---------- KartaView (open street-level imagery) ----------
 async function kartaview() {
-  const url = `https://api.openstreetcam.org/2.0/photo/?lat=${CENTER.lat}&lng=${CENTER.lon}&radius=${RADIUS}&itemsPerPage=200`;
-  const data = await getJson(url);
-  const items = data.result?.data || data.data || [];
+  // the v1 "nearby photos" call; the v2 API rejects plain radius searches
+  const body = new URLSearchParams({ lat: CENTER.lat, lng: CENTER.lon, radius: RADIUS, ipp: 200 });
+  const response = await fetch("https://api.openstreetcam.org/1.0/list/nearby-photos/", {
+    method: "POST",
+    headers: { "user-agent": UA, "content-type": "application/x-www-form-urlencoded", accept: "application/json" },
+    body,
+    signal: AbortSignal.timeout(60_000),
+  });
+  const text = await response.text();
+  if (!response.ok) throw new Error(`${response.status} ${text.slice(0, 150)}`);
+  const data = JSON.parse(text);
+  const items = data.currentPageItems || data.osv?.photos || data.result?.data || data.data || [];
   return items.map((p) => ({
     id: `kartaview:${p.id}`,
     source: "KartaView",
     lon: Number(p.lng),
     lat: Number(p.lat),
     heading: p.heading != null ? Number(p.heading) : null,
-    thumb: p.fileurlTh || p.fileurlLTh || p.imageThUrl,
-    full: p.fileurlProc || p.fileurl || p.imageProcUrl,
-    page: `https://kartaview.org/details/${p.sequenceId}/${p.sequenceIndex}`,
+    thumb: [p.lth_name, p.th_name, p.fileurlLTh, p.fileurlTh, p.imageThUrl].find(Boolean)?.replace(/^(?!https?:)/, "https://"),
+    full: [p.name, p.fileurlProc, p.fileurl, p.imageProcUrl].find(Boolean)?.replace(/^(?!https?:)/, "https://"),
+    page: `https://kartaview.org/details/${p.sequence_id ?? p.sequenceId}/${p.sequence_index ?? p.sequenceIndex}`,
     title: "KartaView",
     description: "",
     author: p.username || "KartaView contributor",
