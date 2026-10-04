@@ -2,7 +2,7 @@
 // and walking directions to a building. Opens as a full-screen overlay; returns close().
 // Map data © OpenStreetMap contributors (ODbL). Rendering: MapLibre GL JS (BSD-3-Clause), loaded on demand.
 import {
-  createRouter, buildingForRoom, metresBetween, bearingDeg, progressOnRoute, walkMinutes, TURN_ZH, pointInRing,
+  createRouter, buildingForRoom, metresBetween, bearingDeg, progressOnRoute, walkMinutes, TURN_ZH, pointInRing, createPositionFilter,
 } from "./campus-geo.js?v=94ae86f8c9";
 
 let current = null;
@@ -220,7 +220,7 @@ function campusStyle(c, campus, basemap) {
     version: 8,
     sources: {
       ...(basemap ? { world: { type: "vector", url: basemap } } : {}),
-      campus: { type: "geojson", data: campus, attribution: "© OpenStreetMap contributors" },
+      campus: { type: "geojson", data: campus, attribution: '<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>' },
       route: { type: "geojson", data: EMPTY },
       accuracy: { type: "geojson", data: EMPTY },
     },
@@ -363,7 +363,8 @@ export function openCampusMap(options) {
   let router = null;
   let buildings = new Map(); // code -> feature
   let focusCode = null;
-  let me = null; // { lon, lat, accuracy, at }
+  let me = null; // { lon, lat, accuracy, at }: smoothed position, accuracy as the phone reports it
+  const positionFilter = createPositionFilter();
   let heading = null; // degrees, smoothed
   let watchId = null;
   let meMarker = null;
@@ -682,27 +683,23 @@ export function openCampusMap(options) {
 
   function onPosition(position) {
     const { longitude, latitude, accuracy } = position.coords;
-    const fix = { lon: longitude, lat: latitude, accuracy, at: Date.now() };
-    // gentle smoothing: blend with the previous fix, trusting the more accurate one more
-    if (me && Date.now() - me.at < 15000) {
-      const w = Math.min(0.85, Math.max(0.25, me.accuracy / (me.accuracy + accuracy)));
-      fix.lon = me.lon + (fix.lon - me.lon) * w;
-      fix.lat = me.lat + (fix.lat - me.lat) * w;
-    }
+    const fix = positionFilter.update(longitude, latitude, accuracy, position.timestamp || Date.now());
+    if (!fix) return; // a sudden jump: wait for the next fixes to confirm it
     const first = !me;
-    me = fix;
+    me = { lon: fix.lon, lat: fix.lat, accuracy, at: Date.now() };
     if (msg.textContent.startsWith("正在定位")) msg.textContent = "";
     const point = [me.lon, me.lat];
+    map.getSource("accuracy")?.setData(circle(point, Math.max(3, accuracy)));
+    // while navigating, the dot sits on the route when we are clearly walking along it
+    const shown = (nav && updateNavigation()) || point;
     if (!meMarker) {
       const node = el("div", { class: "cm-me" }, [el("div", { class: "cm-cone" }), el("i")]);
-      meMarker = new maplibre.Marker({ element: node, rotationAlignment: "map", pitchAlignment: "map" }).setLngLat(point).addTo(map);
-    } else meMarker.setLngLat(point);
-    map.getSource("accuracy")?.setData(circle(point, Math.max(3, accuracy)));
+      meMarker = new maplibre.Marker({ element: node, rotationAlignment: "map", pitchAlignment: "map" }).setLngLat(shown).addTo(map);
+    } else meMarker.setLngLat(shown);
     const far = metresBetween(point, campus.meta.centre);
     if (first && far > 2500) say(`你现在离校园约 ${fmtMetres(far)}，到了学校再用导航。`, 6000);
     if (accuracy > 60) say(`GPS 不太准（误差约 ${Math.round(accuracy)} 米），走到空旷处会好一些。`, 4000);
-    if (nav) updateNavigation();
-    else if (follow && (first || far < 3000)) {
+    if (!nav && follow && (first || far < 3000)) {
       if (first) cameraTo(point, { zoom: 18, pitch: 60 });
       else map.easeTo({ center: point, duration: reduceMotion ? 0 : 600 });
     }
@@ -744,8 +741,9 @@ export function openCampusMap(options) {
     );
   }
 
+  /** Re-checks the walk after a new fix; returns where to draw the walker (on the route when close to it). */
   function updateNavigation(force = false) {
-    if (!nav || !me) return;
+    if (!nav || !me) return null;
     const point = [me.lon, me.lat];
     const door = router.nodes[router.doors[nav.code]];
     const f = buildings.get(nav.code);
@@ -762,7 +760,7 @@ export function openCampusMap(options) {
         arrivedSheet(nav.code);
         map.getSource("route")?.setData(EMPTY);
       }
-      return;
+      return null;
     }
     const far = metresBetween(point, campus.meta.centre);
     if (far > 2500) {
@@ -771,11 +769,13 @@ export function openCampusMap(options) {
         el("p", { text: `你现在离校园约 ${fmtMetres(far)}。导航只在校园里用，到了学校再打开。` }),
         el("div", { class: "cm-actions" }, [el("button", { class: "cm-btn", type: "button", text: "结束", onclick: endNavigation })])
       );
-      return;
+      return null;
     }
-    let progress = nav.route ? progressOnRoute(nav.route, point) : null;
-    if (progress?.offRoute) nav.offCount++;
-    else nav.offCount = 0;
+    // off the route = further than the GPS error (20-30 m) from it, twice in a row, with a usable fix
+    const tolerance = Math.max(20, Math.min(me.accuracy, 30));
+    let progress = nav.route ? progressOnRoute(nav.route, point, tolerance) : null;
+    if (progress?.offRoute && me.accuracy <= 30) nav.offCount++;
+    else if (progress && !progress.offRoute) nav.offCount = 0;
     const stale = Date.now() - nav.lastRoute > 4000;
     if (force || !nav.route || (nav.offCount >= 2 && stale)) {
       nav.route = router.route(point, nav.code);
@@ -783,16 +783,18 @@ export function openCampusMap(options) {
       nav.offCount = 0;
       if (!nav.route) {
         say("算不出路线，请先往大路走。", 4000);
-        return;
+        return null;
       }
       map.getSource("route")?.setData({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: nav.route.coords } });
-      progress = progressOnRoute(nav.route, point);
+      progress = progressOnRoute(nav.route, point, tolerance);
     }
     navSheet(progress);
+    const shown = !progress.offRoute && progress.distance <= Math.min(15, Math.max(5, me.accuracy)) ? progress.point : point;
     if (follow) {
-      const bearing = heading ?? bearingDeg(point, progress?.nextStep?.at || door);
-      map.easeTo({ center: point, bearing, pitch: 62, zoom: Math.max(map.getZoom(), 18.2), duration: reduceMotion ? 0 : 800, padding: { bottom: sheet.offsetHeight * 0.9, top: 60 } });
+      const bearing = heading ?? bearingDeg(shown, progress.nextStep?.at || door);
+      map.easeTo({ center: shown, bearing, pitch: 62, zoom: Math.max(map.getZoom(), 18.2), duration: reduceMotion ? 0 : 800, padding: { bottom: sheet.offsetHeight * 0.9, top: 60 } });
     }
+    return shown;
   }
 
   function navSheet(progress) {

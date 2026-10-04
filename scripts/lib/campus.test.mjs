@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   metresBetween, bearingDeg, closestPointOnSegment, polygonCentroid, pointInRing, buildingForRoom,
-  createRouter, directions, progressOnRoute, walkMinutes, CAMPUS_CODES,
+  createRouter, directions, progressOnRoute, walkMinutes, CAMPUS_CODES, createPositionFilter,
 } from "../../assets/campus-geo.js";
 
 const json = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), "utf8"));
@@ -119,4 +119,37 @@ test("directions turn left and right at corners", () => {
   const steps = directions([a, b, c, d]);
   assert.deepEqual(steps.map((s) => s.turn), ["start", "right", "left", "arrive"]);
   assert.ok(Math.abs(steps[1].metres - 100) < 2);
+});
+
+test("GPS smoothing follows a walker, damps jitter and ignores one-off jumps", () => {
+  const f = createPositionFilter();
+  const metresEast = (m) => 114 + m / (111_195 * Math.cos((4.5 * Math.PI) / 180));
+  const first = f.update(114, 4.5, 8, 0);
+  assert.deepEqual([first.lon, first.lat, first.accuracy], [114, 4.5, 8]);
+  // a 6 m wobble one second later moves the dot only part of the way
+  const wobble = f.update(metresEast(6), 4.5, 8, 1000);
+  const moved = metresBetween([114, 4.5], [wobble.lon, wobble.lat]);
+  assert.ok(moved > 0.5 && moved < 4, `moved ${moved.toFixed(1)} m`);
+  // walking east at 1.3 m/s for a minute: the smoothed dot keeps up (no long lag)
+  let out = wobble;
+  for (let s = 2; s <= 60; s++) out = f.update(metresEast(1.3 * s), 4.5, 8, s * 1000) || out;
+  const lag = metresBetween([metresEast(1.3 * 60), 4.5], [out.lon, out.lat]);
+  assert.ok(lag < 8, `lags ${lag.toFixed(1)} m behind`);
+  // a 500 m jump is ignored twice, then accepted when it keeps coming (we really are there)
+  const far = metresEast(1.3 * 60 + 500);
+  assert.equal(f.update(far, 4.5, 8, 61_000), null);
+  assert.equal(f.update(far, 4.5, 8, 62_000), null);
+  const accepted = f.update(far, 4.5, 8, 63_000);
+  assert.ok(accepted && Math.abs(accepted.lon - far) < 1e-9);
+  // after a long gap (phone asleep) the next fix is taken as is
+  const later = f.update(114, 4.5, 20, 200_000);
+  assert.deepEqual([later.lon, later.lat], [114, 4.5]);
+});
+
+test("route progress gives the nearest point on the route", () => {
+  const r = { coords: [[114, 4.5], [114, 4.5009]], steps: directions([[114, 4.5], [114, 4.5009]]) };
+  const p = progressOnRoute(r, [114.00005, 4.5004], 20);
+  assert.ok(Math.abs(p.point[0] - 114) < 1e-9 && Math.abs(p.point[1] - 4.5004) < 1e-6);
+  assert.ok(p.distance > 5 && p.distance < 6);
+  assert.equal(p.offRoute, false);
 });

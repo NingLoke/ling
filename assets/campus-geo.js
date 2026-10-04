@@ -97,6 +97,43 @@ export function buildingForRoom(room, { rooms = ROOM_ALIASES, codes = CAMPUS_COD
   return null;
 }
 
+/**
+ * Smooths phone GPS fixes for someone walking: a constant-position Kalman filter (uncertainty grows by
+ * q metres per second, each fix weighs in by its reported accuracy), and a fix that would mean running
+ * faster than maxSpeed is ignored, unless several in a row agree (then we really moved: start over).
+ *   update(lon, lat, accuracy, timeMs) -> { lon, lat, accuracy } or null when the fix was ignored
+ */
+export function createPositionFilter({ q = 4, maxSpeed = 8, stale = 30_000 } = {}) {
+  let state = null;
+  let ignored = 0;
+  const start = (lon, lat, accuracy, at) => {
+    state = { lon, lat, variance: accuracy * accuracy, at };
+    ignored = 0;
+    return { lon, lat, accuracy };
+  };
+  return {
+    update(lon, lat, accuracy, at) {
+      const acc = Math.max(1, Number.isFinite(accuracy) ? accuracy : 50);
+      if (!state || at - state.at > stale) return start(lon, lat, acc, at);
+      const dt = Math.max(0, (at - state.at) / 1000);
+      const variance = state.variance + dt * q * q;
+      const jump = metresBetween([state.lon, state.lat], [lon, lat]);
+      if (jump > maxSpeed * Math.max(dt, 1) + acc + Math.sqrt(variance)) {
+        if (++ignored < 3) return null;
+        return start(lon, lat, acc, at);
+      }
+      ignored = 0;
+      const k = variance / (variance + acc * acc);
+      state = { lon: state.lon + k * (lon - state.lon), lat: state.lat + k * (lat - state.lat), variance: (1 - k) * variance, at };
+      return { lon: state.lon, lat: state.lat, accuracy: Math.sqrt(state.variance) };
+    },
+    reset() {
+      state = null;
+      ignored = 0;
+    },
+  };
+}
+
 /** "about 3 min": walking at 1.25 m/s. */
 export const walkMinutes = (metres) => Math.max(1, Math.round(metres / 1.25 / 60));
 
@@ -252,8 +289,9 @@ export function directions(coords) {
 export const TURN_ZH = { start: "出发", left: "左转", right: "右转", "slight-left": "稍向左", "slight-right": "稍向右", uturn: "掉头", arrive: "到达" };
 
 /**
- * Where the walker is along a route: { along, remaining, offRoute, nextStep } given their position.
- * along/remaining in metres; offRoute when more than `tolerance` metres from the line.
+ * Where the walker is along a route: { along, remaining, offRoute, distance, point, nextStep, toNext }.
+ * along/remaining/distance/toNext in metres; point is the nearest spot on the route; offRoute when more
+ * than `tolerance` metres from the line.
  */
 export function progressOnRoute(routeResult, position, tolerance = 30) {
   const { coords, steps } = routeResult;
@@ -263,7 +301,7 @@ export function progressOnRoute(routeResult, position, tolerance = 30) {
     const p = closestPointOnSegment(position, coords[i], coords[i + 1]);
     const d = metresBetween(position, p);
     const along = walked + metresBetween(coords[i], p);
-    if (!best || d < best.distance) best = { distance: d, along, segment: i };
+    if (!best || d < best.distance) best = { distance: d, along, segment: i, point: p };
     walked += metresBetween(coords[i], coords[i + 1]);
   }
   const total = walked;
@@ -278,5 +316,5 @@ export function progressOnRoute(routeResult, position, tolerance = 30) {
       break;
     }
   }
-  return { along: best.along, remaining: Math.max(0, total - best.along), offRoute: best.distance > tolerance, distance: best.distance, nextStep, toNext };
+  return { along: best.along, remaining: Math.max(0, total - best.along), offRoute: best.distance > tolerance, distance: best.distance, point: best.point, nextStep, toNext };
 }
