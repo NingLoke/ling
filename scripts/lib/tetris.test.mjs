@@ -1,7 +1,7 @@
 // Tests for the pure game logic in assets/tetris.js (the overlay UI is not loaded in node).
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createGame, PIECES, COLS, ROWS, LOCK_DELAY, gravityMs } from "../../assets/tetris.js";
+import { createGame, PIECES, COLS, ROWS, LOCK_DELAY, gravityMs, skinStage, nextSkinAt, buildSong } from "../../assets/tetris.js";
 
 // Deterministic random numbers so every run deals the same pieces.
 const seededRandom = (seed = 1) => {
@@ -260,4 +260,21 @@ test("pause freezes gravity and input", () => {
   assert.equal(game.togglePause(), false);
   game.tick(gravityMs(1) + 1);
   assert.equal(game.getState().active.y, y0 + 1);
+});
+
+test("skins change at 1,500 / 4,000 / 8,000 / 14,000 / 22,000 and then every 10,000 points", () => {
+  assert.deepEqual([0, 1499, 1500, 3999, 4000, 8000, 14000, 21999, 22000, 31999, 32000, 52000].map(skinStage), [0, 0, 1, 1, 2, 3, 4, 4, 5, 5, 6, 8]);
+  assert.deepEqual([0, 1, 2, 3, 4, 5, 6].map(nextSkinAt), [1500, 4000, 8000, 14000, 22000, 32000, 42000]);
+  for (let stage = 0; stage < 9; stage++) assert.equal(skinStage(nextSkinAt(stage)), stage + 1);
+});
+
+test("the music loop is whole bars: melody A twice, then B (96 beats)", () => {
+  const { events, beats } = buildSong();
+  assert.equal(beats, 96);
+  const lead = events.filter((e) => e.part === "lead");
+  const bass = events.filter((e) => e.part === "bass");
+  assert.equal(bass.length, 24 * 8, "eighth-note bass in all 24 bars");
+  assert.ok(lead.every((e) => e.beat + e.beats <= beats));
+  assert.ok(events.every((e, i) => i === 0 || events[i - 1].beat <= e.beat), "sorted by time");
+  assert.equal(lead[0].midi, 76, "starts on E5");
 });

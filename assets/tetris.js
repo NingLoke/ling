@@ -435,6 +435,51 @@ const CSS = `
 .tt-card .tt-score{font-size:30px;font-weight:700;color:var(--tt-text);font-variant-numeric:tabular-nums;margin:2px 0 4px}
 .tt-card .tt-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .tt-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.tt-top,.tt-main,.tt-controls,.tt-hint{position:relative;z-index:1}
+.tt-title small{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:.06em;
+  vertical-align:3px;color:var(--tt-glow);border:1px solid color-mix(in srgb,var(--tt-glow) 45%,transparent);background:color-mix(in srgb,var(--tt-glow) 10%,transparent)}
+.tt-icon{padding:0;width:44px;display:grid;place-items:center}.tt-icon svg{width:22px;height:22px}
+/* drifting light (neon) / drifting mist (ink) behind everything */
+.tt-aura{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+.tt-aura i{position:absolute;width:70vmax;height:70vmax;border-radius:50%;opacity:.2;filter:blur(30px);transition:background 1.2s;
+  background:radial-gradient(closest-side,var(--tt-glow),transparent);animation:tt-drift 19s ease-in-out infinite alternate}
+.tt-aura i:nth-child(1){left:-30vmax;top:-25vmax}
+.tt-aura i:nth-child(2){right:-35vmax;bottom:-30vmax;background:radial-gradient(closest-side,var(--tt-glow2),transparent);animation-duration:23s;animation-delay:-7s}
+.tt-aura i:nth-child(3){left:20vmax;top:30vmax;width:45vmax;height:45vmax;opacity:.12;animation-duration:29s;animation-delay:-13s}
+.tt-ink .tt-aura i{opacity:.09;filter:blur(40px);mix-blend-mode:multiply}
+@keyframes tt-drift{from{transform:translate(0,0) scale(1)}to{transform:translate(18vmax,12vmax) scale(1.25)}}
+/* the board breathes with the music; flashes on clears */
+.tt-neon .tt-board{box-shadow:0 0 0 1px color-mix(in srgb,var(--tt-glow) 25%,transparent),0 0 28px -6px color-mix(in srgb,var(--tt-glow) 45%,transparent);
+  animation:tt-breathe var(--tt-beat,.9s) ease-in-out infinite alternate}
+@keyframes tt-breathe{to{box-shadow:0 0 0 1px color-mix(in srgb,var(--tt-glow) 45%,transparent),0 0 44px -4px color-mix(in srgb,var(--tt-glow) 70%,transparent)}}
+.tt-paused .tt-board{animation-play-state:paused}
+.tt-boardwrap::after{content:"";position:absolute;inset:-2px;border-radius:8px;pointer-events:none;opacity:0;transition:opacity .45s;
+  box-shadow:0 0 0 2px var(--tt-glow),0 0 50px 6px color-mix(in srgb,var(--tt-glow) 70%,transparent)}
+.tt-boardwrap.tt-hit::after{opacity:1;transition:opacity .05s}
+.tt-ink .tt-boardwrap::after{box-shadow:0 0 0 2px color-mix(in srgb,var(--tt-glow) 70%,transparent),0 0 40px 4px color-mix(in srgb,var(--tt-glow) 30%,transparent)}
+/* level up: a band of light sweeps across; new skin: a burst from the middle */
+.tt-sweep,.tt-burst{position:absolute;inset:0;pointer-events:none;z-index:2;opacity:0}
+.tt-sweep{background:linear-gradient(100deg,transparent 35%,color-mix(in srgb,var(--tt-glow) 45%,transparent) 50%,transparent 65%);background-size:250% 100%}
+.tt-levelup .tt-sweep{animation:tt-sweep .9s ease-out}
+@keyframes tt-sweep{0%{opacity:1;background-position:120% 0}100%{opacity:0;background-position:-20% 0}}
+.tt-burst{background:radial-gradient(circle at 50% 45%,color-mix(in srgb,var(--tt-glow) 70%,transparent),transparent 60%)}
+.tt-newskin .tt-burst{animation:tt-burst 1.2s ease-out}
+@keyframes tt-burst{0%{opacity:.95;transform:scale(.3)}100%{opacity:0;transform:scale(1.8)}}
+/* "四消！" style call-outs over the board */
+.tt-pops{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;z-index:3}
+.tt-pop{font-weight:800;font-size:calc(var(--tt-cell,24px) * 1.25);letter-spacing:.08em;white-space:nowrap;animation:tt-pop 1.1s ease-out forwards}
+.tt-pop.tt-big{font-size:calc(var(--tt-cell,24px) * 1.8)}
+.tt-pop.tt-small{font-size:calc(var(--tt-cell,24px) * .85)}
+.tt-neon .tt-pop{color:#fff;text-shadow:0 0 6px var(--tt-glow),0 0 18px var(--tt-glow),0 0 36px var(--tt-glow)}
+.tt-ink .tt-pop{color:var(--tt-glow);font-family:"Ma Shan Zheng","Noto Serif SC",serif;font-weight:700;
+  text-shadow:0 0 1px #fff,0 1px 0 #fff,0 0 14px rgba(255,255,255,.9)}
+@keyframes tt-pop{0%{opacity:0;transform:scale(.5) translateY(10px)}18%{opacity:1;transform:scale(1.12)}32%{transform:scale(1)}75%{opacity:1}100%{opacity:0;transform:translateY(-26px)}}
+@media (prefers-reduced-motion:reduce){
+  .tt-aura i,.tt-neon .tt-board{animation:none}
+  .tt-levelup .tt-sweep,.tt-newskin .tt-burst{animation:none}
+  .tt-pop{animation:tt-fade 1.1s forwards}
+}
+@keyframes tt-fade{0%,70%{opacity:1}100%{opacity:0}}
 `;
 
 const ICONS = {
@@ -443,6 +488,8 @@ const ICONS = {
   rotate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/></svg>',
   down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v13"/><path d="M6 12l6 6 6-6"/></svg>',
   drop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 5l5 5 5-5"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg>',
+  soundOn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg>',
+  soundOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l5 6"/><path d="M22 9l-5 6"/></svg>',
 };
 
 function el(tag, attrs = {}, children = []) {
@@ -615,6 +662,335 @@ function drawInkTile(ctx, size, color, rand) {
   ctx.stroke(outline);
 }
 
+// ---------------------------------------------------------------------------
+// Skins: the look changes as the score climbs (1,500 / 4,000 / 8,000 / 14,000 / 22,000, then every 10,000)
+// ---------------------------------------------------------------------------
+
+const SKIN_STEPS = [1500, 4000, 8000, 14000, 22000];
+const SKIN_EVERY = 10000;
+
+/** How many skin milestones a score has passed. */
+export function skinStage(score) {
+  let stage = SKIN_STEPS.filter((step) => score >= step).length;
+  const last = SKIN_STEPS.at(-1);
+  if (score >= last) stage += Math.floor((score - last) / SKIN_EVERY);
+  return stage;
+}
+
+/** Score needed for the milestone after `stage`. */
+export function nextSkinAt(stage) {
+  return stage < SKIN_STEPS.length ? SKIN_STEPS[stage] : SKIN_STEPS.at(-1) + (stage - SKIN_STEPS.length + 1) * SKIN_EVERY;
+}
+
+// The first skin of each style is the page's own theme.
+const SKINS = {
+  neon: [
+    { name: "夜空" },
+    { name: "极光", accent: "#6ff7c8", glow: "#6ff7c8", glow2: "#a98bff", board: ["#06171a", "#0b0f24"], grid: "rgba(111,247,200,.08)",
+      pieces: { I: "#6ff7c8", O: "#c8f76f", T: "#a98bff", S: "#3fd6a0", Z: "#ff7ac8", J: "#5aa9ff", L: "#7ae0ff" } },
+    { name: "赛博", accent: "#ff4fd8", glow: "#ff4fd8", glow2: "#00f0ff", board: ["#16051f", "#05061a"], grid: "rgba(255,79,216,.09)",
+      pieces: { I: "#00f0ff", O: "#ffe600", T: "#ff4fd8", S: "#39ff88", Z: "#ff3b6b", J: "#6b5bff", L: "#ff9a3b" } },
+    { name: "熔岩", accent: "#ff7a2f", glow: "#ff5a1f", glow2: "#ffd166", board: ["#1d0905", "#0d0505"], grid: "rgba(255,122,47,.09)",
+      pieces: { I: "#ffb347", O: "#ffe066", T: "#ff5e3a", S: "#ff9f1c", Z: "#e63946", J: "#d62828", L: "#ff7b00" } },
+    { name: "冰川", accent: "#9be7ff", glow: "#9be7ff", glow2: "#5fa8ff", board: ["#061423", "#0a1a2e"], grid: "rgba(155,231,255,.09)",
+      pieces: { I: "#e0fbff", O: "#b8f2ff", T: "#9bb8ff", S: "#7fe3f0", Z: "#c7d7ff", J: "#5fa8ff", L: "#a0f0e0" } },
+    { name: "黄金", accent: "#ffd166", glow: "#ffcf4a", glow2: "#f4a259", board: ["#1a1306", "#0b0904"], grid: "rgba(255,209,102,.09)",
+      pieces: { I: "#fff1b8", O: "#ffd166", T: "#f4a259", S: "#e9c46a", Z: "#e76f51", J: "#c99a3a", L: "#ffe08a" } },
+  ],
+  ink: [
+    { name: "水墨" },
+    { name: "青绿", accent: "#2f7d6d", glow: "#2f7d6d", glow2: "#2f6f8f", board: ["#f3f1e7", "#e6ede2"], grid: "rgba(47,125,109,.12)",
+      pieces: { I: "#2f6f8f", O: "#7a9a3a", T: "#2f7d6d", S: "#4f8f6f", Z: "#3a5f7d", J: "#1f4f5f", L: "#6f8f4f" } },
+    { name: "朱砂", accent: "#c0392b", glow: "#c0392b", glow2: "#c97b3a", board: ["#f6eee4", "#efe1d2"], grid: "rgba(192,57,43,.12)",
+      pieces: { I: "#a8402c", O: "#c97b3a", T: "#c0392b", S: "#8c3b2e", Z: "#d4553f", J: "#6e2a22", L: "#b5652e" } },
+    { name: "金碧", accent: "#b8862b", glow: "#c9972f", glow2: "#1f3f6f", board: ["#f5efdc", "#ebe0c2"], grid: "rgba(184,134,43,.14)",
+      pieces: { I: "#1f3f6f", O: "#c9972f", T: "#b8862b", S: "#2f5f5f", Z: "#8f3f2f", J: "#14284a", L: "#d4a843" } },
+    { name: "雪夜", accent: "#5b6f9f", glow: "#5b6f9f", glow2: "#8a96b0", board: ["#eef1f5", "#e0e6ee"], grid: "rgba(91,111,159,.13)",
+      pieces: { I: "#4a5a7f", O: "#8a96b0", T: "#5b6f9f", S: "#3f4f6f", Z: "#6f7f9f", J: "#232c40", L: "#9aa6c0" } },
+    { name: "桃花", accent: "#d9667f", glow: "#d9667f", glow2: "#8f9f5f", board: ["#fbf1ef", "#f5e2e2"], grid: "rgba(217,102,127,.13)",
+      pieces: { I: "#c75b7a", O: "#e8a0a8", T: "#d9667f", S: "#8f9f5f", Z: "#b04a6a", J: "#7a3a52", L: "#e89aa6" } },
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// Music & sound effects (Web Audio, synthesised: no audio files)
+// The tune is Korobeiniki (1861), the Russian folk song best known as the Tetris theme (public domain).
+// ---------------------------------------------------------------------------
+
+const NOTE_OFFSETS = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+const midiOf = (name) => {
+  const m = /^([A-G])(#?)(\d)$/.exec(name);
+  return 12 * (Number(m[3]) + 1) + NOTE_OFFSETS[m[1]] + (m[2] ? 1 : 0);
+};
+const hz = (midi) => 440 * 2 ** ((midi - 69) / 12);
+// [note or null for a rest, beats]
+const MELODY_A = [
+  ["E5", 1], ["B4", 0.5], ["C5", 0.5], ["D5", 1], ["C5", 0.5], ["B4", 0.5],
+  ["A4", 1], ["A4", 0.5], ["C5", 0.5], ["E5", 1], ["D5", 0.5], ["C5", 0.5],
+  ["B4", 1.5], ["C5", 0.5], ["D5", 1], ["E5", 1],
+  ["C5", 1], ["A4", 1], ["A4", 1], [null, 1],
+  ["D5", 1.5], ["F5", 0.5], ["A5", 1], ["G5", 0.5], ["F5", 0.5],
+  ["E5", 1.5], ["C5", 0.5], ["E5", 1], ["D5", 0.5], ["C5", 0.5],
+  ["B4", 1], ["B4", 0.5], ["C5", 0.5], ["D5", 1], ["E5", 1],
+  ["C5", 1], ["A4", 1], ["A4", 1], [null, 1],
+];
+const MELODY_B = [
+  ["E5", 2], ["C5", 2], ["D5", 2], ["B4", 2], ["C5", 2], ["A4", 2], ["G#4", 2], ["B4", 2],
+  ["E5", 2], ["C5", 2], ["D5", 2], ["B4", 2], ["C5", 1], ["E5", 1], ["A5", 2], ["G#5", 4],
+];
+const BASS_A = ["E2", "A2", "E2", "A2", "D2", "C2", "E2", "A2"]; // one root per bar
+const BASS_B = ["A2", "E2", "A2", "E2", "A2", "E2", "A2", "E2"];
+
+/** The whole loop (A A B) as timed notes: { beat, beats, midi, part }. */
+export function buildSong() {
+  const events = [];
+  let beat = 0;
+  const melody = (notes) => {
+    for (const [name, beats] of notes) {
+      if (name) events.push({ beat, beats, midi: midiOf(name), part: "lead" });
+      beat += beats;
+    }
+  };
+  const bass = (roots, start) => {
+    roots.forEach((root, bar) => {
+      for (let i = 0; i < 8; i++) events.push({ beat: start + bar * 4 + i / 2, beats: 0.5, midi: midiOf(root) + (i % 2 ? 12 : 0), part: "bass" });
+    });
+  };
+  bass(BASS_A, 0);
+  melody(MELODY_A);
+  bass(BASS_A, 32);
+  melody(MELODY_A);
+  bass(BASS_B, 64);
+  melody(MELODY_B);
+  events.sort((a, b) => a.beat - b.beat || (a.part === "bass" ? -1 : 1));
+  return { events, beats: beat };
+}
+
+const tempoFor = (level) => Math.min(220, 132 + (level - 1) * 8); // beats per minute
+
+function createSound(style) {
+  const AudioCtx = typeof window !== "undefined" && (window.AudioContext || window.webkitAudioContext);
+  const song = buildSong();
+  let ctx = null;
+  let master = null;
+  let fxBus = null;
+  let echo = null;
+  let musicBus = null;
+  let muted = false;
+  let level = 1;
+  let playing = false;
+  let timer = 0;
+  let index = 0;
+  let loopBeat = 0;
+  let cursorBeat = 0;
+  let cursorTime = 0;
+
+  function ensure() {
+    if (!AudioCtx) return false;
+    if (!ctx) {
+      try {
+        ctx = new AudioCtx();
+      } catch {
+        return false;
+      }
+      master = ctx.createGain();
+      master.gain.value = muted ? 0 : 0.8;
+      master.connect(ctx.destination);
+      if (style === "ink") {
+        // a little room: soft echo, so the plucked notes ring like a zither
+        echo = ctx.createGain();
+        const delay = ctx.createDelay(1);
+        delay.delayTime.value = 0.24;
+        const feedback = ctx.createGain();
+        feedback.gain.value = 0.3;
+        const tone = ctx.createBiquadFilter();
+        tone.type = "lowpass";
+        tone.frequency.value = 1800;
+        const wet = ctx.createGain();
+        wet.gain.value = 0.3;
+        echo.connect(delay);
+        delay.connect(tone);
+        tone.connect(feedback);
+        feedback.connect(delay);
+        tone.connect(wet);
+        wet.connect(master);
+      }
+      fxBus = ctx.createGain();
+      fxBus.gain.value = 0.9;
+      fxBus.connect(master);
+      if (echo) fxBus.connect(echo);
+    }
+    if (ctx.state === "suspended") ctx.resume().catch(() => {});
+    return true;
+  }
+
+  function newMusicBus() {
+    if (musicBus) {
+      const old = musicBus;
+      old.gain.setTargetAtTime(0, ctx.currentTime, 0.03);
+      setTimeout(() => old.disconnect(), 500);
+    }
+    musicBus = ctx.createGain();
+    musicBus.gain.value = 0.6;
+    musicBus.connect(master);
+    if (echo) musicBus.connect(echo);
+  }
+
+  function note(time, midi, length, part) {
+    const gain = ctx.createGain();
+    gain.connect(musicBus);
+    const bass = part === "bass";
+    if (style === "ink") {
+      const body = ctx.createOscillator();
+      body.type = "triangle";
+      body.frequency.value = hz(midi);
+      const shine = ctx.createOscillator();
+      shine.type = "sine";
+      shine.frequency.value = hz(midi) * 2;
+      const shineGain = ctx.createGain();
+      shineGain.gain.value = bass ? 0.12 : 0.35;
+      body.connect(gain);
+      shine.connect(shineGain);
+      shineGain.connect(gain);
+      const decay = bass ? Math.max(0.3, length) : Math.max(0.5, length * 1.8);
+      gain.gain.setValueAtTime(0.0001, time);
+      gain.gain.exponentialRampToValueAtTime(bass ? 0.13 : 0.2, time + 0.006);
+      gain.gain.exponentialRampToValueAtTime(0.0006, time + decay);
+      body.start(time);
+      shine.start(time);
+      body.stop(time + decay + 0.05);
+      shine.stop(time + decay + 0.05);
+    } else {
+      const osc = ctx.createOscillator();
+      osc.type = bass ? "triangle" : "square";
+      osc.frequency.value = hz(midi);
+      if (bass) osc.connect(gain);
+      else {
+        const soften = ctx.createBiquadFilter();
+        soften.type = "lowpass";
+        soften.frequency.value = 3400;
+        osc.connect(soften);
+        soften.connect(gain);
+      }
+      const peak = bass ? 0.2 : 0.07;
+      const end = time + length;
+      gain.gain.setValueAtTime(0.0001, time);
+      gain.gain.exponentialRampToValueAtTime(peak, time + 0.008);
+      gain.gain.exponentialRampToValueAtTime(peak * 0.6, Math.max(time + 0.02, end - 0.03));
+      gain.gain.exponentialRampToValueAtTime(0.0005, end);
+      osc.start(time);
+      osc.stop(end + 0.02);
+    }
+  }
+
+  // Look-ahead scheduler: queue the notes of the next quarter second, every 60 ms.
+  function pump() {
+    if (!playing || !ctx) return;
+    const horizon = ctx.currentTime + 0.25;
+    const secondsPerBeat = 60 / tempoFor(level);
+    for (;;) {
+      const event = song.events[index];
+      const beat = loopBeat + event.beat;
+      const time = cursorTime + (beat - cursorBeat) * secondsPerBeat;
+      if (time > horizon) break;
+      if (time >= ctx.currentTime - 0.05) note(Math.max(time, ctx.currentTime), event.midi, event.beats * secondsPerBeat * (event.part === "lead" ? 0.92 : 0.85), event.part);
+      cursorTime = time;
+      cursorBeat = beat;
+      index++;
+      if (index >= song.events.length) {
+        index = 0;
+        loopBeat += song.beats;
+      }
+    }
+  }
+
+  function tone(time, freq, length, { type = "sine", gain = 0.1, to = null } = {}) {
+    const osc = ctx.createOscillator();
+    const amp = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, time);
+    if (to) osc.frequency.exponentialRampToValueAtTime(to, time + length);
+    amp.gain.setValueAtTime(0.0001, time);
+    amp.gain.exponentialRampToValueAtTime(gain, time + 0.005);
+    amp.gain.exponentialRampToValueAtTime(0.0005, time + length);
+    osc.connect(amp);
+    amp.connect(fxBus);
+    osc.start(time);
+    osc.stop(time + length + 0.02);
+  }
+
+  return {
+    start() {
+      if (!ensure()) return;
+      newMusicBus();
+      index = 0;
+      loopBeat = 0;
+      cursorBeat = 0;
+      cursorTime = ctx.currentTime + 0.08;
+      playing = true;
+      clearInterval(timer);
+      timer = setInterval(pump, 60);
+      pump();
+    },
+    pause() {
+      clearInterval(timer);
+      timer = 0;
+      if (ctx && ctx.state === "running") ctx.suspend().catch(() => {});
+    },
+    resume() {
+      if (!ctx) return;
+      if (ctx.state === "suspended") ctx.resume().catch(() => {});
+      if (playing && !timer) timer = setInterval(pump, 60);
+    },
+    stopMusic() {
+      playing = false;
+      clearInterval(timer);
+      timer = 0;
+      if (musicBus && ctx) {
+        musicBus.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
+        musicBus = null;
+      }
+    },
+    setLevel(value) {
+      level = value;
+    },
+    setMuted(value) {
+      muted = value;
+      if (master) master.gain.setTargetAtTime(value ? 0 : 0.8, ctx.currentTime, 0.02);
+    },
+    sfx(name, arg = 0) {
+      if (!ctx || muted || ctx.state !== "running") return;
+      const now = ctx.currentTime + 0.005;
+      const wave = style === "ink" ? "triangle" : "square";
+      if (name === "move") tone(now, style === "ink" ? 520 : 700, 0.035, { type: style === "ink" ? "sine" : "square", gain: 0.025 });
+      else if (name === "rotate") tone(now, style === "ink" ? 660 : 880, 0.06, { type: wave, gain: 0.035, to: style === "ink" ? 740 : 1180 });
+      else if (name === "lock") tone(now, 260, 0.05, { type: "triangle", gain: 0.05, to: 200 });
+      else if (name === "drop") {
+        tone(now, 190, 0.17, { type: "sine", gain: 0.22, to: 52 });
+        tone(now, 95, 0.09, { type: "triangle", gain: 0.1 });
+      } else if (name === "hold") {
+        tone(now, hz(76), 0.07, { type: wave, gain: 0.035 });
+        tone(now + 0.06, hz(71), 0.08, { type: wave, gain: 0.035 });
+      } else if (name === "clear") {
+        const notes = arg >= 4 ? [72, 76, 79, 84, 88, 91, 96] : [72, 76, 79, 84].slice(0, arg + 1);
+        notes.forEach((m, i) => tone(now + i * 0.055, hz(m), 0.18, { type: wave, gain: arg >= 4 ? 0.06 : 0.05 }));
+        if (arg >= 4) tone(now, 70, 0.45, { type: "sine", gain: 0.18, to: 38 });
+      } else if (name === "level") {
+        [67, 72, 76, 79].forEach((m, i) => tone(now + i * 0.08, hz(m), 0.22, { type: wave, gain: 0.055 }));
+      } else if (name === "skin") {
+        [79, 83, 86, 91, 95, 98].forEach((m, i) => tone(now + i * 0.06, hz(m), 0.35, { type: "sine", gain: 0.06 }));
+      } else if (name === "over") {
+        [64, 60, 57, 52].forEach((m, i) => tone(now + i * 0.22, hz(m), 0.32, { type: wave, gain: 0.07 }));
+      }
+    },
+    close() {
+      this.stopMusic();
+      if (ctx) ctx.close().catch(() => {});
+      ctx = null;
+    },
+  };
+}
+
 /**
  * Open the full-screen game. Returns close().
  *   theme       { style: "neon"|"ink", background, panel, grid, text, muted, accent, pieces: {I..L}, font }
@@ -634,6 +1010,22 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
   let best = readBest(storageKey);
   let started = false;
   let closed = false;
+  const sound = createSound(t.style);
+  const soundKey = `${storageKey}:sound`;
+  let soundOn = true;
+  try {
+    soundOn = localStorage.getItem(soundKey) !== "off";
+  } catch {
+    /* private mode */
+  }
+  sound.setMuted(!soundOn);
+  const skins = SKINS[ink ? "ink" : "neon"].map((skin, i) =>
+    i === 0
+      ? { name: skin.name, accent: t.accent, glow: t.accent, glow2: t.pieces.T, board: [ink ? t.panel : t.background, ink ? t.panel : t.background], grid: t.grid, pieces: t.pieces }
+      : skin
+  );
+  let stage = 0;
+  let skin = skins[0];
 
   // ----- DOM -----
   const style = el("style", { text: CSS });
@@ -655,11 +1047,23 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
 
   const pauseBtn = el("button", { class: "tt-btn", type: "button", text: "暂停" });
   const closeBtn = el("button", { class: "tt-btn", type: "button", text: "关闭" });
-  const top = el("div", { class: "tt-top" }, [el("h2", { class: "tt-title", text: title }), pauseBtn, closeBtn]);
+  const soundBtn = el("button", { class: "tt-btn tt-icon", type: "button" });
+  const skinChip = el("small", { text: skin.name });
+  const top = el("div", { class: "tt-top" }, [el("h2", { class: "tt-title" }, [title, skinChip]), soundBtn, pauseBtn, closeBtn]);
+  const showSound = () => {
+    soundBtn.innerHTML = soundOn ? ICONS.soundOn : ICONS.soundOff; // static icons only
+    soundBtn.setAttribute("aria-label", soundOn ? "关闭声音" : "打开声音");
+    soundBtn.setAttribute("aria-pressed", String(soundOn));
+  };
+  showSound();
 
   const board = el("canvas", { class: "tt-board", role: "img", "aria-label": "游戏区域" });
   const msg = el("div", { class: "tt-msg" });
-  const boardWrap = el("div", { class: "tt-boardwrap" }, [board, msg]);
+  const pops = el("div", { class: "tt-pops", "aria-hidden": "true" });
+  const boardWrap = el("div", { class: "tt-boardwrap" }, [board, pops, msg]);
+  const aura = el("div", { class: "tt-aura", "aria-hidden": "true" }, [el("i"), el("i"), el("i")]);
+  const sweep = el("div", { class: "tt-sweep", "aria-hidden": "true" });
+  const burst = el("div", { class: "tt-burst", "aria-hidden": "true" });
 
   const holdCanvas = el("canvas");
   const nextCanvas = el("canvas");
@@ -689,10 +1093,10 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
     ctl("drop", "直接落下", ICONS.drop),
     el("button", { class: "tt-ctl", type: "button", "aria-label": "暂存方块", "data-action": "hold" }, [el("small", { text: "暂存" })]),
   ]);
-  const hint = el("div", { class: "tt-hint", text: "← → 移动 · ↑ 或 X 旋转 · Z 反转 · ↓ 加速 · 空格 落下 · C 暂存 · P 暂停 · Esc 关闭" });
+  const hint = el("div", { class: "tt-hint", text: "← → 移动 · ↑ 或 X 旋转 · Z 反转 · ↓ 加速 · 空格 落下 · C 暂存 · P 暂停 · M 声音 · Esc 关闭" });
   const live = el("div", { class: "tt-sr", "aria-live": "polite" });
 
-  overlay.append(style, top, main, controls, hint, live);
+  overlay.append(style, aura, top, main, controls, hint, live, sweep, burst);
 
   // ----- page lock: no scrolling behind, page made inert, focus remembered -----
   const scrollY = window.scrollY;
@@ -772,12 +1176,29 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
       canvas.width = Math.round(mini * 4 * ratio);
       canvas.height = Math.round(mini * rowsTall * ratio);
     }
-    const key = `${cell}@${ratio}`;
+    overlay.style.setProperty("--tt-cell", `${cell}px`);
+    const key = `${cell}@${ratio}@${stage}`;
     if (key !== tileKey) {
       tileKey = key;
-      tiles = makeTiles(t, Math.round(cell * ratio));
+      tiles = makeTiles({ ...t, pieces: skin.pieces }, Math.round(cell * ratio));
     }
     draw(performance.now(), true);
+  }
+
+  function applySkin(next, announce = true) {
+    stage = next;
+    skin = skins[next % skins.length];
+    overlay.style.setProperty("--tt-glow", skin.glow);
+    overlay.style.setProperty("--tt-glow2", skin.glow2);
+    overlay.style.setProperty("--tt-accent", skin.accent);
+    skinChip.textContent = skin.name;
+    tileKey = "";
+    layout();
+    if (!announce) return;
+    sound.sfx("skin");
+    popup(`新皮肤 · ${skin.name}`, "tt-small");
+    flashClass(overlay, "tt-newskin", 1200);
+    live.textContent = `新皮肤：${skin.name}`;
   }
 
   // ----- drawing -----
@@ -792,7 +1213,10 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
   }
 
   function drawBoardBackground(ctx, w, h) {
-    ctx.fillStyle = ink ? t.panel : t.background;
+    const fill = ctx.createLinearGradient(0, 0, 0, h);
+    fill.addColorStop(0, skin.board[0]);
+    fill.addColorStop(1, skin.board[1]);
+    ctx.fillStyle = fill;
     ctx.fillRect(0, 0, w, h);
     if (ink) {
       // faint paper fibres
@@ -800,7 +1224,7 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
       ctx.fillStyle = "rgba(0,0,0,.025)";
       for (let i = 0; i < 70; i++) ctx.fillRect(rand() * w, rand() * h, 1 + rand() * w * 0.05, 1);
     }
-    ctx.strokeStyle = t.grid;
+    ctx.strokeStyle = skin.grid;
     ctx.lineWidth = 1;
     ctx.beginPath();
     const size = w / COLS;
@@ -848,7 +1272,7 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
     );
 
     if (state.active && !state.over) {
-      const color = t.pieces[state.active.type];
+      const color = skin.pieces[state.active.type];
       ctx.save();
       for (const [x, y] of state.ghost) {
         if (y < 0) continue;
@@ -874,8 +1298,52 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
         flashes.splice(i, 1);
         continue;
       }
-      ctx.fillStyle = ink ? withAlpha(t.accent, 0.35 * (left / 260)) : `rgba(255,255,255,${0.55 * (left / 260)})`;
+      ctx.fillStyle = ink ? withAlpha(skin.accent, 0.35 * (left / 260)) : `rgba(255,255,255,${0.55 * (left / 260)})`;
       for (const row of flash.rows) ctx.fillRect(0, row * size, w, size);
+    }
+
+    // hard-drop light trails
+    for (let i = trails.length - 1; i >= 0; i--) {
+      const trail = trails[i];
+      const left = (trail.until - now) / 260;
+      if (left <= 0) {
+        trails.splice(i, 1);
+        continue;
+      }
+      for (const col of trail.cols) {
+        const top = col.top * size;
+        const bottom = (col.bottom + 1) * size;
+        const beam = ctx.createLinearGradient(0, top, 0, bottom);
+        beam.addColorStop(0, withAlpha(trail.color, 0));
+        beam.addColorStop(1, withAlpha(trail.color, (ink ? 0.22 : 0.45) * left));
+        ctx.fillStyle = beam;
+        ctx.fillRect(col.x * size + size * 0.12, top, size * 0.76, bottom - top);
+      }
+    }
+
+    // particles: glowing sparks (neon) or ink splashes (ink)
+    if (particles.length) {
+      ctx.save();
+      if (!ink) ctx.globalCompositeOperation = "lighter";
+      for (const p of particles) {
+        const a = Math.max(0, p.life / p.max);
+        if (ink) {
+          ctx.fillStyle = withAlpha(p.color, 0.6 * a);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = withAlpha(p.color, 0.22 * a);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r * 2.8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = withAlpha(p.color, 0.95 * a);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.restore();
     }
 
     const shown = `${state.next.join("")}|${state.hold}|${state.canHold}|${state.score}|${state.lines}|${state.level}|${best}|${mini}|${slots}`;
@@ -905,16 +1373,23 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
     if (kind === "start") {
       card.append(
         el("h2", { text: title }),
-        el("p", { text: coarse ? "按下面的按钮操作，也可以在方块区左右滑动、点一下旋转、往下一甩直接落下。" : "← → 移动，↑ 旋转，空格直接落下。" })
+        el("p", { text: coarse ? "按下面的按钮操作，也可以在方块区左右滑动、点一下旋转、往下一甩直接落下。" : "← → 移动，↑ 旋转，空格直接落下，M 开关声音。" }),
+        el("p", { text: `分数到 ${nextSkinAt(0).toLocaleString("en-US")}、${nextSkinAt(1).toLocaleString("en-US")}、${nextSkinAt(2).toLocaleString("en-US")}… 会换新皮肤。` })
       );
       primary = el("button", { class: "tt-btn tt-primary", type: "button", text: "开始" });
       primary.addEventListener("click", () => {
         started = true;
+        sound.start(); // inside the tap, so phones allow audio
         resume();
       });
       actions.append(primary);
     } else if (kind === "pause") {
-      card.append(el("h2", { text: "暂停" }), el("p", { text: `分数 ${state.score.toLocaleString("en-US")} · 行 ${state.lines}` }));
+      const upcoming = skins[(stage + 1) % skins.length].name;
+      card.append(
+        el("h2", { text: "暂停" }),
+        el("p", { text: `分数 ${state.score.toLocaleString("en-US")} · 行 ${state.lines}` }),
+        el("p", { text: `皮肤「${skin.name}」· 到 ${nextSkinAt(stage).toLocaleString("en-US")} 分换「${upcoming}」` })
+      );
       primary = el("button", { class: "tt-btn tt-primary", type: "button", text: "继续" });
       primary.addEventListener("click", resume);
       const restart = el("button", { class: "tt-btn", type: "button", text: "重新开始" });
@@ -939,6 +1414,91 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
     primary.focus({ preventScroll: true });
   }
 
+  // ----- effects -----
+  const particles = []; // { x, y, vx, vy, r, life, max, color } in canvas pixels / ms
+  const trails = []; // { cols: [{ x, top, bottom }], color, until }
+  let shake = 0; // css px
+  let combo = -1;
+  const timers = new Set();
+  const later = (fn, ms) => {
+    const id = setTimeout(() => {
+      timers.delete(id);
+      fn();
+    }, ms);
+    timers.add(id);
+  };
+
+  function flashClass(node, name, ms) {
+    node.classList.remove(name);
+    void node.offsetWidth; // restart the CSS animation
+    node.classList.add(name);
+    later(() => node.classList.remove(name), ms);
+  }
+
+  function popup(text, size = "") {
+    const pop = el("div", { class: `tt-pop ${size}`.trim(), text });
+    pops.append(pop);
+    later(() => pop.remove(), 1150);
+  }
+
+  function burstRows(rows, count) {
+    if (reduceMotion) return;
+    const size = board.width / COLS;
+    const colors = Object.values(skin.pieces);
+    for (const row of rows) {
+      for (let x = 0; x < COLS; x++) {
+        for (let k = 0; k < (ink ? 2 : 3); k++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = ((ink ? 1 : 2) + Math.random() * (ink ? 3 : 5)) * (count >= 4 ? 1.6 : 1) * size / 1000;
+          const life = (ink ? 700 : 550) + Math.random() * 500;
+          particles.push({
+            x: (x + 0.5) * size,
+            y: (row + 0.5) * size,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - (ink ? 0 : size * 0.004),
+            r: size * (ink ? 0.08 + Math.random() * 0.14 : 0.05 + Math.random() * 0.07),
+            life,
+            max: life,
+            color: ink ? (Math.random() < (count >= 4 ? 0.4 : 0.15) ? skin.accent : skin.pieces.J) : colors[(Math.random() * colors.length) | 0],
+          });
+        }
+      }
+    }
+    if (particles.length > 600) particles.splice(0, particles.length - 600);
+  }
+
+  function stepEffects(dt) {
+    const size = board.width / COLS;
+    const gravity = (ink ? 3 : 10) * size / 1e6;
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.life -= dt;
+      if (p.life <= 0) {
+        particles.splice(i, 1);
+        continue;
+      }
+      p.vy += gravity * dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      if (ink) p.r *= 1 + dt * 0.0005; // ink spreads as it lands
+    }
+    if (shake > 0.3) {
+      shake *= Math.exp(-dt / 70);
+      boardWrap.style.transform = `translate(${((Math.random() - 0.5) * 2 * shake).toFixed(1)}px, ${((Math.random() - 0.5) * 2 * shake).toFixed(1)}px)`;
+    } else if (shake) {
+      shake = 0;
+      boardWrap.style.transform = "";
+    }
+  }
+
+  function kick(px) {
+    if (!reduceMotion) shake = Math.max(shake, px);
+  }
+
+  function setBeat() {
+    overlay.style.setProperty("--tt-beat", `${(60 / tempoFor(game.getState().level)).toFixed(3)}s`);
+  }
+
   // ----- loop -----
   let raf = 0;
   let last = 0;
@@ -950,9 +1510,22 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
     last = now;
     game.tick(dt);
     handleEvents(now);
+    stepEffects(dt);
     draw(now);
     const state = game.getState();
     if (!state.over && !state.paused) raf = requestAnimationFrame(frame);
+    else if (particles.length || shake) raf = requestAnimationFrame(settle);
+  }
+
+  // After game over, let the last sparks fall and the shake settle.
+  function settle(now) {
+    raf = 0;
+    if (closed) return;
+    const dt = Math.min(100, now - last);
+    last = now;
+    stepEffects(dt);
+    draw(now);
+    if (particles.length || shake) raf = requestAnimationFrame(settle);
   }
 
   function run() {
@@ -962,14 +1535,35 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
     }
   }
 
+  const CLEAR_WORDS = ["", "", "双消！", "三消！", "四消！"];
+  let hardDropped = false;
+
   function handleEvents(now) {
+    let locked = false;
+    let cleared = 0;
     for (const event of game.drainEvents()) {
-      if (event.type === "clear") {
+      if (event.type === "lock") {
+        locked = true;
+        if (!hardDropped) sound.sfx("lock");
+      } else if (event.type === "clear") {
+        cleared = event.count;
         if (!reduceMotion) flashes.push({ rows: event.rows, until: now + 260 });
+        burstRows(event.rows, event.count);
+        sound.sfx("clear", event.count);
+        flashClass(boardWrap, "tt-hit", 320);
+        kick(event.count >= 4 ? 9 : event.count >= 3 ? 5 : event.count >= 2 ? 3 : 0);
+        if (event.count >= 2) popup(CLEAR_WORDS[event.count], event.count >= 4 ? "tt-big" : "");
         live.textContent = `消除 ${event.count} 行`;
       } else if (event.type === "level") {
+        sound.setLevel(event.level);
+        sound.sfx("level");
+        setBeat();
+        flashClass(overlay, "tt-levelup", 900);
+        popup(`升级 · Lv.${event.level}`, "tt-small");
         live.textContent = `等级 ${event.level}`;
       } else if (event.type === "over") {
+        sound.stopMusic();
+        sound.sfx("over");
         stopRepeats();
         const score = game.getState().score;
         draw(now, true);
@@ -981,12 +1575,21 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
         draw(now, true);
       }
     }
+    if (locked) {
+      combo = cleared ? combo + 1 : -1;
+      if (combo >= 1) popup(`连击 ×${combo + 1}`, "tt-small");
+    }
+    hardDropped = false;
+    const reached = skinStage(game.getState().score);
+    if (reached > stage) applySkin(reached);
   }
 
   function pause() {
     const state = game.getState();
     if (!started || state.over || state.paused) return;
     game.pause();
+    sound.pause();
+    overlay.classList.add("tt-paused");
     stopRepeats();
     pauseBtn.textContent = "继续";
     showMessage("pause");
@@ -995,6 +1598,8 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
   function resume() {
     if (game.getState().over) return;
     game.resume();
+    sound.resume();
+    overlay.classList.remove("tt-paused");
     pauseBtn.textContent = "暂停";
     showMessage(null);
     overlay.focus({ preventScroll: true });
@@ -1004,6 +1609,13 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
   function restartGame() {
     game.reset();
     flashes.length = 0;
+    particles.length = 0;
+    trails.length = 0;
+    combo = -1;
+    if (stage !== 0) applySkin(0, false);
+    sound.setLevel(1);
+    setBeat();
+    sound.start();
     started = true;
     resume();
     draw(performance.now(), true);
@@ -1025,7 +1637,25 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
   };
   function perform(name) {
     if (!playing()) return;
-    act[name]();
+    const before = name === "drop" ? game.getState() : null;
+    const result = act[name]();
+    if (name === "left" || name === "right") {
+      if (result) sound.sfx("move");
+    } else if (name === "rotate" || name === "rotateCCW") {
+      if (result) sound.sfx("rotate");
+    } else if (name === "hold") {
+      if (result) sound.sfx("hold");
+    } else if (name === "drop" && before?.active) {
+      hardDropped = true;
+      sound.sfx("drop");
+      kick(result > 0 ? 3 : 1.5);
+      if (result > 0 && !reduceMotion) {
+        const cols = new Map();
+        for (const [x, y] of before.active.cells) cols.set(x, { x, top: Math.max(0, Math.min(y, cols.get(x)?.top ?? y)), bottom: 0 });
+        for (const [x, y] of before.ghost) if (cols.has(x)) cols.get(x).bottom = Math.max(cols.get(x).bottom, y);
+        trails.push({ cols: [...cols.values()], color: skin.pieces[before.active.type], until: performance.now() + 260 });
+      }
+    }
     handleEvents(performance.now());
     draw(performance.now());
   }
@@ -1077,6 +1707,11 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
     if (event.key === "Escape") {
       event.preventDefault();
       close();
+      return;
+    }
+    if (event.code === "KeyM") {
+      event.preventDefault();
+      toggleSound();
       return;
     }
     if (event.code === "KeyP") {
@@ -1182,6 +1817,17 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
     else pause();
   });
   closeBtn.addEventListener("click", () => close());
+  function toggleSound() {
+    soundOn = !soundOn;
+    sound.setMuted(!soundOn);
+    try {
+      localStorage.setItem(soundKey, soundOn ? "on" : "off");
+    } catch {
+      /* private mode */
+    }
+    showSound();
+  }
+  soundBtn.addEventListener("click", toggleSound);
 
   const onVisibility = () => {
     if (document.hidden) pause();
@@ -1202,6 +1848,8 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
     closed = true;
     if (raf) cancelAnimationFrame(raf);
     stopRepeats();
+    sound.close();
+    for (const id of timers) clearTimeout(id);
     const score = game.getState().score;
     if (score > best) writeBest(storageKey, score);
     window.removeEventListener("keydown", onKeyDown);
@@ -1232,7 +1880,9 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
 
   current = { close: () => close() };
   game.pause();
-  layout();
+  overlay.classList.add("tt-paused");
+  applySkin(0, false);
+  setBeat();
   showMessage("start");
   return current.close;
 }
