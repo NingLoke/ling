@@ -1,16 +1,16 @@
 {
-  "fetchedAt": "2026-10-04T12:27:52.692Z",
+  "fetchedAt": "2026-10-04T16:49:54.386Z",
   "center": {
     "lat": 4.5117,
     "lon": 114.0167
   },
   "radius": 1400,
   "counts": {
-    "elements": 1322,
+    "elements": 1334,
     "buildings": 939,
     "buildingsWithHeight": 864,
-    "highways": 287,
-    "footways": 39,
+    "highways": 299,
+    "footways": 43,
     "water": 14,
     "entrances": 0
   },
@@ -485,6 +485,12 @@
     },
     {
       "type": "way",
+      "id": 599627403,
+      "name": "Lorong Perkasa 1A",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
       "id": 599627405,
       "name": "Jalan Perkasa 8",
       "kind": "highway=residential"
@@ -617,6 +623,12 @@
     },
     {
       "type": "way",
+      "id": 599704538,
+      "name": "Jalan Tasik Utama",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
       "id": 599704543,
       "name": "Knewton Global Schools Miri",
       "kind": "amenity=school"
@@ -725,6 +737,18 @@
     },
     {
       "type": "way",
+      "id": 747474349,
+      "name": "Lorong Perkasa 1A",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 816362010,
+      "name": "Lorong Perkasa 1A",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
       "id": 816363890,
       "name": "Jalan Desa Senadin",
       "kind": "highway=secondary"
@@ -740,6 +764,12 @@
       "id": 816363892,
       "name": "Jalan Ilmu",
       "kind": "highway=secondary"
+    },
+    {
+      "type": "way",
+      "id": 817503062,
+      "name": "Jalan Curtin",
+      "kind": "highway=residential"
     },
     {
       "type": "way",
@@ -982,6 +1012,18 @@
       "kind": "building"
     },
     {
+      "type": "way",
+      "id": 1328524974,
+      "name": "Jalan Perkasa 2",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 1548510668,
+      "name": "Lorong Perkasa 1A",
+      "kind": "highway=residential"
+    },
+    {
       "type": "relation",
       "id": 17732313,
       "name": "Curtin University Lake",
@@ -1010,6 +1052,12 @@
       "id": 689488353,
       "name": "Curtin Trading Room",
       "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 817503062,
+      "name": "Jalan Curtin",
+      "kind": "highway=residential"
     },
     {
       "type": "way",
