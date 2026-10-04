@@ -1,0 +1,22 @@
+MapLibre GL JS 6.12.0 (BSD-3-Clause, see LICENSE.txt) was copied unchanged from the npm package
+maplibre-gl@6.12.0 (dist/maplibre-gl.mjs, maplibre-gl-shared.mjs, maplibre-gl-worker.mjs, maplibre-gl.css;
+source map comments removed). Its bundled files also contain code from these packages, under their
+own licences (texts in each package on npm):
+
+  @mapbox/point-geometry           ISC
+  @mapbox/tiny-sdf                 BSD-2-Clause
+  @mapbox/unitbezier               BSD-2-Clause
+  @mapbox/vector-tile              BSD-3-Clause
+  @maplibre/geojson-vt             ISC
+  @maplibre/maplibre-gl-style-spec ISC
+  @maplibre/mlt                    MIT OR Apache-2.0
+  @maplibre/vt-pbf                 MIT
+  bidi-js                          MIT
+  earcut                           ISC
+  gl-matrix                        MIT
+  kdbush                           ISC
+  murmurhash-js                    MIT
+  pbf                              BSD-3-Clause
+  potpack                          ISC
+  quickselect                      ISC
+  tinyqueue                        ISC

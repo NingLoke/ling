@@ -118,6 +118,39 @@ for (const e of elements) {
   });
 }
 
+// lakes drawn as multipolygon relations (Curtin University Lake, with its island) from their member ways
+const same = (a, b) => a[0] === b[0] && a[1] === b[1];
+const joinRings = (lines) => {
+  const rings = [];
+  const pool = lines.filter((l) => l.length > 1).map((l) => l.slice());
+  while (pool.length) {
+    let ring = pool.shift();
+    while (!closed(ring)) {
+      const end = ring.at(-1);
+      const i = pool.findIndex((l) => same(l[0], end) || same(l.at(-1), end));
+      if (i < 0) break;
+      const next = pool.splice(i, 1)[0];
+      ring = ring.concat((same(next[0], end) ? next : next.slice().reverse()).slice(1));
+    }
+    if (closed(ring)) rings.push(ring);
+  }
+  return rings;
+};
+for (const e of elements) {
+  const tags = e.tags || {};
+  if (e.type !== "relation" || tags.type !== "multipolygon" || !(tags.natural === "water" || tags.water)) continue;
+  const ringsFor = (inner) => joinRings((e.members || []).filter((m) => m.type === "way" && m.geometry && (m.role === "inner") === inner).map((m) => ringOf(m)));
+  const outers = ringsFor(false).filter((r) => anyNear(r, 120));
+  if (!outers.length) continue;
+  const inners = ringsFor(true);
+  const polygons = outers.map((outer) => [outer, ...inners.filter((inner) => pointInRing(inner[0], outer))]);
+  features.push({
+    type: "Feature",
+    properties: { kind: "water", osm: `relation/${e.id}`, highway: null, sport: null, name: tags.name ?? null },
+    geometry: polygons.length === 1 ? { type: "Polygon", coordinates: polygons[0] } : { type: "MultiPolygon", coordinates: polygons },
+  });
+}
+
 // ---------- walking graph ----------
 const WALK = { footway: 1, path: 1, pedestrian: 1, steps: 1.15, corridor: 1, cycleway: 1.05, living_street: 1.1, service: 1.15, unclassified: 1.2, residential: 1.2, tertiary: 1.3, secondary: 1.35, primary: 1.4, track: 1.2 };
 const nodes = []; // [lon, lat]
@@ -225,9 +258,11 @@ for (const f of buildings) {
 // the academic buildings, so routes between neighbours went round the block. Where walking straight
 // is plausible (short, not through another building or water) and the mapped route is a big detour,
 // add a direct link, a little more "expensive" so real paths still win when they are close.
+// Links join doors to doors and paths, and paths to paths: the router never walks *through* another
+// building's door (a corner of its outline), so the shortcuts between paths must exist on their own.
 const blockers = features
   .filter((f) => ["building", "water"].includes(f.properties.kind))
-  .map((f) => f.geometry.coordinates[0]);
+  .flatMap((f) => (f.geometry.type === "MultiPolygon" ? f.geometry.coordinates.map((polygon) => polygon[0]) : [f.geometry.coordinates[0]]));
 const clear = (p, q) => {
   const len = metresBetween(p, q);
   const n = Math.ceil(len / 2);
@@ -246,14 +281,13 @@ let shortcuts = 0;
     const r = createRouter({ nodes: graphNodes, edges: graphEdges, doors: { _: to } }).route(graphNodes[from], "_");
     return r ? r.metres : Infinity;
   };
+  const isDoor = new Set(doorNodes);
   const candidates = [];
-  for (const a of doorNodes) {
-    for (let b = 0; b < graphNodes.length; b++) {
-      if (a === b) continue;
-      const isDoor = doorNodes.includes(b);
+  for (let a = 0; a < graphNodes.length; a++) {
+    for (let b = a + 1; b < graphNodes.length; b++) {
+      const doorsAtEnds = isDoor.has(a) + isDoor.has(b);
       const d = metresBetween(graphNodes[a], graphNodes[b]);
-      if (d > (isDoor ? 70 : 40) || d < 3) continue;
-      if (isDoor && b < a) continue;
+      if (d < 3 || d > (doorsAtEnds ? 70 : 60)) continue;
       candidates.push([a, b, d]);
     }
   }

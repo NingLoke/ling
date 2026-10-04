@@ -51,6 +51,7 @@ test("every room in both timetables maps to a building on the map", () => {
   assert.equal(buildingForRoom("Auditorium"), "FN4");
   assert.equal(buildingForRoom("SK3 102 Lecture 1"), "SK3");
   assert.equal(buildingForRoom("ZZ9 101"), null);
+  assert.equal(buildingForRoom("LTCL 9"), "HL2"); // sometimes written without the bracketed room code
   assert.equal(buildingForRoom(""), null);
 });
 
@@ -152,4 +153,68 @@ test("route progress gives the nearest point on the route", () => {
   assert.ok(Math.abs(p.point[0] - 114) < 1e-9 && Math.abs(p.point[1] - 4.5004) < 1e-6);
   assert.ok(p.distance > 5 && p.distance < 6);
   assert.equal(p.offRoute, false);
+});
+
+test("a gentle bend is announced at a fork where another way goes straighter on", () => {
+  // walking east, the path bends 20° left at a junction where another way carries straight on
+  const a = [114, 4.5];
+  const b = [114.0005, 4.5];
+  const c = [114.0005 + 0.0005 * Math.cos((20 * Math.PI) / 180), 4.5 + 0.0005 * Math.sin((20 * Math.PI) / 180)];
+  const plain = directions([a, b, c]);
+  assert.deepEqual(plain.map((s) => s.turn), ["start", "arrive"]); // no junction: nothing to say
+  const fork = directions([a, b, c], [null, [90], null]); // another way leaves at bearing 90 (straight east)
+  assert.deepEqual(fork.map((s) => s.turn), ["start", "slight-left", "arrive"]);
+});
+
+test("a small jog is not two turns, and two quick turns the same way are one", () => {
+  const m = (east, north) => [114 + east / 110_850, 4.5 + north / 110_574];
+  const jog = directions([m(0, 0), m(40, 0), m(43, 2), m(46, 0), m(90, 0)]);
+  assert.deepEqual(jog.map((s) => s.turn), ["start", "arrive"]);
+  // round a corner: right, 6 m, right again -> a single right turn, not a U-turn
+  const corner = directions([m(0, 0), m(0, 40), m(6, 40), m(6, 0)]);
+  assert.deepEqual(corner.map((s) => s.turn), ["start", "right", "arrive"]);
+});
+
+test("progress stays near where the walker was when the route passes close to itself", () => {
+  const m = (east, north) => [114 + east / 110_850, 4.5 + north / 110_574];
+  // out 100 m east, 8 m north, back 100 m west: the way back runs 8 m from the way out
+  const coords = [m(0, 0), m(100, 0), m(100, 8), m(0, 8)];
+  const r = { coords, steps: directions(coords) };
+  const walker = m(30, 5); // on the way out, but GPS puts them 5 m north (nearer the way back)
+  assert.ok(progressOnRoute(r, walker, 20).along > 150); // no history: snaps to the way back
+  const p = progressOnRoute(r, walker, 20, 25);
+  assert.ok(p.along > 25 && p.along < 40, `along ${p.along}`);
+});
+
+test("routes do not turn at another building's door, and coded routes rarely double back", () => {
+  let uturns = 0;
+  let turns = 0;
+  let pairs = 0;
+  const doorNodes = new Map(Object.entries(paths.doors).map(([code, n]) => [paths.nodes[n].join(","), code]));
+  for (const a of CAMPUS_CODES) {
+    for (const b of CAMPUS_CODES) {
+      if (a === b) continue;
+      const r = router.route(paths.nodes[paths.doors[a]], b);
+      pairs++;
+      turns += r.steps.length - 2;
+      if (r.steps.some((s) => s.turn === "uturn")) uturns++;
+      // walking past another building's door corner is fine; turning sharply there is not
+      for (let i = 1; i < r.coords.length - 1; i++) {
+        const door = doorNodes.get(r.coords[i].join(","));
+        if (!door || door === a || door === b) continue;
+        if (router.nodes.filter((n) => n.join(",") === r.coords[i].join(",")).length > 1) continue; // a path node there too
+        const turn = Math.abs(((bearingDeg(r.coords[i], r.coords[i + 1]) - bearingDeg(r.coords[i - 1], r.coords[i]) + 540) % 360) - 180);
+        assert.ok(turn <= 46, `${a}->${b} turns ${Math.round(turn)}° at ${door}'s door`);
+      }
+    }
+  }
+  assert.ok(uturns <= 5, `${uturns} of ${pairs} routes have a U-turn`);
+  assert.ok(turns / pairs < 6.5, `${(turns / pairs).toFixed(1)} turns per route`);
+});
+
+test("Curtin University Lake is on the map with its island", () => {
+  const lake = campus.features.find((f) => f.properties.kind === "water" && /Curtin University Lake/i.test(f.properties.name || ""));
+  assert.ok(lake, "lake missing");
+  const polygons = lake.geometry.type === "MultiPolygon" ? lake.geometry.coordinates : [lake.geometry.coordinates];
+  assert.ok(polygons.some((rings) => rings.length >= 2), "the island (inner ring) is missing");
 });
