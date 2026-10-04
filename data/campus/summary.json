@@ -1,0 +1,1102 @@
+{
+  "fetchedAt": "2026-10-04T10:58:01.697Z",
+  "center": {
+    "lat": 4.5117,
+    "lon": 114.0167
+  },
+  "radius": 1400,
+  "counts": {
+    "elements": 1334,
+    "buildings": 939,
+    "buildingsWithHeight": 864,
+    "highways": 299,
+    "footways": 43,
+    "water": 14,
+    "entrances": 0
+  },
+  "university": [
+    {
+      "type": "way",
+      "id": 973138217,
+      "name": "Curtin University Malaysia",
+      "bounds": {
+        "minlat": 4.5094543,
+        "minlon": 114.0125109,
+        "maxlat": 4.5149602,
+        "maxlon": 114.021472
+      }
+    },
+    {
+      "type": "way",
+      "id": 973138217,
+      "name": "Curtin University Malaysia",
+      "bounds": {
+        "minlat": 4.5094543,
+        "minlon": 114.0125109,
+        "maxlat": 4.5149602,
+        "maxlon": 114.021472
+      }
+    }
+  ],
+  "named": [
+    {
+      "type": "node",
+      "id": 2668169453,
+      "name": "Senadin",
+      "kind": "name:zh"
+    },
+    {
+      "type": "node",
+      "id": 5704743474,
+      "name": "GK Mini Mart",
+      "kind": "shop"
+    },
+    {
+      "type": "node",
+      "id": 5915075536,
+      "name": "BEM Senadin",
+      "kind": "amenity=place_of_worship"
+    },
+    {
+      "type": "node",
+      "id": 5915075537,
+      "name": "72 Cafe",
+      "kind": "amenity=restaurant"
+    },
+    {
+      "type": "node",
+      "id": 5965397009,
+      "name": "Trevor and Friends",
+      "kind": "attraction"
+    },
+    {
+      "type": "node",
+      "id": 11519106353,
+      "name": "Super Save",
+      "kind": "addr:city"
+    },
+    {
+      "type": "node",
+      "id": 11519106354,
+      "name": "69 Cafe",
+      "kind": "amenity=restaurant"
+    },
+    {
+      "type": "node",
+      "id": 11519106362,
+      "name": "Advance Motor Services Company",
+      "kind": "addr:city"
+    },
+    {
+      "type": "node",
+      "id": 11519106364,
+      "name": "Bestcare Pharmacy",
+      "kind": "amenity=pharmacy"
+    },
+    {
+      "type": "node",
+      "id": 11519106365,
+      "name": "myDobi",
+      "kind": "addr:city"
+    },
+    {
+      "type": "node",
+      "id": 11519106366,
+      "name": "All Day Mini Mart",
+      "kind": "addr:city"
+    },
+    {
+      "type": "node",
+      "id": 11519106367,
+      "name": "62 Cafe",
+      "kind": "amenity=restaurant"
+    },
+    {
+      "type": "node",
+      "id": 11519106368,
+      "name": "Sammi Hair Studio",
+      "kind": "addr:city"
+    },
+    {
+      "type": "node",
+      "id": 11519127569,
+      "name": "Hong Zhong Hardware Trading Company",
+      "kind": "addr:city"
+    },
+    {
+      "type": "node",
+      "id": 11519127570,
+      "name": "Hou Peng Yu Cafe",
+      "kind": "amenity=restaurant"
+    },
+    {
+      "type": "node",
+      "id": 11556727994,
+      "name": "Ridge Design & Build",
+      "kind": "addr:city"
+    },
+    {
+      "type": "node",
+      "id": 11556728010,
+      "name": "Ngie Hock Industries Sdn Bhd",
+      "kind": "addr:city"
+    },
+    {
+      "type": "node",
+      "id": 11734487972,
+      "name": "Borneo Fresh Pork",
+      "kind": "addr:city"
+    },
+    {
+      "type": "node",
+      "id": 11734487974,
+      "name": "Sin Heng Motor",
+      "kind": "addr:city"
+    },
+    {
+      "type": "node",
+      "id": 12147537680,
+      "name": "69 Snooker",
+      "kind": "addr:city"
+    },
+    {
+      "type": "node",
+      "id": 12147537681,
+      "name": "Lucky Mini Mart",
+      "kind": "addr:city"
+    },
+    {
+      "type": "node",
+      "id": 12149884304,
+      "name": "Jo Smokehouse",
+      "kind": "amenity=fast_food"
+    },
+    {
+      "type": "node",
+      "id": 12149884355,
+      "name": "Rindu Burger (stall)",
+      "kind": "amenity=fast_food"
+    },
+    {
+      "type": "node",
+      "id": 12291383032,
+      "name": "Ah Ling Aluminium Work",
+      "kind": "addr:city"
+    },
+    {
+      "type": "way",
+      "id": 261185129,
+      "name": "Lorong Desa Senadin 2C-2",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 261185136,
+      "name": "Jalan Jati 2E",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 261185139,
+      "name": "Lorong Desa Senadin 2A-3",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 261185144,
+      "name": "Lorong Desa Senadin 2C-11",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 261185156,
+      "name": "Lorong Desa Senadin 2A-4",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 261185157,
+      "name": "Jalan Ilmu",
+      "kind": "highway=secondary"
+    },
+    {
+      "type": "way",
+      "id": 261185175,
+      "name": "Lorong Desa Senadin 2C-4",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 261185176,
+      "name": "Jalan University",
+      "kind": "highway=tertiary"
+    },
+    {
+      "type": "way",
+      "id": 261185188,
+      "name": "Lorong Desa Senadin 2C-5",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 261185192,
+      "name": "Lorong Desa Senadin 2C-7a",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 261185195,
+      "name": "Lorong Desa Senadin 2A-1",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 261185212,
+      "name": "Lorong Desa Senadin 2C-3",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 261185227,
+      "name": "Lorong Desa Senadin 2C-8",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 261185230,
+      "name": "Lorong Desa Senadin 2A-2",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 261185234,
+      "name": "Lorong Desa Senadin 2C-7",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 261185235,
+      "name": "Lorong Desa Senadin 2C-10",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 261185251,
+      "name": "Lorong Desa Senadin 2C-1",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 261185256,
+      "name": "Lorong Desa Senadin 2C",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 261185281,
+      "name": "Lorong Desa Senadin 2C-9",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 261185291,
+      "name": "Lorong Desa Senadin 2C-12",
+      "kind": "highway=service"
+    },
+    {
+      "type": "way",
+      "id": 261185292,
+      "name": "Jalan Desa Senadin",
+      "kind": "highway=secondary"
+    },
+    {
+      "type": "way",
+      "id": 261185296,
+      "name": "Lorong Desa Senadin 2C-6",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 261185301,
+      "name": "Lorong Desa Senadin 2A",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 261185313,
+      "name": "Lorong Desa Senadin 2C-9",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 261185314,
+      "name": "Jalan Desa Senadin 2",
+      "kind": "highway=secondary"
+    },
+    {
+      "type": "way",
+      "id": 315410721,
+      "name": "Faculty of Business",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 315410722,
+      "name": "Recreation & Event Centre",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 315410723,
+      "name": "Curtin Malaysia Graduate School / Student Affairs Office",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 315410724,
+      "name": "Faculty of Humanities",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 315410725,
+      "name": "Distributed Learning Space",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 315410726,
+      "name": "Faculty of Engineering and Science",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 315410727,
+      "name": "Faculty of Engineering and Science",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 315410729,
+      "name": "HDR Centre / FYE Studios",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 315410730,
+      "name": "Food Court",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 315410731,
+      "name": "ICT Labs",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 392662902,
+      "name": "Jalan University",
+      "kind": "highway=tertiary"
+    },
+    {
+      "type": "way",
+      "id": 397900114,
+      "name": "Jalan Curtin",
+      "kind": "highway=service"
+    },
+    {
+      "type": "way",
+      "id": 488764482,
+      "name": "Lorong Desa Senadin 2B",
+      "kind": "highway=footway"
+    },
+    {
+      "type": "way",
+      "id": 544448845,
+      "name": "Library & Auditorium",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 544980501,
+      "name": "Sarawak Bio Valley Plant",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 599292728,
+      "name": "Borneo Pavilion",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 599292750,
+      "name": "Sibuti",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 599292752,
+      "name": "Mulu",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 599292753,
+      "name": "Kingfisher 5 (Multipurpose Hall)",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 599292754,
+      "name": "Lakeside Cafeteria",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 599292755,
+      "name": "Curtin Malaysia Student Council",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 599292757,
+      "name": "Similajau",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 599292760,
+      "name": "Niah",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 599292761,
+      "name": "Lambir",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 599627401,
+      "name": "Jalan Perkasa Utama",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 599627403,
+      "name": "Lorong Perkasa 1A",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 599627405,
+      "name": "Jalan Perkasa 8",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 599627406,
+      "name": "Lorong Perkasa 7A",
+      "kind": "highway=service"
+    },
+    {
+      "type": "way",
+      "id": 599627407,
+      "name": "Jalan Perkasa 7",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 599627408,
+      "name": "Jalan Perkasa 6",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 599627410,
+      "name": "Lorong Perkasa 7B/1",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 599627411,
+      "name": "Lorong Perkasa 7B",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 599627412,
+      "name": "Lorong Perkasa 7C",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 599627421,
+      "name": "Jalan Perkasa 5",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 599627422,
+      "name": "Jalan Perkasa 4",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 599627423,
+      "name": "Jalan Perkasa 3",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 599627425,
+      "name": "Jalan Perkasa 2",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 599627427,
+      "name": "Jalan Desa Senadin",
+      "kind": "highway=secondary"
+    },
+    {
+      "type": "way",
+      "id": 599627429,
+      "name": "Jalan Ilmu",
+      "kind": "highway=secondary"
+    },
+    {
+      "type": "way",
+      "id": 599627430,
+      "name": "Jalan Sukma",
+      "kind": "highway=tertiary"
+    },
+    {
+      "type": "way",
+      "id": 599627435,
+      "name": "Lorong Perkasa 3B/1",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 599627436,
+      "name": "Lorong Perkasa 3C",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 599627437,
+      "name": "Lorong Perkasa 3C/1",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 599627438,
+      "name": "Lorong Perkasa 2C",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 599627439,
+      "name": "Lorong Perkasa 2B",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 599627440,
+      "name": "Lorong Perkasa 2A",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 599627441,
+      "name": "Lorong Perkasa 2A/2",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 599627442,
+      "name": "Lorong Perkasa 2A/1",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 599704538,
+      "name": "Jalan Tasik Utama",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 599704543,
+      "name": "Knewton Global Schools Miri",
+      "kind": "amenity=school"
+    },
+    {
+      "type": "way",
+      "id": 599704619,
+      "name": "Azman Islamic Centre",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 599704626,
+      "name": "Harry Perkins Lecture Theatre",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 599711538,
+      "name": "Senadin Basketball Court",
+      "kind": "access"
+    },
+    {
+      "type": "way",
+      "id": 626544257,
+      "name": "Frisbee Green",
+      "kind": "landuse"
+    },
+    {
+      "type": "way",
+      "id": 626547625,
+      "name": "ICT Helpdesk",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 626547628,
+      "name": "Music Room",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 631724243,
+      "name": "Student Common Area",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 665266081,
+      "name": "Lorong Tasik 4B",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 665266082,
+      "name": "Lorong Tasik 4B3",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 665266083,
+      "name": "Lorong Tasik 4B1",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 665266086,
+      "name": "Lorong Tasik 4B3/B",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 665266087,
+      "name": "Lorong Tasik 4B3/D",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 665266088,
+      "name": "Lorong Tasik 4B3/F",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 686777282,
+      "name": "Jalan Perkasa 1",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 686777283,
+      "name": "Jalan Perkasa 9",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 689488353,
+      "name": "Curtin Trading Room",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 747474348,
+      "name": "Jalan Perkasa Utama",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 747474349,
+      "name": "Lorong Perkasa 1A",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 816362010,
+      "name": "Lorong Perkasa 1A",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 816363890,
+      "name": "Jalan Desa Senadin",
+      "kind": "highway=secondary"
+    },
+    {
+      "type": "way",
+      "id": 816363891,
+      "name": "Jalan Sukma",
+      "kind": "highway=tertiary"
+    },
+    {
+      "type": "way",
+      "id": 816363892,
+      "name": "Jalan Ilmu",
+      "kind": "highway=secondary"
+    },
+    {
+      "type": "way",
+      "id": 817503062,
+      "name": "Jalan Curtin",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 829367656,
+      "name": "Jalan Desa Senadin",
+      "kind": "highway=unclassified"
+    },
+    {
+      "type": "way",
+      "id": 832069520,
+      "name": "Jalan Tasik Utama",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 854979396,
+      "name": "EKDA Industries Sdn Bhd",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 854979400,
+      "name": "Trusty Auto Parts & Services",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 854979401,
+      "name": "Plastic & Packaging Sdn Bhd (PNP)",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 854979414,
+      "name": "DESB Marine Services Sdn Bhd",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 854979415,
+      "name": "Weida Integrated Industries Sdn Bhd (Miri)",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 854979417,
+      "name": "Sarawak Gas Trading Company",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 854979418,
+      "name": "Kilang Kicap Hua Chan",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 854979430,
+      "name": "Chemsain Konsultant Sdn Bhd",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 854979431,
+      "name": "Tomling Engineering Sdn Bhd",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 854979436,
+      "name": "Satva Sdn Bhd",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 929533702,
+      "name": "Lorong Desa Senadin 2C-12",
+      "kind": "highway=service"
+    },
+    {
+      "type": "way",
+      "id": 973138217,
+      "name": "Curtin University Malaysia",
+      "kind": "amenity=university"
+    },
+    {
+      "type": "way",
+      "id": 1016265051,
+      "name": "Lorong Perkasa 7B",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 1123412955,
+      "name": "Lorong Perkasa 3B",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 1235776429,
+      "name": "Engineering Research Lab",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 1235776430,
+      "name": "Cafeteria",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 1235776437,
+      "name": "Security guard house",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 1239895025,
+      "name": "Tamu Desa Senadin",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 1240902196,
+      "name": "Jalan Perkasa Utama",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 1240902198,
+      "name": "Jalan University",
+      "kind": "highway=tertiary"
+    },
+    {
+      "type": "way",
+      "id": 1240902199,
+      "name": "Jalan University",
+      "kind": "highway=tertiary"
+    },
+    {
+      "type": "way",
+      "id": 1240902200,
+      "name": "Lorong Tasik 2",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 1240902201,
+      "name": "Jalan University",
+      "kind": "highway=tertiary"
+    },
+    {
+      "type": "way",
+      "id": 1243451839,
+      "name": "Institut Memandu Miri-Subis Sdn Bhd",
+      "kind": "amenity=driving_school"
+    },
+    {
+      "type": "way",
+      "id": 1243464947,
+      "name": "Centerite Development Sdn Bhd",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 1243464948,
+      "name": "Hua Chan Sauce Factory (Miri) Sdn Bhd",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 1243474355,
+      "name": "Fojohn Hardware Sdn Bhd (FJ)",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 1293659843,
+      "name": "NICE 2 MEET U",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 1293659844,
+      "name": "Curtin Waters Guard House",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 1306611812,
+      "name": "Il Lago",
+      "kind": "landuse"
+    },
+    {
+      "type": "way",
+      "id": 1311241544,
+      "name": "Administration & International Student Office",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 1311241547,
+      "name": "Council-Room",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 1311241551,
+      "name": "Faculty of Engineering and Science",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 1311262983,
+      "name": "Curtin Aquaculture Research Laboratories (CARL)",
+      "kind": "construction"
+    },
+    {
+      "type": "way",
+      "id": 1311283746,
+      "name": "Loagan Bunut",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 1311505754,
+      "name": "Lakeside Apartments 1 & 2",
+      "kind": "landuse"
+    },
+    {
+      "type": "way",
+      "id": 1311505756,
+      "name": "Lakeside Apartments 4",
+      "kind": "landuse"
+    },
+    {
+      "type": "way",
+      "id": 1328524399,
+      "name": "Modern Era Plus Sdn Bhd",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 1328524974,
+      "name": "Jalan Perkasa 2",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 1548510668,
+      "name": "Lorong Perkasa 1A",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "relation",
+      "id": 17732313,
+      "name": "Curtin University Lake",
+      "kind": "fishing"
+    },
+    {
+      "type": "way",
+      "id": 315410723,
+      "name": "Curtin Malaysia Graduate School / Student Affairs Office",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 397900114,
+      "name": "Jalan Curtin",
+      "kind": "highway=service"
+    },
+    {
+      "type": "way",
+      "id": 599292755,
+      "name": "Curtin Malaysia Student Council",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 689488353,
+      "name": "Curtin Trading Room",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 817503062,
+      "name": "Jalan Curtin",
+      "kind": "highway=residential"
+    },
+    {
+      "type": "way",
+      "id": 973138217,
+      "name": "Curtin University Malaysia",
+      "kind": "amenity=university"
+    },
+    {
+      "type": "way",
+      "id": 1293659844,
+      "name": "Curtin Waters Guard House",
+      "kind": "building"
+    },
+    {
+      "type": "way",
+      "id": 1311262983,
+      "name": "Curtin Aquaculture Research Laboratories (CARL)",
+      "kind": "construction"
+    },
+    {
+      "type": "relation",
+      "id": 17732313,
+      "name": "Curtin University Lake",
+      "kind": "fishing"
+    }
+  ],
+  "nominatim": [
+    {
+      "name": "Curtin University Malaysia, 250, Jalan Curtin, Senadin, Miri, Bahagian Miri, Sarawak, 98000, Malaysia",
+      "osm": "way/973138217",
+      "lat": "4.5117513",
+      "lon": "114.0169987",
+      "bbox": [
+        "4.5094543",
+        "4.5149602",
+        "114.0125109",
+        "114.0214720"
+      ],
+      "type": "university"
+    }
+  ]
+}
