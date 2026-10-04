@@ -112,10 +112,17 @@ const CSS = `
 .cm-real>span{font-size:13px;color:var(--cm-muted);margin-right:2px}
 .cm-real a{min-height:38px;padding:0 12px;font-size:14px;text-decoration:none}
 .cm-real a svg{width:14px;height:14px;opacity:.7}
+.cm-real .cm-pano-btn{border-color:var(--cm-accent);color:var(--cm-accent);font-weight:700}
+.cm-real .cm-pano-btn svg{width:18px;height:18px}
 .cm-thumbs{display:flex;gap:8px;overflow-x:auto;margin-top:10px;padding-bottom:4px;scroll-snap-type:x mandatory}
 .cm-thumbs button{flex:none;width:112px;height:84px;padding:0;border:1px solid var(--cm-line);border-radius:10px;overflow:hidden;background:var(--cm-line);cursor:pointer;scroll-snap-align:start}
 .cm-thumbs img{width:100%;height:100%;object-fit:cover;display:block}
 .cm-photo{position:absolute;inset:0;z-index:5;background:#000;display:grid;grid-template-rows:auto 1fr auto;color:#f2f2f2}
+.cm-photo .cm-pano-box,.cm-photo iframe{width:100%;height:100%;min-height:0;border:0;display:block;background:#111}
+.cm-photo .cm-pano-box .pnlm-load-box{font-family:var(--cm-font)}
+.cm-pano{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;cursor:pointer;border:2px solid #fff;
+  background:var(--cm-accent);color:var(--cm-on-accent);box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.cm-pano svg{width:17px;height:17px}
 .cm-photo header{display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px}
 .cm-photo header b{flex:1;font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cm-photo img{width:100%;height:100%;object-fit:contain;min-height:0}
@@ -142,6 +149,7 @@ const ICON = {
   north: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l5 14-5-3-5 3z" fill="currentColor" fill-opacity=".25"/></svg>',
   arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V5"/><path d="M6 11l6-6 6 6"/></svg>',
   compass: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z" fill="currentColor" fill-opacity=".3"/></svg>',
+  pano: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="9" ry="4.5"/><path d="M12 7.5v9"/><path d="M3 12h18"/></svg>',
   out: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
   flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4"/><path d="M6 4h11l-2 4 2 4H6"/></svg>',
 };
@@ -320,6 +328,9 @@ function campusStyle(c, campus, basemap) {
  *   maplibreUrl  URL of maplibre-gl.mjs (its CSS sits next to it)
  *   campusUrl, pathsUrl  data/campus/campus.geojson and paths.json
  *   photosUrl    data/campus/photos.json (openly licensed real pictures; optional)
+ *   panoramasUrl data/campus/panoramas.json: 360° photos of the campus (their files are relative to it)
+ *   pannellumUrl the Pannellum panorama viewer's script (its CSS sits next to it), loaded when first needed
+ *   googleEmbedKey  a Google Maps Embed API key; with it, Street View opens inside the map instead of Google Maps
  *   style        "ink" | "neon"
  *   focus        building code to show ("SK3"), or null
  *   navigate     start walking directions to focus right away
@@ -335,7 +346,7 @@ export function openCampusMap(options) {
     current.focus(options.focus, options.navigate, options.compassPermission);
     return current.close;
   }
-  const { maplibreUrl, campusUrl, pathsUrl, photosUrl = null, style = "ink", classes = [], classLabel = "", basemap = OPENFREEMAP } = options;
+  const { maplibreUrl, campusUrl, pathsUrl, photosUrl = null, panoramasUrl = null, pannellumUrl = null, googleEmbedKey = "", style = "ink", classes = [], classLabel = "", basemap = OPENFREEMAP } = options;
   const c = { ...PALETTES[style === "neon" ? "neon" : "ink"], ...(options.palette || {}) };
   const reduceMotion = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
   const html = document.documentElement;
@@ -623,6 +634,7 @@ export function openCampusMap(options) {
       mapBox.addEventListener("wheel", () => (wheelAt = Date.now()), { passive: true });
       updateLabelsVisibility();
       ready = true;
+      showPanoramaSpots();
       if (options.focus) select(options.focus, { navigate: options.navigate });
       else {
         idleSheet();
@@ -749,12 +761,135 @@ export function openCampusMap(options) {
     const look = Math.round(bearingDeg([vlon, vlat], [lon, lat]));
     const at = (n) => n.toFixed(6);
     const link = (text, href) => el("a", { class: "cm-btn", href, target: "_blank", rel: "noopener" }, [text, el("span", { html: ICON.out })]);
-    return el("div", { class: "cm-real" }, [
+    const row = el("div", { class: "cm-real" }, [
       el("span", { text: "看实景" }),
-      link("街景", `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${at(vlat)},${at(vlon)}&heading=${look}&pitch=5&fov=80`),
+      googleEmbedKey
+        ? el("button", { class: "cm-btn", type: "button", text: "街景", onclick: () => streetViewHere([vlon, vlat], look, f.properties.code) })
+        : link("街景", `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${at(vlat)},${at(vlon)}&heading=${look}&pitch=5&fov=80`),
       link("卫星图", `https://www.google.com/maps/@?api=1&map_action=map&center=${at(lat)},${at(lon)}&zoom=19&basemap=satellite`),
       link("Google 地图", `https://www.google.com/maps/search/?api=1&query=${at(lat)},${at(lon)}`),
     ]);
+    // our own 360° photo near this building: a draggable view right here, facing the building
+    loadPanoramas().then((list) => {
+      const near = list
+        .map((x) => ({ x, d: metresBetween([x.lon, x.lat], f.properties.centre) }))
+        .filter(({ d }) => d < 100)
+        .sort((a, b) => a.d - b.d)[0];
+      if (!near || !row.isConnected) return;
+      row.insertBefore(el("button", { class: "cm-btn cm-pano-btn", type: "button", onclick: () => openPanorama(near.x, f.properties.centre, f.properties.code) }, [el("span", { html: ICON.pano }), "360°"]), row.children[1]);
+    });
+    return row;
+  }
+
+  // ----- 360° photos (Pannellum) and Street View inside the map -----
+  let panoramas = null;
+  async function loadPanoramas() {
+    if (panoramas || !panoramasUrl) return panoramas || [];
+    try {
+      const base = new URL(panoramasUrl, document.baseURI);
+      const data = await fetch(base).then((r) => (r.ok ? r.json() : null));
+      panoramas = (Array.isArray(data?.panoramas) ? data.panoramas : [])
+        .filter((x) => x.file && Number.isFinite(x.lon) && Number.isFinite(x.lat))
+        .map((x) => ({ ...x, url: new URL(x.file, base).href }));
+    } catch {
+      panoramas = [];
+    }
+    return panoramas;
+  }
+  let panoramaMarkers = [];
+  async function showPanoramaSpots() {
+    const list = await loadPanoramas();
+    if (closed || !list.length) return;
+    panoramaMarkers = list.map((x) => {
+      const node = el("button", { class: "cm-pano", type: "button", "aria-label": `360° 实景：${x.title || ""}`, html: ICON.pano, onclick: (event) => {
+        event.stopPropagation();
+        openPanorama(x, null, null);
+      } });
+      return new maplibre.Marker({ element: node }).setLngLat([x.lon, x.lat]).addTo(map);
+    });
+    const toggle = () => {
+      const show = map.getZoom() >= 16.6;
+      for (const m of panoramaMarkers) m.getElement().style.display = show ? "" : "none";
+    };
+    map.on("zoomend", toggle);
+    toggle();
+  }
+  let pannellumReady = null;
+  function loadPannellum() {
+    if (!pannellumUrl) return Promise.reject(new Error("no pannellumUrl"));
+    if (window.pannellum) return Promise.resolve(window.pannellum);
+    pannellumReady ??= new Promise((resolve, reject) => {
+      const src = new URL(pannellumUrl, document.baseURI);
+      if (!document.querySelector("link[data-cm-pnlm]")) document.head.append(el("link", { rel: "stylesheet", href: new URL("pannellum.css", src).href, "data-cm-pnlm": "1" }));
+      const script = el("script", { src: src.href });
+      script.onload = () => (window.pannellum ? resolve(window.pannellum) : reject(new Error("pannellum missing")));
+      script.onerror = () => {
+        pannellumReady = null;
+        reject(new Error("pannellum failed to load"));
+      };
+      document.head.append(script);
+    });
+    return pannellumReady;
+  }
+  // a full-screen layer with a header and a footer (credits); Back / Esc / the arrow close it
+  function viewerLayer(title, body, credits, onClose) {
+    const box = el("div", { class: "cm-photo", role: "dialog", "aria-label": title });
+    pushLayer(box);
+    const closeBox = box.closeLayer;
+    box.closeLayer = (fromHistory) => {
+      onClose?.();
+      closeBox(fromHistory);
+    };
+    box.append(
+      el("header", {}, [el("button", { class: "cm-btn", type: "button", "aria-label": "关闭", html: ICON.back, onclick: () => box.closeLayer() }), el("b", { text: title })]),
+      body,
+      el("footer", {}, credits)
+    );
+    overlay.append(box);
+    box.querySelector("button")?.focus();
+    return box;
+  }
+  async function openPanorama(x, target, code) {
+    const holder = el("div", { class: "cm-pano-box" });
+    let viewer = null;
+    const credits = [
+      x.author ? `${x.author} · ` : "",
+      x.licenseUrl ? el("a", { href: x.licenseUrl, target: "_blank", rel: "noopener", text: x.license || "licence" }) : x.license || "",
+      x.taken ? ` · ${x.taken}` : "",
+      " · 拖动看四周，双指缩放",
+    ];
+    viewerLayer(x.title || (code ? `${code} 360°` : "360° 实景"), holder, credits, () => viewer?.destroy?.());
+    try {
+      const pannellum = await loadPannellum();
+      if (!holder.isConnected) return;
+      const north = Number.isFinite(x.north) ? x.north : 0; // the compass heading at the middle of the photo
+      const yaw = target ? ((bearingDeg([x.lon, x.lat], target) - north + 540) % 360) - 180 : 0;
+      viewer = pannellum.viewer(holder, {
+        type: "equirectangular",
+        panorama: x.url,
+        autoLoad: true,
+        crossOrigin: "anonymous",
+        yaw,
+        pitch: 0,
+        hfov: 100,
+        northOffset: north,
+        compass: true,
+        showFullscreenCtrl: false,
+        ...(x.haov ? { haov: x.haov } : {}),
+        ...(x.vaov ? { vaov: x.vaov } : {}),
+        ...(x.vOffset != null ? { vOffset: x.vOffset } : {}),
+        strings: { loadingLabel: "正在载入…", loadButtonLabel: "点这里载入", genericWebGLError: "这台手机的浏览器显示不了全景图。", fileAccessError: "全景图载不进来。" },
+      });
+      if (options.debug) window.__campusPano = viewer;
+    } catch (error) {
+      console.warn(error);
+      holder.textContent = "全景查看器载入失败，检查网络后再试。";
+    }
+  }
+  function streetViewHere([lon, lat], heading, code) {
+    const src = `https://www.google.com/maps/embed/v1/streetview?key=${encodeURIComponent(googleEmbedKey)}&location=${lat.toFixed(6)},${lon.toFixed(6)}&heading=${heading}&pitch=5&fov=80`;
+    const frame = el("iframe", { src, title: `${code} 街景`, allowfullscreen: true, loading: "eager", referrerpolicy: "strict-origin-when-cross-origin" });
+    viewerLayer(`${code} 街景`, frame, ["Google 街景 · 拖动看四周（附近没有街景时会显示空白）"]);
   }
   let photos = null; // [] once loaded (or failed)
   async function loadPhotos() {

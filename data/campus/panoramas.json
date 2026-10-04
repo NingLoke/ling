@@ -1,0 +1,4 @@
+{
+ "about": "360° photos (or wide phone panoramas) of the campus, shown as draggable views on the campus map. Add one with: node scripts/add-panorama.mjs photo.jpg --at SK3 --author \"Name\" --license \"CC BY 4.0\". file is relative to this JSON; north is the compass heading of the photo's middle.",
+ "panoramas": []
+}

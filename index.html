@@ -1275,6 +1275,8 @@ $("back").addEventListener("click", () => {
 });
 // ---------- campus map (3D, GPS, walking directions), loaded on first use ----------
 const MAP_STYLE = "ink";
+// Optional: a Google Maps Embed API key (restricted to this site's address) opens Street View inside the map.
+const GOOGLE_EMBED_KEY = "";
 /** This week's classes for the map: which buildings are "ours", and the next one to walk to. */
 function mapClasses(now) {
   if (!data) return [];
@@ -1311,12 +1313,15 @@ async function openMap(code = null, navigate = false) {
     }
   }
   try {
-    const { openCampusMap } = await import("./assets/campus-map.js?v=68970a6989");
+    const { openCampusMap } = await import("./assets/campus-map.js?v=cf34e31fa0");
     openCampusMap({
       maplibreUrl: "./assets/vendor/maplibre-gl-6.12.0/maplibre-gl.mjs",
       campusUrl: "data/campus/campus.geojson",
       pathsUrl: "data/campus/paths.json",
       photosUrl: "data/campus/photos.json",
+      panoramasUrl: "data/campus/panoramas.json",
+      pannellumUrl: "./assets/vendor/pannellum-2.5.7/pannellum.js",
+      googleEmbedKey: GOOGLE_EMBED_KEY,
       style: MAP_STYLE,
       focus: code,
       navigate,
