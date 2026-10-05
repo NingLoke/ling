@@ -25,12 +25,12 @@ export const CLASSES = {
   },
   "3E2": {
     title: "3E2",
-    // The foundation units with classes for 3E2 in SWS. Not Programming: its only 3E2 class is a lab shared with
-    // 3E1/3E4 that clashes with 3E2's Critical Thinking seminar, and the lecture is not for 3E2. Not Management:
-    // only its lecture for "All", no 3E2 tutorial.
+    // Physics 2, Maths 3, Chemistry and Critical Thinking. Chemistry is listed in SWS under the code it shares with
+    // the diploma (CMDP1056_CMFP0052).
     selections: [
       { unit: "CMFP0043", groups: ["3E2"], short: "Maths 3" },
       { unit: "CMFP0051", groups: ["3E2"], short: "Physics 2" },
+      { unit: "CMDP1056_CMFP0052", groups: ["3E2"], short: "Chemistry" },
       { unit: "CMFP0023", groups: ["3E2"], short: "Critical Thinking" },
     ],
   },
