@@ -145,7 +145,7 @@ button.cm-media-item{cursor:zoom-in}
 .cm-media-nav .cm-btn:disabled{opacity:.35;cursor:default}
 .cm-media-count{min-width:30px;text-align:center;font-size:12px;color:var(--cm-muted);font-variant-numeric:tabular-nums}
 @keyframes cm-wait{to{opacity:.55}}
-@media (min-width:720px) and (orientation:landscape){
+@media (min-width:560px) and (orientation:landscape){
   /* side by side, and clear of the map buttons on the right */
   .cm-sheet:has(>.cm-media){display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;padding-top:14px;
     max-height:62vh;right:calc(env(safe-area-inset-right) + 70px);border-top-right-radius:20px;border-right:1px solid var(--cm-line)}
@@ -1084,16 +1084,18 @@ export function openCampusMap(options) {
   }
   // The picture half of a sheet: the place's own pictures, or the nearest ones marked 在这附近, and last
   // Google's satellite picture of it. `small`: a lower strip (the arrival sheet), only with its own pictures.
-  function mediaPane(place, { small = false } = {}) {
+  function mediaPane(place, { small = false, settled = null } = {}) {
     const pane = el("figure", { class: `cm-media cm-media-wait${small ? " cm-media-small" : ""}`, "aria-label": place.code ? `${place.code} 的实景` : "实景" });
     loadPictures().then(() => {
       if (!pane.isConnected) return; // the sheet moved on
       const found = picturesFor(place);
       if (small && found.near) pane.remove();
       else fillPane(pane, place, found);
+      settled?.();
     }).catch((error) => {
       console.warn(error);
       pane.remove();
+      settled?.();
     });
     return pane;
   }
@@ -1750,14 +1752,20 @@ export function openCampusMap(options) {
     const f = buildings.get(code);
     const mine = (byCode.get(code) || []).find((m) => m.next) || (byCode.get(code) || [])[0];
     announcer.textContent = `到了 ${code}`;
+    // keep the door and the walker in the part of the map the (now taller) sheet leaves free
+    const door = router?.nodes[router.doors[code]] || f?.properties.centre;
+    const frame = () => {
+      if (!closed && door && nav?.arrived && nav.code === code) map.easeTo({ center: door, duration: reduceMotion ? 0 : 600, padding: sheetPadding() });
+    };
     sheet.replaceChildren(
-      ...(f ? [mediaPane(placeOf(f, code), { small: true })] : []), // a picture, so it is easy to recognise
+      ...(f ? [mediaPane(placeOf(f, code), { small: true, settled: frame })] : []), // a picture, so it is easy to recognise
       el("div", { class: "cm-opts" }, [
         el("h2", {}, [`到了！${code}`, el("small", { text: [f?.properties.name, f?.properties.zh].filter(Boolean).join(" · ") })]),
         el("p", { text: mine ? `${mine.title} 在 ${mine.room}。` : "你已经在这栋楼旁边了。" }),
         el("div", { class: "cm-actions" }, [el("button", { class: "cm-btn cm-primary", type: "button", text: "好", onclick: endNavigation })]),
       ])
     );
+    frame();
     releaseWakeLock();
   }
 
