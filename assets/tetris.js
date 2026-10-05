@@ -1034,7 +1034,9 @@ function createSound(style) {
 
 /**
  * Open the full-screen game. Returns close().
- *   theme       { style: "neon"|"ink", background, panel, grid, text, muted, accent, pieces: {I..L}, font }
+ *   theme       { style: "neon"|"ink", background, panel, grid, text, muted, accent, pieces: {I..L}, font,
+ *                 skinName (what the page's own colours are called; "夜空" / "水墨" by default),
+ *                 skins (the skins that follow at higher scores, like SKINS below; the style's own by default) }
  *   storageKey  localStorage key for the best score
  *   title       heading shown in the overlay
  */
@@ -1060,11 +1062,8 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
     /* private mode */
   }
   sound.setMuted(!soundOn);
-  const skins = SKINS[ink ? "ink" : "neon"].map((skin, i) =>
-    i === 0
-      ? { name: skin.name, accent: t.accent, glow: t.accent, glow2: t.pieces.T, board: [ink ? t.panel : t.background, ink ? t.panel : t.background], grid: t.grid, pieces: t.pieces }
-      : skin
-  );
+  const own = { name: t.skinName || SKINS[ink ? "ink" : "neon"][0].name, accent: t.accent, glow: t.accent, glow2: t.pieces.T, board: [ink ? t.panel : t.background, ink ? t.panel : t.background], grid: t.grid, pieces: t.pieces };
+  const skins = [own, ...(Array.isArray(t.skins) && t.skins.length ? t.skins : SKINS[ink ? "ink" : "neon"].slice(1))];
   let stage = 0;
   let skin = skins[0];
 
