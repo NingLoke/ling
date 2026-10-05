@@ -76,6 +76,12 @@
       "short": "Physics 2",
       "group": "3E2"
     },
+    "CMDP1056_CMFP0052": {
+      "code": "CMDP1056_CMFP0052",
+      "name": "Chemistry",
+      "short": "Chemistry",
+      "group": "3E2"
+    },
     "CMFP0023": {
       "code": "CMFP0023",
       "name": "Critical Thinking",
@@ -172,6 +178,67 @@
       ],
       "staff": [
         "Shubashini Krishnan"
+      ],
+      "group": "3E2"
+    },
+    {
+      "id": "CMDP1056_CMFP0052/CSM/2/3/LEC/1",
+      "unit": "CMDP1056_CMFP0052",
+      "type": "Lecture",
+      "day": 1,
+      "firstDate": "2026-10-06",
+      "start": 840,
+      "end": 960,
+      "weeks": [
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "rooms": [
+        "Auditorium"
+      ],
+      "staff": [
+        "Cynthia Anak Paul Sebli",
+        "Nikia William"
+      ],
+      "group": "3E1-4; D2A1/D1A1"
+    },
+    {
+      "id": "CMDP1056_CMFP0052/CSM/2/3/LAB/2",
+      "unit": "CMDP1056_CMFP0052",
+      "type": "Lab",
+      "day": 2,
+      "firstDate": "2026-10-07",
+      "start": 480,
+      "end": 600,
+      "weeks": [
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "rooms": [
+        "SK2 204 (ME 204) Chemistry Lab 1"
+      ],
+      "staff": [
+        "Cynthia Anak Paul Sebli"
       ],
       "group": "3E2"
     },
@@ -356,7 +423,37 @@
         "Grace Abigail"
       ],
       "group": "3E2"
+    },
+    {
+      "id": "CMDP1056_CMFP0052/CSM/2/3/TUT/2",
+      "unit": "CMDP1056_CMFP0052",
+      "type": "Tutorial",
+      "day": 4,
+      "firstDate": "2026-10-09",
+      "start": 600,
+      "end": 720,
+      "weeks": [
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "rooms": [
+        "LTCL 4 (HL2-104)"
+      ],
+      "staff": [
+        "Nikia William"
+      ],
+      "group": "3E2"
     }
   ],
-  "updatedAt": "2026-10-05T05:12:55.583Z"
+  "updatedAt": "2026-10-05T05:34:41.028Z"
 }
