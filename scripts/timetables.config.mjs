@@ -23,6 +23,17 @@ export const CLASSES = {
       { unit: "CMFP0021", groups: ["2E4"], short: "ECS" },
     ],
   },
+  "3E2": {
+    title: "3E2",
+    // The foundation units with classes for 3E2 in SWS. Not Programming: its only 3E2 class is a lab shared with
+    // 3E1/3E4 that clashes with 3E2's Critical Thinking seminar, and the lecture is not for 3E2. Not Management:
+    // only its lecture for "All", no 3E2 tutorial.
+    selections: [
+      { unit: "CMFP0043", groups: ["3E2"], short: "Maths 3" },
+      { unit: "CMFP0051", groups: ["3E2"], short: "Physics 2" },
+      { unit: "CMFP0023", groups: ["3E2"], short: "Critical Thinking" },
+    ],
+  },
   "3E4": {
     title: "3E4",
     selections: [

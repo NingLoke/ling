@@ -1,0 +1,362 @@
+{
+  "schema": 1,
+  "class": "3E2",
+  "title": "3E2",
+  "semester": "Semester Two",
+  "timezone": "Asia/Kuching",
+  "source": "http://sws.curtin.edu.my",
+  "weeks": [
+    {
+      "week": 39,
+      "start": "2026-09-21"
+    },
+    {
+      "week": 40,
+      "start": "2026-09-28"
+    },
+    {
+      "week": 41,
+      "start": "2026-10-05"
+    },
+    {
+      "week": 42,
+      "start": "2026-10-12"
+    },
+    {
+      "week": 43,
+      "start": "2026-10-19"
+    },
+    {
+      "week": 44,
+      "start": "2026-10-26"
+    },
+    {
+      "week": 45,
+      "start": "2026-11-02"
+    },
+    {
+      "week": 46,
+      "start": "2026-11-09"
+    },
+    {
+      "week": 47,
+      "start": "2026-11-16"
+    },
+    {
+      "week": 48,
+      "start": "2026-11-23"
+    },
+    {
+      "week": 49,
+      "start": "2026-11-30"
+    },
+    {
+      "week": 50,
+      "start": "2026-12-07"
+    },
+    {
+      "week": 51,
+      "start": "2026-12-14"
+    },
+    {
+      "week": 52,
+      "start": "2026-12-21"
+    }
+  ],
+  "units": {
+    "CMFP0043": {
+      "code": "CMFP0043",
+      "name": "Mathematics 3",
+      "short": "Maths 3",
+      "group": "3E2"
+    },
+    "CMFP0051": {
+      "code": "CMFP0051",
+      "name": "Physics 2",
+      "short": "Physics 2",
+      "group": "3E2"
+    },
+    "CMFP0023": {
+      "code": "CMFP0023",
+      "name": "Critical Thinking",
+      "short": "Critical Thinking",
+      "group": "3E2"
+    }
+  },
+  "events": [
+    {
+      "id": "CMFP0043/CSM/1/3/LEC/1",
+      "unit": "CMFP0043",
+      "type": "Lecture",
+      "day": 0,
+      "firstDate": "2026-10-05",
+      "start": 480,
+      "end": 600,
+      "weeks": [
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "rooms": [
+        "SK3 103 Lecture 2"
+      ],
+      "staff": [
+        "Puteri Nurul Fatihah Binti Mohamad Azli",
+        "Shubashini Krishnan"
+      ],
+      "group": "3E1-4"
+    },
+    {
+      "id": "CMFP0051/CSM/1/3/LEC/1",
+      "unit": "CMFP0051",
+      "type": "Lecture",
+      "day": 0,
+      "firstDate": "2026-10-05",
+      "start": 600,
+      "end": 720,
+      "weeks": [
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "rooms": [
+        "SK3 102 Lecture 1"
+      ],
+      "staff": [
+        "Lukman Mohd Najib"
+      ],
+      "group": "3E1-3; 2E1-7"
+    },
+    {
+      "id": "CMFP0043/CSM/1/3/TUT/2/2",
+      "unit": "CMFP0043",
+      "type": "Tutorial",
+      "day": 0,
+      "firstDate": "2026-10-05",
+      "start": 780,
+      "end": 870,
+      "weeks": [
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "rooms": [
+        "LTCL 3 (HL2-103)"
+      ],
+      "staff": [
+        "Shubashini Krishnan"
+      ],
+      "group": "3E2"
+    },
+    {
+      "id": "CMFP0043/CSM/1/3/TUT/2/1",
+      "unit": "CMFP0043",
+      "type": "Tutorial",
+      "day": 2,
+      "firstDate": "2026-10-07",
+      "start": 840,
+      "end": 930,
+      "weeks": [
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "rooms": [
+        "PA3 206"
+      ],
+      "staff": [
+        "Shubashini Krishnan"
+      ],
+      "group": "3E2"
+    },
+    {
+      "id": "CMFP0043/CSM/1/3/C/1",
+      "unit": "CMFP0043",
+      "type": "Clinic",
+      "day": 2,
+      "firstDate": "2026-10-07",
+      "start": 1020,
+      "end": 1110,
+      "weeks": [
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "rooms": [
+        "SK3 206 Collaborative Room 2"
+      ],
+      "staff": [
+        "Puteri Nurul Fatihah Binti Mohamad Azli",
+        "Shubashini Krishnan"
+      ],
+      "group": "3E1-4"
+    },
+    {
+      "id": "CMFP0023/CSM/1/3/SEM/02/1",
+      "unit": "CMFP0023",
+      "type": "Seminar",
+      "day": 3,
+      "firstDate": "2026-10-08",
+      "start": 480,
+      "end": 570,
+      "weeks": [
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "rooms": [
+        "SK3 104 Lecture 3"
+      ],
+      "staff": [
+        "Grace Abigail"
+      ],
+      "group": "3E2"
+    },
+    {
+      "id": "CMFP0051/CSM/1/3/C/1",
+      "unit": "CMFP0051",
+      "type": "Clinic",
+      "day": 3,
+      "firstDate": "2026-10-08",
+      "start": 660,
+      "end": 780,
+      "weeks": [
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "rooms": [
+        "Auditorium"
+      ],
+      "staff": [
+        "Lukman Mohd Najib"
+      ],
+      "group": "3E1-3; 2E1-7"
+    },
+    {
+      "id": "CMFP0051/CSM/1/3/WS/02",
+      "unit": "CMFP0051",
+      "type": "Workshop",
+      "day": 3,
+      "firstDate": "2026-10-08",
+      "start": 840,
+      "end": 1020,
+      "weeks": [
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "rooms": [
+        "SK3 206 Collaborative Room 2",
+        "SK2 101 (ME 101) Physic Lab"
+      ],
+      "staff": [
+        "Lukman Mohd Najib"
+      ],
+      "group": "3E2"
+    },
+    {
+      "id": "CMFP0023/CSM/1/3/SEM/02/2",
+      "unit": "CMFP0023",
+      "type": "Seminar",
+      "day": 4,
+      "firstDate": "2026-10-09",
+      "start": 480,
+      "end": 570,
+      "weeks": [
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "rooms": [
+        "LTCL 2 (HL2-102)"
+      ],
+      "staff": [
+        "Grace Abigail"
+      ],
+      "group": "3E2"
+    }
+  ],
+  "updatedAt": "2026-10-05T05:12:55.583Z"
+}
