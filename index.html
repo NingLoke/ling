@@ -372,7 +372,7 @@ dialog.viewer .sheet-head { position: static; padding-top: calc(env(safe-area-in
 .shot-tools::-webkit-scrollbar { display: none; }
 .shot-tools .mini-btn { flex: none; padding: 0 12px; font-size: 13px; }
 .shot-tools .mini-btn[aria-pressed="true"] { border-color: #d9a400; background: #fff3b8; color: #3a2f1b; }
-.shot-stage { flex: 1; min-height: 0; overflow: auto; background: #fff; overscroll-behavior: contain; touch-action: pan-x pan-y pinch-zoom; }
+.shot-stage { flex: 1; min-height: 0; overflow: auto; background: #fff; overscroll-behavior: contain; touch-action: pan-x pan-y; }
 .shot-frame { position: relative; }
 .shot-frame img { display: block; width: 100%; height: auto; }
 .shot-mark { position: absolute; border: 2px solid #e0a800; background: rgba(255, 214, 0, .2); border-radius: 3px; pointer-events: none; }
@@ -1162,15 +1162,31 @@ async function openShot(code, focusId = null) {
     return mark;
   });
   const frame = h("div", { class: "shot-frame" }, img, marks);
-  const stage = h("div", { class: "shot-stage", tabindex: "0", "aria-label": "SWS 截图，可以滚动" }, frame);
+  const stage = h("div", { class: "shot-stage", tabindex: "0", "aria-label": "SWS 截图：两指可以放大，放大后可以上下左右拖" }, frame);
   const markBtn = h("button", { class: "mini-btn", type: "button" });
-  const fitBtn = h("button", { class: "mini-btn", type: "button" });
-  const apply = () => {
-    frame.style.width = fitShot ? "100%" : `${Math.round(pageWidth)}px`;
+  const zoomBtn = h("button", { class: "mini-btn", type: "button" });
+  const applyMarks = () => {
     stage.classList.toggle("hide-marks", !showMarks);
     markBtn.setAttribute("aria-pressed", String(showMarks));
     markBtn.textContent = showMarks ? `框出我的课（${marks.length} 行）` : "不框";
-    fitBtn.textContent = fitShot ? "看原大" : "看全图";
+  };
+  // The screenshot zooms inside its own box (pinch, double tap, the button, ctrl + wheel), so it can then be
+  // dragged every way; the page itself does not zoom here (that left nothing to drag sideways).
+  const fitWidth = () => stage.clientWidth || pageWidth;
+  const bigWidth = () => Math.max(pageWidth, fitWidth() * 2); // the page's own size, or twice the screen
+  const zoomed = () => frame.offsetWidth > fitWidth() + 1;
+  // anchor: the point in the box (px from its top left) that stays under the fingers
+  const zoomTo = (next, anchor = { x: stage.clientWidth / 2, y: stage.clientHeight / 3 }) => {
+    const width = frame.offsetWidth || fitWidth();
+    const height = frame.offsetHeight || 1;
+    const fx = (stage.scrollLeft + anchor.x) / width;
+    const fy = (stage.scrollTop + anchor.y) / height;
+    const w = Math.min(Math.max(pageWidth * 2.5, fitWidth() * 3), Math.max(fitWidth(), next));
+    frame.style.width = w <= fitWidth() + 1 ? "100%" : `${Math.round(w)}px`; // fitted: follows the box when the phone turns
+    stage.scrollLeft = fx * frame.offsetWidth - anchor.x;
+    stage.scrollTop = fy * frame.offsetHeight - anchor.y;
+    fitShot = !zoomed();
+    zoomBtn.textContent = fitShot ? "放大看" : "看整张";
   };
   const scrollToMark = () => {
     const target = marks.find((m) => m.classList.contains("focus")) || marks[0];
@@ -1178,18 +1194,54 @@ async function openShot(code, focusId = null) {
     stage.scrollTop = Math.max(0, target.offsetTop - stage.clientHeight / 3);
     stage.scrollLeft = 0;
   };
-  markBtn.addEventListener("click", () => { showMarks = !showMarks; apply(); });
-  fitBtn.addEventListener("click", () => { fitShot = !fitShot; apply(); scrollToMark(); });
-  apply();
+  const at = (x, y) => {
+    const box = stage.getBoundingClientRect();
+    return { x: x - box.left, y: y - box.top };
+  };
+  markBtn.addEventListener("click", () => { showMarks = !showMarks; applyMarks(); });
+  zoomBtn.addEventListener("click", () => {
+    zoomTo(zoomed() ? 0 : bigWidth());
+    scrollToMark();
+  });
+  stage.addEventListener("dblclick", (event) => zoomTo(zoomed() ? 0 : bigWidth(), at(event.clientX, event.clientY)));
+  let pinch = null;
+  const spread = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  stage.addEventListener("touchstart", (event) => {
+    if (event.touches.length === 2) pinch = { spread: spread(event.touches), width: frame.offsetWidth };
+  }, { passive: true });
+  stage.addEventListener("touchmove", (event) => {
+    if (!pinch || event.touches.length !== 2) return;
+    event.preventDefault();
+    const [a, b] = event.touches;
+    zoomTo((pinch.width * spread(event.touches)) / pinch.spread, at((a.clientX + b.clientX) / 2, (a.clientY + b.clientY) / 2));
+  }, { passive: false });
+  const endPinch = (event) => { if (event.touches.length < 2) pinch = null; };
+  stage.addEventListener("touchend", endPinch);
+  stage.addEventListener("touchcancel", endPinch);
+  // a trackpad pinch (and ctrl + mouse wheel) on a computer
+  stage.addEventListener("wheel", (event) => {
+    if (!event.ctrlKey) return;
+    event.preventDefault();
+    zoomTo(frame.offsetWidth * Math.exp(-event.deltaY / 200), at(event.clientX, event.clientY));
+  }, { passive: false });
+  applyMarks();
   body.replaceChildren(
     h("div", { class: "shot-tools" },
-      markBtn, fitBtn,
+      markBtn, zoomBtn,
       h("a", { class: "mini-btn", href: src, target: "_blank", rel: "noopener" }, "打开原图 ↗"),
       h("button", { class: "mini-btn", type: "button", onclick: () => openCheck(code) }, "自己去 SWS 查")),
     stage,
-    h("p", { class: "shot-note" }, `SWS 官网 List 页面原样截图，没有修改过。黄色框是网站加的，标出 ${CLASS} 用到的 ${marks.length} 行。`));
-  if (img.complete) scrollToMark();
-  else img.addEventListener("load", scrollToMark, { once: true });
+    h("p", { class: "shot-note" }, `SWS 官网 List 页面原样截图，没有修改过。黄色框是网站加的，标出 ${CLASS} 用到的 ${marks.length} 行。两指张开或双击可以放大，放大后上下左右拖动看。`));
+  // start the way it was left last time: the whole page, or zoomed in on my rows
+  const start = () => {
+    zoomTo(fitShot ? 0 : bigWidth(), { x: 0, y: 0 });
+    scrollToMark();
+  };
+  if (img.complete) start();
+  else {
+    zoomTo(fitShot ? 0 : bigWidth(), { x: 0, y: 0 }); // the frame has its size before the picture arrives (width/height attributes)
+    img.addEventListener("load", scrollToMark, { once: true });
+  }
 }
 
 // ---------- footer ----------
