@@ -418,6 +418,20 @@ const CSS = `
 .tt-stat{display:flex;flex-direction:column;padding:2px 2px 0}
 .tt-stat b{font-size:clamp(14px,calc(var(--tt-side) / 5.2),20px);font-variant-numeric:tabular-nums;font-weight:700;line-height:1.15}
 .tt-controls{flex:none;display:grid;grid-template-columns:repeat(6,1fr);gap:8px;padding-top:4px}
+.tt-controls.tt-two{grid-auto-rows:52px}
+.tt-controls.tt-two .tt-ctl{height:auto;min-height:48px}
+.tt-ctl[hidden]{display:none}
+.tt-ctl[data-action=rotate],.tt-ctl[data-action=drop]{color:var(--tt-accent)}
+.tt-layouts{margin:4px 0 12px;text-align:left}
+.tt-layouts>span{display:block;margin:0 0 6px;font-size:12px;color:var(--tt-muted);letter-spacing:.06em}
+.tt-layouts>div{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.tt-lay{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-height:44px;padding:6px 6px 5px;border-radius:10px;
+  border:1px solid var(--tt-line);background:transparent;color:var(--tt-text);font:inherit;cursor:pointer;touch-action:manipulation}
+.tt-lay[aria-pressed=true]{border-color:var(--tt-accent);background:color-mix(in srgb,var(--tt-accent) 14%,transparent)}
+.tt-lay small{font-size:11px;line-height:1.2;text-align:center;white-space:nowrap}
+.tt-lay-pad{display:grid;gap:2px;height:22px}
+.tt-lay-pad i{border-radius:3px;background:color-mix(in srgb,var(--tt-text) 22%,transparent)}
+.tt-lay-pad i.tt-hot{background:var(--tt-accent)}
 .tt-ctl{height:58px;border-radius:16px;border:1px solid var(--tt-line);background:var(--tt-panel);color:var(--tt-text);
   font:inherit;font-size:22px;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:pointer;padding:0}
 .tt-ctl small{font-size:12px;letter-spacing:.04em}
@@ -429,7 +443,8 @@ const CSS = `
 .tt-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:12px}
 .tt-msg[hidden]{display:none}
 .tt-card{background:var(--tt-panel);border:1px solid var(--tt-line);border-radius:16px;
-  padding:18px 16px 14px;text-align:center;min-width:min(240px,100%);max-width:300px;box-shadow:0 18px 50px -20px rgba(0,0,0,.6)}
+  padding:18px 16px 14px;text-align:center;min-width:min(240px,100%);max-width:300px;box-shadow:0 18px 50px -20px rgba(0,0,0,.6);
+  max-height:100%;overflow-y:auto;overscroll-behavior:contain}
 .tt-card h2{margin:0 0 6px;font-size:20px;letter-spacing:.1em}
 .tt-card p{margin:0 0 12px;color:var(--tt-muted);font-size:13px;line-height:1.6}
 .tt-card .tt-score{font-size:30px;font-weight:700;color:var(--tt-text);font-variant-numeric:tabular-nums;margin:2px 0 4px}
@@ -489,11 +504,25 @@ const ICONS = {
   left: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
   right: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
   rotate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/></svg>',
+  rotateCCW: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4v5h5"/></svg>',
   down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v13"/><path d="M6 12l6 6 6-6"/></svg>',
   drop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 5l5 5 5-5"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg>',
   soundOn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg>',
   soundOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l5 6"/><path d="M22 9l-5 6"/></svg>',
 };
+
+// Where the touch buttons sit (按键布局), picked in the start / pause card and kept on the phone. The areas use
+// the buttons' action names; a button a layout leaves out is hidden.
+export const LAYOUTS = [
+  { id: "row", name: "一排", columns: "repeat(6, 1fr)", areas: ["left rotate right down drop hold"] },
+  { id: "split", name: "左移 右转", columns: "1fr 1fr 1fr .3fr 1.1fr 1.1fr", areas: ["left hold right . rotateCCW rotate", "left down right . drop drop"] },
+  { id: "mirror", name: "左转 右移", columns: "1.1fr 1.1fr .3fr 1fr 1fr 1fr", areas: ["rotateCCW rotate . left hold right", "drop drop . left down right"] },
+  { id: "pad", name: "两排大键", columns: "repeat(3, 1fr)", areas: ["hold rotate drop", "left down right"] },
+  { id: "thumb", name: "单手", columns: ".8fr 1fr 1fr 1fr", areas: [". hold rotate drop", ". left down right"] },
+];
+const LAYOUT_KEY = "tt:controls-layout";
+export const layoutById = (id) => LAYOUTS.find((layout) => layout.id === id) || LAYOUTS[0];
+export const layoutActions = (layout) => new Set(layout.areas.join(" ").split(/\s+/).filter((name) => name !== "."));
 
 function el(tag, attrs = {}, children = []) {
   const node = document.createElement(tag);
@@ -1127,12 +1156,51 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
     el("button", { class: "tt-ctl", type: "button", "aria-label": label, "data-action": name, html: icon });
   const controls = el("div", { class: "tt-controls" }, [
     ctl("left", "左移", ICONS.left),
+    ctl("rotateCCW", "反方向旋转", ICONS.rotateCCW),
     ctl("rotate", "旋转", ICONS.rotate),
     ctl("right", "右移", ICONS.right),
     ctl("down", "加速下落", ICONS.down),
     ctl("drop", "直接落下", ICONS.drop),
     el("button", { class: "tt-ctl", type: "button", "aria-label": "暂存方块", "data-action": "hold" }, [el("small", { text: "暂存" })]),
   ]);
+  let layoutId = "row";
+  try {
+    layoutId = layoutById(localStorage.getItem(LAYOUT_KEY)).id;
+  } catch {
+    /* private mode */
+  }
+  function applyLayout(id) {
+    const layout = layoutById(id);
+    layoutId = layout.id;
+    const used = layoutActions(layout);
+    controls.style.gridTemplateColumns = layout.columns;
+    controls.style.gridTemplateAreas = layout.areas.map((row) => `"${row}"`).join(" ");
+    controls.classList.toggle("tt-two", layout.areas.length > 1);
+    for (const button of controls.children) {
+      button.style.gridArea = button.dataset.action;
+      button.hidden = !used.has(button.dataset.action);
+    }
+  }
+  applyLayout(layoutId);
+  // the layout picker in the start / pause card (touch screens only: a keyboard has no buttons to move)
+  function layoutPicker() {
+    const choices = LAYOUTS.map((layout) => {
+      const cells = [...layoutActions(layout)].map((name) => el("i", { class: name === "rotate" || name === "drop" ? "tt-hot" : null, style: `grid-area:${name}` }));
+      const pad = el("span", { class: "tt-lay-pad", "aria-hidden": "true", style: `grid-template-columns:${layout.columns};grid-template-areas:${layout.areas.map((row) => `"${row}"`).join(" ")}` }, cells);
+      const button = el("button", { class: "tt-lay", type: "button", "aria-pressed": String(layout.id === layoutId), "data-layout": layout.id }, [pad, el("small", { text: layout.name })]);
+      button.addEventListener("click", () => {
+        applyLayout(layout.id);
+        try {
+          localStorage.setItem(LAYOUT_KEY, layout.id);
+        } catch {
+          /* private mode */
+        }
+        for (const other of choices) other.setAttribute("aria-pressed", String(other === button));
+      });
+      return button;
+    });
+    return el("div", { class: "tt-layouts", role: "group", "aria-label": "按键布局" }, [el("span", { text: "按键布局（点一下，下面的按钮马上换）" }), el("div", {}, choices)]);
+  }
   const hint = el("div", { class: "tt-hint", text: "← → 移动 · ↑ 或 X 旋转 · Z 反转 · ↓ 加速 · 空格 落下 · C 暂存 · P 暂停 · M 声音 · Esc 关闭" });
   const live = el("div", { class: "tt-sr", "aria-live": "polite" });
 
@@ -1438,6 +1506,7 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
         el("p", { text: coarse ? "按下面的按钮操作，也可以在方块区左右滑动、点一下旋转、往下一甩直接落下。" : "← → 移动，↑ 旋转，空格直接落下，M 开关声音。" }),
         el("p", { text: `分数到 ${nextSkinAt(0).toLocaleString("en-US")}、${nextSkinAt(1).toLocaleString("en-US")}、${nextSkinAt(2).toLocaleString("en-US")}… 会换新皮肤。` })
       );
+      if (coarse) card.append(layoutPicker());
       primary = el("button", { class: "tt-btn tt-primary", type: "button", text: "开始" });
       primary.addEventListener("click", () => {
         started = true;
@@ -1452,6 +1521,7 @@ export function openTetris({ theme = {}, storageKey = "tetris:best", title = "�
         el("p", { text: `分数 ${state.score.toLocaleString("en-US")} · 行 ${state.lines}` }),
         el("p", { text: `皮肤「${skin.name}」· 到 ${nextSkinAt(stage).toLocaleString("en-US")} 分换「${upcoming}」` })
       );
+      if (coarse) card.append(layoutPicker());
       primary = el("button", { class: "tt-btn tt-primary", type: "button", text: "继续" });
       primary.addEventListener("click", resume);
       const restart = el("button", { class: "tt-btn", type: "button", text: "重新开始" });

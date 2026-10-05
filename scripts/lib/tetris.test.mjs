@@ -1,7 +1,7 @@
 // Tests for the pure game logic in assets/tetris.js (the overlay UI is not loaded in node).
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createGame, PIECES, COLS, ROWS, LOCK_DELAY, gravityMs, skinStage, nextSkinAt, buildSong } from "../../assets/tetris.js";
+import { createGame, PIECES, COLS, ROWS, LOCK_DELAY, gravityMs, skinStage, nextSkinAt, buildSong, LAYOUTS, layoutById, layoutActions } from "../../assets/tetris.js";
 
 // Deterministic random numbers so every run deals the same pieces.
 const seededRandom = (seed = 1) => {
@@ -277,4 +277,29 @@ test("the music loop is whole bars: melody A twice, then B (96 beats)", () => {
   assert.ok(lead.every((e) => e.beat + e.beats <= beats));
   assert.ok(events.every((e, i) => i === 0 || events[i - 1].beat <= e.beat), "sorted by time");
   assert.equal(lead[0].midi, 76, "starts on E5");
+});
+
+test("every button layout is a valid grid with the buttons a game needs", () => {
+  const needed = ["left", "right", "rotate", "down", "drop", "hold"];
+  assert.ok(LAYOUTS.length >= 4);
+  assert.equal(new Set(LAYOUTS.map((l) => l.id)).size, LAYOUTS.length, "ids are unique");
+  for (const layout of LAYOUTS) {
+    const rows = layout.areas.map((row) => row.trim().split(/\s+/));
+    const width = rows[0].length;
+    for (const row of rows) assert.equal(row.length, width, `${layout.id}: rows of the same length`);
+    // grid-template-columns has one track per column
+    const tracks = layout.columns.replace(/repeat\((\d+),\s*([^)]+)\)/g, (_, n, t) => Array(Number(n)).fill(t).join(" ")).trim().split(/\s+/);
+    assert.equal(tracks.length, width, `${layout.id}: one column size per column`);
+    const used = layoutActions(layout);
+    for (const name of needed) assert.ok(used.has(name), `${layout.id} has ${name}`);
+    // CSS drops the whole template unless every named area is one filled rectangle
+    for (const name of used) {
+      const cells = rows.flatMap((row, r) => row.map((cell, c) => (cell === name ? [r, c] : null)).filter(Boolean));
+      const rs = cells.map(([r]) => r);
+      const cs = cells.map(([, c]) => c);
+      const area = (Math.max(...rs) - Math.min(...rs) + 1) * (Math.max(...cs) - Math.min(...cs) + 1);
+      assert.equal(cells.length, area, `${layout.id}: ${name} is a rectangle`);
+    }
+  }
+  assert.equal(layoutById("nope").id, LAYOUTS[0].id, "an unknown saved layout falls back to the first");
 });
