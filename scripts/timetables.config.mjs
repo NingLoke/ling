@@ -12,6 +12,17 @@ export const CLASSES = {
       { unit: "CMFP0021", groups: ["2E3"], short: "ECS" },
     ],
   },
+  "2E4": {
+    title: "2E4",
+    // Maths and English: the same classes as 2E3
+    selections: [
+      { unit: "CMFP0042", groups: ["K"], short: "Maths 2" },
+      { unit: "CMFP0051", groups: ["2E4"], short: "Physics 2" },
+      { unit: "CMFP0061", groups: ["2E4"], short: "Programming" },
+      { unit: "FP-070", groups: ["*"], staff: "Grace", short: "Academic English" },
+      { unit: "CMFP0021", groups: ["2E4"], short: "ECS" },
+    ],
+  },
   "3E4": {
     title: "3E4",
     selections: [
