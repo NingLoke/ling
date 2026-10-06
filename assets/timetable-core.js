@@ -331,3 +331,147 @@ export function startTimetable({ embedded, urls, statusUrls = [], cacheKey, onDa
   refresh.ready = refresh();
   return refresh;
 }
+
+/**
+ * The version of a page's code: the ?v= stamps on its own scripts ("./assets/tetris.js?v=1a2b3c4d5e"), sorted
+ * and joined. scripts/stamp-assets.mjs changes a stamp whenever that file (or anything it imports) changes, so
+ * two copies of the page run the same code exactly when this matches. "" when there are no stamps (an error
+ * page, a captive portal), which never counts as a new version.
+ */
+export function codeVersion(html) {
+  const stamps = String(html ?? "").match(/\.\/(?:assets\/)?[\w-]+\.js\?v=[0-9a-f]+/g) || [];
+  return [...new Set(stamps)].sort().join(" ");
+}
+
+/**
+ * What to do about the live page's code version:
+ *   "none"    same code (or the live page could not be read)
+ *   "reload"  new code, the page has just come back to the screen and nothing is open: reload now. Only once
+ *             per version (tried = the version we last reloaded for), so a cache that keeps serving the old
+ *             page can't make it reload over and over; and never when that can't be remembered.
+ *   "bar"     new code, but the map / a game / a dialog is open, or reloading already didn't help: offer it.
+ */
+export function updateAction({ current, live, shown = false, busy = false, tried = null, canRemember = true }) {
+  if (!current || !live || live === current) return "none";
+  return shown && !busy && canRemember && tried !== live ? "reload" : "bar";
+}
+
+/**
+ * Keeps a page that stays open for days (a home-screen app) on the latest code. The timetable data refreshes
+ * itself, but the code only changes when the page loads again, so a fix never reached a page left open.
+ * Whenever the page comes back to the screen (and every `every` ms while it is up) this reads the live page
+ * and compares codeVersion, then reloads or shows a bar "网站更新了" (updateAction). isBusy() says whether
+ * reloading now would throw away something the user is doing. Returns a function that stops it.
+ */
+export function watchForUpdates({ isBusy = () => false, every = 10 * 60_000, minGap = 60_000, firstCheck = 4_000, timeoutMs = 8_000 } = {}) {
+  const current = codeVersion(document.documentElement.outerHTML);
+  if (!current || typeof fetch !== "function") return () => {};
+  const KEY = "tt:reloaded-for";
+  const store = (() => {
+    try {
+      sessionStorage.setItem(`${KEY}:probe`, "1");
+      return sessionStorage.getItem(`${KEY}:probe`) === "1" ? sessionStorage : null;
+    } catch {
+      return null;
+    }
+  })();
+  let lastCheck = 0;
+  let checking = false;
+  let bar = null;
+  let dismissed = null;
+
+  async function liveVersion() {
+    const url = new URL(location.href);
+    url.hash = "";
+    url.searchParams.set("_v", String(Date.now()));
+    const controller = typeof AbortController === "function" ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+    try {
+      const response = await fetch(url, { cache: "no-store", signal: controller?.signal });
+      return response.ok ? codeVersion(await response.text()) : "";
+    } catch {
+      return "";
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
+  function showBar(live) {
+    if (dismissed === live) return;
+    if (!bar) {
+      const style = document.createElement("style");
+      style.textContent = `.tt-update{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translateX(-50%);z-index:2147483600;display:flex;align-items:center;gap:2px;max-width:calc(100vw - 32px);padding:4px;border-radius:999px;background:rgba(24,24,27,.94);color:#fff;box-shadow:0 6px 24px rgba(0,0,0,.28);font:inherit;font-size:14px}
+.tt-update button{font:inherit;color:inherit;background:none;border:0;border-radius:999px;padding:8px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.tt-update .tt-update-go{font-weight:600;white-space:nowrap}
+.tt-update .tt-update-x{padding:8px 12px;opacity:.7}
+.tt-update button:focus-visible{outline:2px solid #fff;outline-offset:-2px}`;
+      const go = document.createElement("button");
+      go.type = "button";
+      go.className = "tt-update-go";
+      go.textContent = "网站更新了 · 点这里刷新";
+      go.addEventListener("click", () => location.reload());
+      const close = document.createElement("button");
+      close.type = "button";
+      close.className = "tt-update-x";
+      close.setAttribute("aria-label", "先不刷新");
+      close.textContent = "✕";
+      close.addEventListener("click", () => {
+        dismissed = bar.dataset.version;
+        bar.hidden = true;
+      });
+      bar = document.createElement("div");
+      bar.className = "tt-update";
+      bar.setAttribute("role", "status");
+      bar.append(style, go, close);
+      document.body.append(bar);
+    }
+    bar.dataset.version = live;
+    bar.hidden = false;
+  }
+
+  async function check(shown) {
+    if (checking || document.hidden || Date.now() - lastCheck < minGap) return;
+    checking = true;
+    lastCheck = Date.now();
+    try {
+      const live = await liveVersion();
+      let tried = null;
+      try {
+        tried = store?.getItem(KEY) ?? null;
+      } catch {
+        tried = null;
+      }
+      const action = updateAction({ current, live, shown, busy: Boolean(isBusy()), tried, canRemember: Boolean(store) });
+      if (action === "reload") {
+        try {
+          store.setItem(KEY, live);
+          location.reload();
+        } catch {
+          showBar(live); // can't remember the attempt: don't risk reloading in a loop
+        }
+      } else if (action === "bar") {
+        showBar(live);
+      }
+    } finally {
+      checking = false;
+    }
+  }
+
+  const onVisible = () => {
+    if (!document.hidden) check(true);
+  };
+  const onPageShow = (event) => {
+    if (event.persisted) check(true);
+  };
+  document.addEventListener("visibilitychange", onVisible);
+  window.addEventListener("pageshow", onPageShow);
+  const first = setTimeout(() => check(true), firstCheck);
+  const timer = setInterval(() => check(false), every);
+  return () => {
+    clearTimeout(first);
+    clearInterval(timer);
+    document.removeEventListener("visibilitychange", onVisible);
+    window.removeEventListener("pageshow", onPageShow);
+    bar?.remove();
+  };
+}
