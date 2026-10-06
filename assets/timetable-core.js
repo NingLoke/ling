@@ -333,74 +333,103 @@ export function startTimetable({ embedded, urls, statusUrls = [], cacheKey, onDa
 }
 
 /**
- * The version of a page's code: the ?v= stamps on its own scripts ("./assets/tetris.js?v=1a2b3c4d5e"), sorted
- * and joined. scripts/stamp-assets.mjs changes a stamp whenever that file (or anything it imports) changes, so
- * two copies of the page run the same code exactly when this matches. "" when there are no stamps (an error
- * page, a captive portal), which never counts as a new version.
+ * The version of a page's code, as scripts/stamp-assets.mjs writes it into the page:
+ * <meta name="code-version" content="<hash of the page without its timetable data>">. The hash covers the
+ * page's own script and CSS and the ?v= stamps of every module it loads, so any code change changes it and a
+ * new timetable snapshot does not. "" when there is none (an error page, a captive portal): never "new".
  */
 export function codeVersion(html) {
-  const stamps = String(html ?? "").match(/\.\/(?:assets\/)?[\w-]+\.js\?v=[0-9a-f]+/g) || [];
-  return [...new Set(stamps)].sort().join(" ");
+  return /<meta name="code-version" content="([0-9a-f]+)">/.exec(String(html ?? ""))?.[1] ?? "";
 }
 
 /**
  * What to do about the live page's code version:
  *   "none"    same code (or the live page could not be read)
- *   "reload"  new code, the page has just come back to the screen and nothing is open: reload now. Only once
- *             per version (tried = the version we last reloaded for), so a cache that keeps serving the old
- *             page can't make it reload over and over; and never when that can't be remembered.
- *   "bar"     new code, but the map / a game / a dialog is open, or reloading already didn't help: offer it.
+ *   "reload"  new code, the page has just come back to the screen, the user hasn't touched it since, and
+ *             nothing is open: reload now. Not again for the same version within retryAfter ms (tried =
+ *             { version, at } of the last automatic reload), so a CDN still serving the old page for a few
+ *             minutes can't make it reload over and over; never when that can't be remembered.
+ *   "bar"     new code otherwise: offer it ("网站更新了 · 点这里刷新").
  */
-export function updateAction({ current, live, shown = false, busy = false, tried = null, canRemember = true }) {
+export function updateAction({ current, live, shown = false, busy = false, tried = null, now = 0, canRemember = true, retryAfter = 15 * 60_000 }) {
   if (!current || !live || live === current) return "none";
-  return shown && !busy && canRemember && tried !== live ? "reload" : "bar";
+  const triedRecently = tried?.version === live && now - (tried.at ?? 0) < retryAfter;
+  return shown && !busy && canRemember && !triedRecently ? "reload" : "bar";
 }
 
 /**
  * Keeps a page that stays open for days (a home-screen app) on the latest code. The timetable data refreshes
  * itself, but the code only changes when the page loads again, so a fix never reached a page left open.
- * Whenever the page comes back to the screen (and every `every` ms while it is up) this reads the live page
- * and compares codeVersion, then reloads or shows a bar "网站更新了" (updateAction). isBusy() says whether
- * reloading now would throw away something the user is doing. Returns a function that stops it.
+ * Whenever the page comes back to the screen (and every `every` ms while it is up) this asks the server for
+ * the page (revalidating, so it sees what a reload would get) and compares codeVersion, then reloads or shows
+ * a bar (updateAction). Before reloading it downloads the new modules, so a connection that drops then leaves
+ * the working page alone. isBusy() says whether reloading would throw away something the user is doing; the
+ * bar waits while an element matching `overlays` (full-screen map, game) is open, since it would cover their
+ * controls. Returns a function that stops it.
  */
-export function watchForUpdates({ isBusy = () => false, every = 10 * 60_000, minGap = 60_000, firstCheck = 4_000, timeoutMs = 8_000 } = {}) {
-  const current = codeVersion(document.documentElement.outerHTML);
+export function watchForUpdates({ isBusy = () => false, overlays = "", every = 10 * 60_000, minGap = 60_000, firstCheck = 4_000, timeoutMs = 8_000 } = {}) {
+  const current = document.querySelector('meta[name="code-version"]')?.content || "";
   if (!current || typeof fetch !== "function") return () => {};
   const KEY = "tt:reloaded-for";
   const store = (() => {
     try {
       sessionStorage.setItem(`${KEY}:probe`, "1");
-      return sessionStorage.getItem(`${KEY}:probe`) === "1" ? sessionStorage : null;
+      const ok = sessionStorage.getItem(`${KEY}:probe`) === "1";
+      sessionStorage.removeItem(`${KEY}:probe`);
+      return ok ? sessionStorage : null;
     } catch {
       return null;
     }
   })();
   let lastCheck = 0;
   let checking = false;
+  let lastInput = 0;
   let bar = null;
-  let dismissed = null;
+  let pending = null; // the newer version the bar offers
+  let dismissed = null; // ✕ on the bar: quiet for that version until the page is next hidden
 
-  async function liveVersion() {
-    const url = new URL(location.href);
-    url.hash = "";
-    url.searchParams.set("_v", String(Date.now()));
+  const withTimeout = async (url, init) => {
     const controller = typeof AbortController === "function" ? new AbortController() : null;
     const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
     try {
-      const response = await fetch(url, { cache: "no-store", signal: controller?.signal });
-      return response.ok ? codeVersion(await response.text()) : "";
-    } catch {
-      return "";
+      return await fetch(url, { ...init, signal: controller?.signal });
     } finally {
       if (timer) clearTimeout(timer);
     }
+  };
+  async function livePage() {
+    const url = new URL(location.href);
+    url.hash = "";
+    try {
+      const response = await withTimeout(url, { cache: "no-cache" });
+      return response.ok ? await response.text() : "";
+    } catch {
+      return "";
+    }
+  }
+  // the page's modules at their new URLs, so the reload doesn't need the network for them
+  async function prefetchModules(html) {
+    const refs = [...new Set(html.match(/\.\/(?:assets\/)?[\w-]+\.js\?v=[0-9a-f]+/g) || [])];
+    try {
+      const responses = await Promise.all(refs.map((ref) => withTimeout(new URL(ref, location.href))));
+      return responses.every((r) => r.ok);
+    } catch {
+      return false;
+    }
   }
 
-  function showBar(live) {
-    if (dismissed === live) return;
+  const covered = () => Boolean(overlays && document.querySelector(overlays));
+  function syncBar() {
+    if (!bar) return;
+    bar.hidden = !pending || pending === dismissed || covered();
+    if (!bar.hidden) bar.inert = false; // an overlay that opened over it may have made it inert
+  }
+  function offer(live) {
+    pending = live;
     if (!bar) {
       const style = document.createElement("style");
       style.textContent = `.tt-update{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translateX(-50%);z-index:2147483600;display:flex;align-items:center;gap:2px;max-width:calc(100vw - 32px);padding:4px;border-radius:999px;background:rgba(24,24,27,.94);color:#fff;box-shadow:0 6px 24px rgba(0,0,0,.28);font:inherit;font-size:14px}
+.tt-update[hidden]{display:none}
 .tt-update button{font:inherit;color:inherit;background:none;border:0;border-radius:999px;padding:8px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .tt-update .tt-update-go{font-weight:600;white-space:nowrap}
 .tt-update .tt-update-x{padding:8px 12px;opacity:.7}
@@ -416,8 +445,8 @@ export function watchForUpdates({ isBusy = () => false, every = 10 * 60_000, min
       close.setAttribute("aria-label", "先不刷新");
       close.textContent = "✕";
       close.addEventListener("click", () => {
-        dismissed = bar.dataset.version;
-        bar.hidden = true;
+        dismissed = pending;
+        syncBar();
       });
       bar = document.createElement("div");
       bar.className = "tt-update";
@@ -425,53 +454,73 @@ export function watchForUpdates({ isBusy = () => false, every = 10 * 60_000, min
       bar.append(style, go, close);
       document.body.append(bar);
     }
-    bar.dataset.version = live;
-    bar.hidden = false;
+    syncBar();
   }
+  // the map and the game come and go as children of <body>: hide the bar under them, bring it back after
+  const observer = overlays && typeof MutationObserver === "function" ? new MutationObserver(syncBar) : null;
+  observer?.observe(document.body, { childList: true });
 
   async function check(shown) {
     if (checking || document.hidden || Date.now() - lastCheck < minGap) return;
     checking = true;
-    lastCheck = Date.now();
+    const started = lastCheck = Date.now();
     try {
-      const live = await liveVersion();
+      const html = await livePage();
+      const live = codeVersion(html);
       let tried = null;
       try {
-        tried = store?.getItem(KEY) ?? null;
+        tried = JSON.parse(store?.getItem(KEY) || "null");
       } catch {
         tried = null;
       }
-      const action = updateAction({ current, live, shown, busy: Boolean(isBusy()), tried, canRemember: Boolean(store) });
-      if (action === "reload") {
-        try {
-          store.setItem(KEY, live);
-          location.reload();
-        } catch {
-          showBar(live); // can't remember the attempt: don't risk reloading in a loop
-        }
-      } else if (action === "bar") {
-        showBar(live);
+      const action = updateAction({
+        current, live, shown: shown && lastInput < started, busy: Boolean(isBusy()), tried, now: Date.now(), canRemember: Boolean(store),
+      });
+      if (action === "none") {
+        pending = null;
+        syncBar();
+        return;
       }
+      if (action === "reload" && (await prefetchModules(html)) && lastInput < started && !isBusy()) {
+        try {
+          store.setItem(KEY, JSON.stringify({ version: live, at: Date.now() }));
+          location.reload();
+          return;
+        } catch {
+          // can't remember the attempt: don't risk reloading in a loop
+        }
+      }
+      offer(live);
     } finally {
       checking = false;
     }
   }
 
+  const onInput = () => {
+    lastInput = Date.now();
+  };
   const onVisible = () => {
-    if (!document.hidden) check(true);
+    if (document.hidden) {
+      dismissed = null;
+      return;
+    }
+    check(true);
   };
   const onPageShow = (event) => {
     if (event.persisted) check(true);
   };
   document.addEventListener("visibilitychange", onVisible);
   window.addEventListener("pageshow", onPageShow);
+  for (const type of ["pointerdown", "keydown", "wheel"]) window.addEventListener(type, onInput, { capture: true, passive: true });
   const first = setTimeout(() => check(true), firstCheck);
   const timer = setInterval(() => check(false), every);
   return () => {
     clearTimeout(first);
     clearInterval(timer);
+    observer?.disconnect();
     document.removeEventListener("visibilitychange", onVisible);
     window.removeEventListener("pageshow", onPageShow);
+    for (const type of ["pointerdown", "keydown", "wheel"]) window.removeEventListener(type, onInput, { capture: true });
     bar?.remove();
   };
 }

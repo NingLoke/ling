@@ -170,30 +170,25 @@ test("startTimetable: embedded first, then network; falls back when offline", as
   assert.deepEqual(nothing, [[null, "none"]]);
 });
 
-test("codeVersion: the page's script stamps, in any order, ignoring everything else", () => {
-  const page = (core, map, data) => `<script type="module">
-import * as core from "./assets/timetable-core.js?v=${core}";
-const { openCampusMap } = await import("./assets/campus-map.js?v=${map}");
-</script><script type="application/json" id="embedded-timetable">${data}</script>`;
-  const a = codeVersion(page("6b6739df93", "99f666a1dd", '{"week":39}'));
-  assert.equal(a, "./assets/campus-map.js?v=99f666a1dd ./assets/timetable-core.js?v=6b6739df93");
-  assert.equal(codeVersion(page("6b6739df93", "99f666a1dd", '{"week":40}')), a, "new timetable data is not new code");
-  assert.notEqual(codeVersion(page("6b6739df93", "0123456789", '{"week":39}')), a);
-  // the zipped sites keep their scripts next to the page
-  assert.equal(codeVersion('import("./tetris.js?v=a8b0e23b78"); import("./tetris.js?v=a8b0e23b78")'), "./tetris.js?v=a8b0e23b78");
-  assert.equal(codeVersion("<h1>Wi-Fi login</h1>"), "");
+test("codeVersion reads the version stamp-assets writes into the page", () => {
+  assert.equal(codeVersion('<head>\n<meta charset="UTF-8">\n<meta name="code-version" content="4b47ecee86d6">\n'), "4b47ecee86d6");
+  assert.equal(codeVersion("<h1>Wi-Fi login</h1>"), "", "an error page or captive portal is never a new version");
   assert.equal(codeVersion(null), "");
+  const page = readFileSync(new URL("../../index.html", import.meta.url), "utf8");
+  assert.match(codeVersion(page), /^[0-9a-f]{12}$/, "index.html carries one (run scripts/stamp-assets.mjs)");
 });
 
-test("updateAction: reload once when the page comes back and nothing is open, otherwise offer it", () => {
-  const base = { current: "v1", live: "v2", shown: true, busy: false, tried: null, canRemember: true };
+test("updateAction: reload when the page comes back untouched and nothing is open, otherwise offer it", () => {
+  const now = 1_000_000_000;
+  const base = { current: "v1", live: "v2", shown: true, busy: false, tried: null, now, canRemember: true };
   assert.equal(updateAction(base), "reload");
   assert.equal(updateAction({ ...base, live: "v1" }), "none");
   assert.equal(updateAction({ ...base, live: "" }), "none", "could not read the live page");
   assert.equal(updateAction({ ...base, current: "" }), "none");
   assert.equal(updateAction({ ...base, busy: true }), "bar", "the map or a game is open");
   assert.equal(updateAction({ ...base, shown: false }), "bar", "the user is looking at it: don't yank the page away");
-  assert.equal(updateAction({ ...base, tried: "v2" }), "bar", "already reloaded for v2 and still old: stop");
-  assert.equal(updateAction({ ...base, tried: "v1" }), "reload", "an earlier version's attempt doesn't count");
+  assert.equal(updateAction({ ...base, tried: { version: "v2", at: now - 60_000 } }), "bar", "just reloaded for v2 and still old: stop");
+  assert.equal(updateAction({ ...base, tried: { version: "v2", at: now - 16 * 60_000 } }), "reload", "a CDN that lagged has caught up by now");
+  assert.equal(updateAction({ ...base, tried: { version: "v1", at: now } }), "reload", "an earlier version's attempt doesn't count");
   assert.equal(updateAction({ ...base, canRemember: false }), "bar", "no sessionStorage: never reload on our own");
 });

@@ -2,6 +2,9 @@
 // so a changed file gets a new URL and phones load it instead of an old cached copy. Modules that import
 // other modules ("./campus-geo.js" inside assets/campus-map.js) are stamped first, so a change deep down
 // changes every URL on the way up.
+// The page also gets <meta name="code-version" content="<hash>">: a hash of the page itself (its own script and
+// CSS, and with them every stamp) minus the baked-in timetable data, so an open page can tell when its code
+// changed on the server (watchForUpdates in assets/timetable-core.js) while a new timetable snapshot doesn't count.
 //   node scripts/stamp-assets.mjs index.html            update the files, print "changed" or "unchanged"
 //   node scripts/stamp-assets.mjs index.html --check    change nothing; exit 1 and list files that are out of date
 import { readFile, writeFile } from "node:fs/promises";
@@ -37,7 +40,19 @@ async function stamped(file, stack = []) {
   return after;
 }
 
-await stamped(path.resolve(entry));
+const page = path.resolve(entry);
+await stamped(page);
+// the version of the page's code: everything but the timetable data (<script type="application/json">) and this tag
+const META = /<meta name="code-version" content="[0-9a-f]*">\n?/;
+const versioned = (html) => {
+  const code = html.replace(META, "").replace(/(<script\b[^>]*type="application\/json"[^>]*>)[\s\S]*?(<\/script>)/g, "$1$2");
+  const tag = `<meta name="code-version" content="${createHash("sha256").update(code).digest("hex").slice(0, 12)}">`;
+  if (META.test(html)) return html.replace(META, `${tag}\n`);
+  const charset = /<meta charset="[^"]*">\n?/i.exec(html);
+  if (charset) return html.replace(charset[0], `${charset[0].trimEnd()}\n${tag}\n`);
+  return html.replace(/<head>\n?/i, (head) => `${head.trimEnd()}\n${tag}\n`);
+};
+files.get(page).after = versioned(files.get(page).after);
 const changed = [...files].filter(([, f]) => f.before !== f.after).map(([file]) => file);
 if (check) {
   if (changed.length) {

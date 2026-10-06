@@ -11,6 +11,7 @@ Curtin Malaysia 课表网站，课表数据每天自动从 Curtin 官方课表�
 2. `scripts/update-timetables.mjs` 用无头浏览器打开 SWS → Units → 选好科目 → Semester Two → List 报表，把表格转成 JSON。
 3. 只有课表真的变了才会改 `data/<班>.json`。`data/status.json` 记录最近一次检查的时间，每天最多更新一次，所以不会每次运行都产生提交。
 4. 网页打开时会先显示内置的课表，再去读最新的 JSON；断网时用上次保存的版本。
+5. 网页本身的程序也会自己更新：`scripts/stamp-assets.mjs` 给每个 js 文件加版本号，并在页面里写 `<meta name="code-version">`（页面自己的代码和样式的指纹，不算课表数据）。开着的页面回到前台时会对比这个指纹：变了就在没开地图或游戏时自动刷新一次，否则在顶上提示「网站更新了 · 点这里刷新」。改了代码以后记得跑一次 `node scripts/stamp-assets.mjs index.html`（测试会检查）。
 
 ## 核准查看（SWS 原页截图）
 
