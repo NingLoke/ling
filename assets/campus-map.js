@@ -3,7 +3,7 @@
 // Map data © OpenStreetMap contributors (ODbL). Rendering: MapLibre GL JS (BSD-3-Clause), loaded on demand.
 import {
   createRouter, buildingForRoom, metresBetween, bearingDeg, progressOnRoute, walkMinutes, TURN_ZH, pointInRing, createPositionFilter, closestPointOnSegment, polygonCentroid,
-} from "./campus-geo.js?v=2776741563";
+} from "./campus-geo.js?v=23f31ff695";
 import { streetViewEmbed, streetViewAt, satelliteEmbed } from "./streetview-url.js?v=4ae4fac379";
 
 let current = null;

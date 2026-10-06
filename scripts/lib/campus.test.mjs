@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
-  metresBetween, bearingDeg, closestPointOnSegment, polygonCentroid, pointInRing, buildingForRoom,
+  metresBetween, bearingDeg, closestPointOnSegment, polygonCentroid, pointInRing, buildingForRoom, roomLabel,
   createRouter, directions, progressOnRoute, walkMinutes, CAMPUS_CODES, createPositionFilter, segmentsCross,
 } from "../../assets/campus-geo.js";
 
@@ -259,4 +259,14 @@ test("a building's doors: a route may end at any of them, whichever is nearest",
       assert.ok(r && r.metres < 1, `${code}: ${r?.metres}`);
     }
   }
+});
+
+test("roomLabel drops a bracketed SWS code only when it names the wrong building", () => {
+  assert.equal(roomLabel("LTCL 9 (HL2-109)"), "LTCL 9");
+  assert.equal(roomLabel("LTBS LT II (HL2-111)"), "LTBS LT II");
+  assert.equal(buildingForRoom(roomLabel("LTCL 9 (HL2-109)")), "HN2", "the label still finds the building");
+  assert.equal(roomLabel("SK2 101 (ME 101) Physic Lab"), "SK2 101 (ME 101) Physic Lab");
+  assert.equal(roomLabel("PA2 103 (Computer Lab)"), "PA2 103 (Computer Lab)");
+  assert.equal(roomLabel("Auditorium"), "Auditorium");
+  assert.equal(roomLabel(""), "");
 });

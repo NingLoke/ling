@@ -111,6 +111,19 @@ export function buildingForRoom(room, { rooms = ROOM_ALIASES, codes = CAMPUS_COD
 }
 
 /**
+ * A room as it reads on the door: the bracketed SWS code goes when it names the wrong building
+ * ("LTCL 9 (HL2-109)" -> "LTCL 9", see ROOM_ALIASES). Every other room is left as SWS writes it.
+ */
+export function roomLabel(room, { rooms = ROOM_ALIASES } = {}) {
+  const text = String(room ?? "").trim();
+  const inner = /\s*\(([A-Z]{2}\d)-\d+\)/.exec(text);
+  if (!inner) return text;
+  const alias = Object.entries(rooms).find(([name]) => text.toLowerCase().startsWith(name.toLowerCase()));
+  if (!alias || alias[1] === inner[1]) return text;
+  return `${text.slice(0, inner.index)} ${text.slice(inner.index + inner[0].length)}`.replace(/\s+/g, " ").trim();
+}
+
+/**
  * Smooths phone GPS fixes for someone walking: a constant-position Kalman filter (uncertainty grows by
  * q metres per second, each fix weighs in by its reported accuracy), and a fix that would mean running
  * faster than maxSpeed is ignored, unless several in a row agree (then we really moved: start over).
