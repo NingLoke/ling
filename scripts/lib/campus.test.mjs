@@ -41,8 +41,8 @@ test("every room in both timetables maps to a building on the map", () => {
     }
   }
   assert.equal(buildingForRoom("SK3 102 Lecture 1", { rooms, codes }), "SK3");
-  assert.equal(buildingForRoom("LTCL 9 (HL2-109)", { rooms, codes }), "HL2");
-  assert.equal(buildingForRoom("LTBS LT II (HL2-111)", { rooms, codes }), "HL2");
+  assert.equal(buildingForRoom("LTCL 9 (HL2-109)", { rooms, codes }), "HN2"); // SWS says HL2, the room is in Heron 2
+  assert.equal(buildingForRoom("LTBS LT II (HL2-111)", { rooms, codes }), "HN2");
   assert.equal(buildingForRoom("Auditorium", { rooms, codes }), "FN4");
   assert.equal(buildingForRoom("Harry Perkins LT", { rooms, codes }), "FN1");
   assert.equal(buildingForRoom("PA2 103 (Computer Lab)", { rooms, codes }), "PA2");
@@ -51,7 +51,7 @@ test("every room in both timetables maps to a building on the map", () => {
   assert.equal(buildingForRoom("Auditorium"), "FN4");
   assert.equal(buildingForRoom("SK3 102 Lecture 1"), "SK3");
   assert.equal(buildingForRoom("ZZ9 101"), null);
-  assert.equal(buildingForRoom("LTCL 9"), "HL2"); // sometimes written without the bracketed room code
+  assert.equal(buildingForRoom("LTCL 9"), "HN2"); // sometimes written without the bracketed room code
   assert.equal(buildingForRoom(""), null);
 });
 

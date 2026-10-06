@@ -21,7 +21,7 @@ SWS 把选了哪一科存在服务器会话里，网址里不带科目，所以�
 页头的「校园地图」、上课卡片上的「带我去 SK3」、课卡片上的教室名都会打开一张 1:1 的 3D 校园地图：
 
 - **楼和路**：来自 OpenStreetMap（© OpenStreetMap contributors，ODbL）。`.github/workflows/campus-map-data.yml` 在 GitHub Actions 里下载校园数据（`scripts/fetch-campus-osm.mjs` → `data/campus/osm.json`），`scripts/build-campus.mjs` 把它做成地图用的 `data/campus/campus.geojson` 和步行路网 `data/campus/paths.json`。楼的高度按楼层数算（每层约 3.6 米）。
-- **楼的代码**（SK3、PA3、HL2、FN4……）对照学校官方校园地图，写在 `data/campus/codes.json`。官方地图上有、OpenStreetMap 还没画的楼（FN7）按官方地图补画。没有代码的教室名（Auditorium = FN4，Harry Perkins LT = FN1）写在 `assets/campus-geo.js` 的 `ROOM_ALIASES`。
+- **楼的代码**（SK3、PA3、HL2、FN4……）对照学校官方校园地图，写在 `data/campus/codes.json`。官方地图上有、OpenStreetMap 还没画的楼（FN7）按官方地图补画。没有代码的教室名（Auditorium = FN4，Harry Perkins LT = FN1）写在 `assets/campus-geo.js` 的 `ROOM_ALIASES`。SWS 把 LTCL / LTBS 教室写成 “HL2-1xx”，其实它们在 HN2（Heron 2，Lance Twomey Building，有人到现场核对过），所以这两个名字也写在 `ROOM_ALIASES` 里，并且比括号里的代码优先。
 - **校园外面**的道路、河流、树林、市镇用 [OpenFreeMap](https://openfreemap.org)（免费、不用密钥）。连不上的时候校园本身照样能用。
 - **画地图**用 [MapLibre GL JS](https://maplibre.org) 6.12（BSD-3-Clause），放在 `assets/vendor/`，第一次打开地图时才下载（约 300 KB）。需要 iPhone iOS 16.4 以上或较新的 Android Chrome。
 - **定位和带路**：手机 GPS（`watchPosition`）加指南针定朝向；路线在本机用 A* 算，偏离路线会自动重新规划，走到门口会震动提示。位置只在你的手机上用，不保存、不发给别人（显示地图时会像普通地图一样从 OpenFreeMap 下载附近的地图块）。GPS 在室内、楼之间可能偏差 10–30 米，室外最准。

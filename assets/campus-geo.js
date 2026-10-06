@@ -85,24 +85,28 @@ export function pointInRing([x, y], ring) {
 const BLOCKS = { SK: 3, PA: 3, HL: 2, FN: 7, HN: 4, KR: 9 };
 export const CAMPUS_CODES = new Set(Object.entries(BLOCKS).flatMap(([prefix, n]) => Array.from({ length: n }, (_, i) => `${prefix}${i + 1}`)));
 
-/** SWS room names without a building code in them. */
-export const ROOM_ALIASES = { "Auditorium": "FN4", "Harry Perkins LT": "FN1", "Harry Perkins Lecture Theatre": "FN1", "LTCL": "HL2", "LTBS": "HL2" };
+/**
+ * SWS room names whose building we know from the name. These win over the code in brackets: SWS writes
+ * the Lance Twomey rooms (LTCL = Lance Twomey Collaborative Learning, LTBS) as "HL2-1xx", but they are
+ * in Heron 2, the Lance Twomey Building (official map legend; checked on the spot), not Hornbill 2.
+ */
+export const ROOM_ALIASES = { "Auditorium": "FN4", "Harry Perkins LT": "FN1", "Harry Perkins Lecture Theatre": "FN1", "LTCL": "HN2", "LTBS": "HN2" };
 
 /**
- * Which building a SWS room is in: "SK3 102 Lecture 1" -> "SK3", "LTCL 9 (HL2-109)" -> "HL2",
+ * Which building a SWS room is in: "SK3 102 Lecture 1" -> "SK3", "LTCL 9 (HL2-109)" -> "HN2",
  * "Auditorium" -> "FN4" (via rooms aliases). Returns null when unknown.
  */
 export function buildingForRoom(room, { rooms = ROOM_ALIASES, codes = CAMPUS_CODES } = {}) {
   const text = String(room ?? "").trim();
   if (!text) return null;
   const known = (code) => (!codes || codes.has(code) ? code : null);
+  for (const [alias, code] of Object.entries(rooms)) {
+    if (text.toLowerCase().startsWith(alias.toLowerCase())) return known(code);
+  }
   const inner = /\(([A-Z]{2}\d)-\d+/.exec(text);
   if (inner && known(inner[1])) return inner[1];
   const lead = /^([A-Z]{2})\s?(\d)\b/.exec(text);
   if (lead && known(lead[1] + lead[2])) return lead[1] + lead[2];
-  for (const [alias, code] of Object.entries(rooms)) {
-    if (text.toLowerCase().startsWith(alias.toLowerCase())) return known(code);
-  }
   return null;
 }
 
