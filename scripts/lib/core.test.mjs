@@ -189,6 +189,6 @@ test("updateAction: reload when the page comes back untouched and nothing is ope
   assert.equal(updateAction({ ...base, shown: false }), "bar", "the user is looking at it: don't yank the page away");
   assert.equal(updateAction({ ...base, tried: { version: "v2", at: now - 60_000 } }), "bar", "just reloaded for v2 and still old: stop");
   assert.equal(updateAction({ ...base, tried: { version: "v2", at: now - 16 * 60_000 } }), "reload", "a CDN that lagged has caught up by now");
-  assert.equal(updateAction({ ...base, tried: { version: "v1", at: now } }), "reload", "an earlier version's attempt doesn't count");
+  assert.equal(updateAction({ ...base, tried: { version: "v1", at: now - 60_000 } }), "bar", "any automatic reload in the last 15 min: CDN copies may disagree");
   assert.equal(updateAction({ ...base, canRemember: false }), "bar", "no sessionStorage: never reload on our own");
 });

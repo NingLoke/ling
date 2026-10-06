@@ -346,14 +346,15 @@ export function codeVersion(html) {
  * What to do about the live page's code version:
  *   "none"    same code (or the live page could not be read)
  *   "reload"  new code, the page has just come back to the screen, the user hasn't touched it since, and
- *             nothing is open: reload now. Not again for the same version within retryAfter ms (tried =
- *             { version, at } of the last automatic reload), so a CDN still serving the old page for a few
- *             minutes can't make it reload over and over; never when that can't be remembered.
+ *             nothing is open: reload now. At most once per retryAfter ms (tried = { version, at } of the
+ *             last automatic reload), so CDN copies that disagree for a few minutes after a deploy can't make
+ *             it reload over and over; never when that can't be remembered.
  *   "bar"     new code otherwise: offer it ("网站更新了 · 点这里刷新").
  */
 export function updateAction({ current, live, shown = false, busy = false, tried = null, now = 0, canRemember = true, retryAfter = 15 * 60_000 }) {
   if (!current || !live || live === current) return "none";
-  const triedRecently = tried?.version === live && now - (tried.at ?? 0) < retryAfter;
+  // whatever version it was for: two CDN copies that disagree mustn't bounce the page between them
+  const triedRecently = tried != null && now - (tried.at ?? 0) < retryAfter;
   return shown && !busy && canRemember && !triedRecently ? "reload" : "bar";
 }
 
@@ -384,15 +385,17 @@ export function watchForUpdates({ isBusy = () => false, overlays = "", every = 1
   let lastCheck = 0;
   let checking = false;
   let lastInput = 0;
+  let shownAt = Date.now(); // when the page last appeared (loaded, or came back to the screen)
   let bar = null;
   let pending = null; // the newer version the bar offers
   let dismissed = null; // ✕ on the bar: quiet for that version until the page is next hidden
 
-  const withTimeout = async (url, init) => {
+  // fetch and read the body within timeoutMs (fetch alone settles at the headers; a stalled body would hang)
+  const withTimeout = async (url, init, read) => {
     const controller = typeof AbortController === "function" ? new AbortController() : null;
     const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
     try {
-      return await fetch(url, { ...init, signal: controller?.signal });
+      return await read(await fetch(url, { ...init, signal: controller?.signal }));
     } finally {
       if (timer) clearTimeout(timer);
     }
@@ -401,21 +404,27 @@ export function watchForUpdates({ isBusy = () => false, overlays = "", every = 1
     const url = new URL(location.href);
     url.hash = "";
     try {
-      const response = await withTimeout(url, { cache: "no-cache" });
-      return response.ok ? await response.text() : "";
+      return await withTimeout(url, { cache: "no-cache" }, (r) => (r.ok ? r.text() : ""));
     } catch {
       return "";
     }
   }
-  // the page's modules at their new URLs, so the reload doesn't need the network for them
+  // download the page's modules at their new URLs, so the reload finds them in the cache
   async function prefetchModules(html) {
     const refs = [...new Set(html.match(/\.\/(?:assets\/)?[\w-]+\.js\?v=[0-9a-f]+/g) || [])];
     try {
-      const responses = await Promise.all(refs.map((ref) => withTimeout(new URL(ref, location.href))));
-      return responses.every((r) => r.ok);
+      const done = await Promise.all(refs.map((ref) => withTimeout(new URL(ref, location.href), {}, async (r) => r.ok && (await r.arrayBuffer(), true))));
+      return done.every(Boolean);
     } catch {
       return false;
     }
+  }
+  // a reload that is sure to land: the new page and its modules are here (else the bar goes until next time)
+  async function reloadIfReachable() {
+    const html = await livePage();
+    if (!codeVersion(html) || !(await prefetchModules(html))) return false;
+    location.reload();
+    return true;
   }
 
   const covered = () => Boolean(overlays && document.querySelector(overlays));
@@ -438,7 +447,19 @@ export function watchForUpdates({ isBusy = () => false, overlays = "", every = 1
       go.type = "button";
       go.className = "tt-update-go";
       go.textContent = "网站更新了 · 点这里刷新";
-      go.addEventListener("click", () => location.reload());
+      go.addEventListener("click", async () => {
+        if (go.disabled) return;
+        go.disabled = true;
+        go.textContent = "正在更新…";
+        if (await reloadIfReachable()) return;
+        go.textContent = "现在连不上网，等下再试";
+        setTimeout(() => {
+          go.disabled = false;
+          go.textContent = "网站更新了 · 点这里刷新";
+          pending = null; // the next check offers it again
+          syncBar();
+        }, 2500);
+      });
       const close = document.createElement("button");
       close.type = "button";
       close.className = "tt-update-x";
@@ -463,7 +484,8 @@ export function watchForUpdates({ isBusy = () => false, overlays = "", every = 1
   async function check(shown) {
     if (checking || document.hidden || Date.now() - lastCheck < minGap) return;
     checking = true;
-    const started = lastCheck = Date.now();
+    lastCheck = Date.now();
+    const untouched = () => lastInput < shownAt;
     try {
       const html = await livePage();
       const live = codeVersion(html);
@@ -474,14 +496,14 @@ export function watchForUpdates({ isBusy = () => false, overlays = "", every = 1
         tried = null;
       }
       const action = updateAction({
-        current, live, shown: shown && lastInput < started, busy: Boolean(isBusy()), tried, now: Date.now(), canRemember: Boolean(store),
+        current, live, shown: shown && untouched(), busy: Boolean(isBusy()), tried, now: Date.now(), canRemember: Boolean(store),
       });
       if (action === "none") {
         pending = null;
         syncBar();
         return;
       }
-      if (action === "reload" && (await prefetchModules(html)) && lastInput < started && !isBusy()) {
+      if (action === "reload" && (await prefetchModules(html)) && untouched() && !isBusy()) {
         try {
           store.setItem(KEY, JSON.stringify({ version: live, at: Date.now() }));
           location.reload();
@@ -504,10 +526,13 @@ export function watchForUpdates({ isBusy = () => false, overlays = "", every = 1
       dismissed = null;
       return;
     }
+    shownAt = Date.now();
     check(true);
   };
   const onPageShow = (event) => {
-    if (event.persisted) check(true);
+    if (!event.persisted) return;
+    shownAt = Date.now();
+    check(true);
   };
   document.addEventListener("visibilitychange", onVisible);
   window.addEventListener("pageshow", onPageShow);
