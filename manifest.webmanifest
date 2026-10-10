@@ -1,7 +1,7 @@
 {
   "name": "2E3 课表",
   "short_name": "2E3",
-  "description": "Curtin Malaysia 2E3 课表：现在上什么课、下一节在哪里。",
+  "description": "Curtin Malaysia 2E3 课表：现在上什么课、下一节在哪里，还有每日任务、行程和待办。",
   "lang": "zh-CN",
   "start_url": ".",
   "scope": ".",
