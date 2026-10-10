@@ -9,16 +9,19 @@ import { shouldWrite } from "./sync.js";
 
 const FIREBASE = "./vendor/firebase-12.19.0.js";
 const CURSOR_SLACK_MS = 10 * 60 * 1000; // re-read the last 10 minutes on reconnect, in case of out-of-order commits
+const PUSH_TIMEOUT_MS = 30_000; // a transaction that hasn't finished by then is treated as "offline" and retried
 
 let fb = null; // the Firebase module
 let app = null;
 let auth = null;
 let db = null;
+let attempts = 0;
 
 /** Load Firebase and connect. `config` is the web app config from the Firebase console. */
 export async function connect(config, { emulator = false } = {}) {
   if (app) return true;
-  fb = await import(FIREBASE);
+  // the browser remembers a failed import() for the life of the page, so a retry asks under a new URL
+  fb = await import(attempts++ ? `${FIREBASE}?retry=${attempts}` : FIREBASE);
   app = fb.initializeApp(config);
   auth = fb.getAuth(app);
   db = fb.getFirestore(app);
@@ -84,21 +87,23 @@ const fromDoc = (snap) => {
 };
 
 /**
- * Listen for records written since `cursor` (ms, server time). Calls onRecords(list) with each batch and
- * onError(error) if the listener dies. Returns a function that stops listening.
+ * Listen for records written since `cursor` (ms, server time). Calls onRecords(list, { fromCache }) for every
+ * snapshot (list may be empty; fromCache = not confirmed by the server yet) and onError(error) if the listener
+ * dies. Returns a function that stops listening.
  */
 export function listen(uid, cursor, onRecords, onError) {
   const since = fb.Timestamp.fromMillis(Math.max(0, cursor - CURSOR_SLACK_MS));
   const q = fb.query(recordsOf(uid), fb.where("serverAt", ">", since));
   return fb.onSnapshot(
     q,
+    { includeMetadataChanges: true }, // so we hear when a cached answer gets confirmed by the server
     (snap) => {
       const list = [];
       for (const change of snap.docChanges()) {
         if (change.type === "removed" || change.doc.metadata.hasPendingWrites) continue;
         list.push(fromDoc(change.doc));
       }
-      if (list.length) onRecords(list);
+      onRecords(list, { fromCache: snap.metadata.fromCache });
     },
     onError,
   );
@@ -110,8 +115,14 @@ export function listen(uid, cursor, onRecords, onError) {
  * (written, or beaten by the server), newer = the server's records that beat ours (to apply locally).
  */
 export async function push(uid, batch) {
+  // an expired sign-in that can't be refreshed fails here, plainly, instead of stalling inside the transaction
+  await auth.currentUser?.getIdToken();
   const col = recordsOf(uid);
-  return fb.runTransaction(db, async (tx) => {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(Object.assign(new Error("push timed out"), { code: "unavailable" })), PUSH_TIMEOUT_MS);
+  });
+  const work = fb.runTransaction(db, async (tx) => {
     const refs = batch.map((rec) => fb.doc(col, rec.docId));
     const snaps = await Promise.all(refs.map((ref) => tx.get(ref)));
     const newer = [];
@@ -132,4 +143,9 @@ export async function push(uid, batch) {
     });
     return { pushed: batch, newer };
   });
+  try {
+    return await Promise.race([work, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
 }

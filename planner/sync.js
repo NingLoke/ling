@@ -100,13 +100,30 @@ export function applyRecord(state, rec) {
     return { ...state, habitDone };
   }
   if (kind === "setting") {
-    if (!data) return state;
-    return { ...state, settings: { ...state.settings, [id]: data.value } };
+    const settings = { ...state.settings };
+    if (data) settings[id] = data.value;
+    else delete settings[id];
+    return { ...state, settings };
   }
   return state;
 }
 
 // ---------- the sync bookkeeping ----------
+
+const hasNestedArray = (v, inArray = false) =>
+  Array.isArray(v) ? inArray || v.some((x) => hasNestedArray(x, true)) : v && typeof v === "object" ? Object.values(v).some((x) => hasNestedArray(x, false)) : false;
+
+/**
+ * Whether Firestore (and firestore.rules) will take this record. Ones it wouldn't (only possible from a hand-made
+ * backup file; store.normalize cleans ids) stay on this device instead of blocking every upload after them.
+ */
+export function pushable(rec) {
+  return (
+    typeof rec.id === "string" && rec.id.length > 0 && rec.id.length <= 200 &&
+    typeof rec.docId === "string" && !rec.docId.includes("/") && !/^__.*__$/.test(rec.docId) &&
+    (rec.data == null || (!hasNestedArray(rec.data) && JSON.stringify(rec.data).length < 200_000))
+  );
+}
 
 /** Remember local changes as pending records. `now` must grow: a change in the same ms as the last one still wins. */
 export function recordLocalChanges(meta, changes, now) {
@@ -114,6 +131,7 @@ export function recordLocalChanges(meta, changes, now) {
   const versions = { ...meta.versions };
   const pending = { ...meta.pending };
   for (const c of changes) {
+    if (!pushable(c)) continue;
     const updatedAt = Math.max(now, (versions[c.docId] || 0) + 1);
     versions[c.docId] = updatedAt;
     pending[c.docId] = { docId: c.docId, kind: c.kind, id: c.id, data: c.data, deleted: c.data == null, updatedAt };
@@ -129,6 +147,7 @@ export function adoptLocal(state, meta, uid) {
   const versions = {};
   const pending = {};
   for (const [docId, rec] of toRecords(state)) {
+    if (!pushable({ ...rec, docId })) continue;
     const updatedAt = meta.versions[docId] || 1;
     versions[docId] = updatedAt;
     pending[docId] = { docId, kind: rec.kind, id: rec.id, data: rec.data, deleted: false, updatedAt };
@@ -146,6 +165,9 @@ export function adoptLocal(state, meta, uid) {
 /**
  * Records that arrived from the server. Returns the new state and meta.
  * Each remote record: {docId, kind, id, data, deleted, updatedAt, serverAt}.
+ * The server only ever replaces a record with a newer one (shouldWrite), so a record older than the version this
+ * device already has is a stale copy (a slow reply, a re-delivery) and is skipped. Only records that carry a
+ * serverAt move the cursor; the cloud adapter passes serverAt only for records the listener delivered.
  */
 export function applyRemote(state, meta, records) {
   let next = state;
@@ -159,7 +181,7 @@ export function applyRemote(state, meta, records) {
     const mine = pending[r.docId];
     if (mine && mine.updatedAt > r.updatedAt) continue; // our change is newer; it will be pushed
     if (mine) delete pending[r.docId];
-    if (!mine && versions[r.docId] === r.updatedAt) continue; // this version is already here
+    if (!mine && versions[r.docId] >= r.updatedAt) continue; // this version (or a newer one) is already here
     versions[r.docId] = r.updatedAt;
     next = applyRecord(next, r);
     changed = true;

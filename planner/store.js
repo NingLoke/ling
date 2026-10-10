@@ -46,18 +46,62 @@ const safeParse = (text) => {
   }
 };
 
+// Ids end up in sync document ids ("todos~<id>", "tick~<date>~<habitId>"), so they must be short and plain.
+export const safeId = (id) => (typeof id === "string" || typeof id === "number") && /^[A-Za-z0-9_-]{1,100}$/.test(String(id));
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const isObject = (v) => !!v && typeof v === "object" && !Array.isArray(v);
+
+/** Clean up loaded / imported / synced data: drop broken entries, give unusable ids a new one. */
 export function normalize(data) {
   const base = emptyState();
-  if (!data || typeof data !== "object") return base;
-  const list = (v) => (Array.isArray(v) ? v.filter((x) => x && typeof x === "object" && x.id && x.title) : []);
+  if (!isObject(data)) return base;
+  const list = (v) => {
+    if (!Array.isArray(v)) return [];
+    const seen = new Set();
+    const out = [];
+    for (const x of v) {
+      if (!isObject(x) || !x.title) continue;
+      let id = safeId(x.id) ? String(x.id) : newId();
+      while (seen.has(id)) id = newId();
+      seen.add(id);
+      out.push({ ...x, id, title: String(x.title) });
+    }
+    return out;
+  };
+  const habitDone = {};
+  if (isObject(data.habitDone)) {
+    for (const [date, ids] of Object.entries(data.habitDone)) {
+      if (!ISO_DATE.test(date) || !Array.isArray(ids)) continue;
+      const clean = [...new Set(ids.filter(safeId).map(String))];
+      if (clean.length) habitDone[date] = clean;
+    }
+  }
+  const settings = { ...base.settings };
+  if (isObject(data.settings)) {
+    for (const [key, value] of Object.entries(data.settings)) {
+      if (safeId(key) && (value === null || ["string", "number", "boolean"].includes(typeof value))) settings[key] = value;
+    }
+  }
   return {
     schema: 1,
     events: list(data.events),
     habits: list(data.habits).map((h) => ({ ...h, days: Array.isArray(h.days) && h.days.length ? h.days : [0, 1, 2, 3, 4, 5, 6] })),
-    habitDone: data.habitDone && typeof data.habitDone === "object" ? data.habitDone : {},
+    habitDone,
     todos: list(data.todos),
-    settings: { ...base.settings, ...(data.settings || {}) },
+    settings,
   };
+}
+
+/** Add everything from `incoming` to `state` without removing anything (importing a backup while signed in). */
+export function merge(state, incoming) {
+  const add = (kind) => {
+    const byId = new Map(state[kind].map((x) => [x.id, x]));
+    for (const x of incoming[kind]) byId.set(x.id, x);
+    return [...byId.values()];
+  };
+  const habitDone = { ...state.habitDone };
+  for (const [date, ids] of Object.entries(incoming.habitDone)) habitDone[date] = [...new Set([...(habitDone[date] || []), ...ids])];
+  return normalize({ ...state, events: add("events"), habits: add("habits"), todos: add("todos"), habitDone, settings: { ...state.settings, ...incoming.settings } });
 }
 
 // ---------- reading a day ----------

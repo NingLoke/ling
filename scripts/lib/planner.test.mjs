@@ -47,3 +47,26 @@ test("events merge with classes in time order", () => {
   assert.deepEqual(list.map((e) => e.id), ["k", "e"]);
   assert.equal(S.parseTime("8:05"), 485);
 });
+
+test("normalize cleans hand-made backups: ids, tick dates, settings", () => {
+  const s = S.normalize({
+    todos: [{ id: "a/b", title: "slash" }, { id: 7, title: "number" }, { id: "x", title: "dup" }, { id: "x", title: "dup2" }, { title: "" }],
+    habitDone: { "2026-10-10": ["h1", "h1", "bad/id", null], "not-a-date": ["h1"], "2026-10-11": "h1" },
+    settings: { classSource: "3E4", "a/b": "x", nested: { no: 1 } },
+  });
+  assert.equal(s.todos.length, 4);
+  assert.ok(s.todos.every((t) => S.safeId(t.id)));
+  assert.equal(new Set(s.todos.map((t) => t.id)).size, 4);
+  assert.equal(s.todos[1].id, "7");
+  assert.deepEqual(s.habitDone, { "2026-10-10": ["h1"] });
+  assert.deepEqual(s.settings, { classSource: "3E4" });
+});
+
+test("merge adds a backup without removing anything", () => {
+  let mine = S.upsert(S.emptyState(), "todos", { id: "a", title: "mine" });
+  mine = S.toggleHabit(mine, "h", today);
+  const file = S.normalize({ todos: [{ id: "b", title: "from file" }, { id: "a", title: "mine, edited" }], habitDone: { [today]: ["k"] } });
+  const out = S.merge(mine, file);
+  assert.deepEqual(out.todos.map((t) => [t.id, t.title]), [["a", "mine, edited"], ["b", "from file"]]);
+  assert.deepEqual(out.habitDone[today].sort(), ["h", "k"]);
+});

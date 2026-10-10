@@ -276,9 +276,15 @@ $("#import").addEventListener("change", async (e) => {
   const file = e.target.files?.[0];
   if (!file) return;
   try {
-    const data = JSON.parse(await file.text());
-    if (!confirm("导入会替换这台设备上现有的全部资料，确定吗？")) return;
-    commit(S.normalize(data));
+    const data = S.normalize(JSON.parse(await file.text()));
+    // signed in, a replace would delete everything missing from the file on every device; add instead
+    if (syncer.status.user) {
+      if (!confirm("把文件里的资料加进这个账号吗？（现有的项目不会被删除，所有登录这个账号的设备都会看到。）")) return;
+      commit(S.merge(state, data));
+    } else {
+      if (!confirm("导入会替换这台设备上现有的全部资料，确定吗？")) return;
+      commit(data);
+    }
     settings.close();
   } catch {
     alert("这个文件读不出来，确认是「导出备份」生成的 .json 吗？");
@@ -310,7 +316,9 @@ document.addEventListener("click", (e) => {
 // another tab or window changed the data
 window.addEventListener("storage", (e) => {
   if (e.key === S.STORAGE_KEY) {
+    const prev = state;
     state = S.load(storage);
+    if (prev.settings.classSource !== state.settings.classSource) loadTimetable();
     render();
   } else if (e.key === SYNC_KEY) {
     syncer.reloadMeta();
@@ -337,23 +345,35 @@ document.addEventListener("visibilitychange", () => {
 const useEmulator = new URLSearchParams(location.search).has("emulator");
 const syncConfig = useEmulator ? { apiKey: "demo-key", authDomain: "demo-planner.firebaseapp.com", projectId: "demo-planner", appId: "demo" } : firebaseConfig;
 // Google sign-in only works in a real browser, not inside a packaged app's web view
-const inBrowser = /^https?:$/.test(location.protocol) && !window.Capacitor && !window.__TAURI__ && !/Electron/.test(navigator.userAgent);
+const inBrowser =
+  /^https?:$/.test(location.protocol) && location.hostname !== "tauri.localhost" &&
+  !window.Capacitor && !window.__TAURI__ && !window.__TAURI_INTERNALS__ && !window.cordova &&
+  !/Electron|; wv\)/.test(navigator.userAgent);
 const syncer = createSyncer({ cloud, storage, getState: () => state, setState: setRemoteState, onStatus: renderSync });
-let connecting = false;
+let connecting = null; // the connect attempt in progress; everyone who needs Firebase waits for the same one
+let connectFailed = false;
 
-async function startSync() {
-  if (!syncConfig || connecting || cloud.isConnected()) return;
-  connecting = true;
-  renderSync(syncer.status);
-  try {
-    await cloud.connect(syncConfig, { emulator: useEmulator });
-    cloud.onUser((user) => syncer.setUser(user));
-  } catch {
-    // Firebase couldn't load (offline?): everything still works on this device, try again when back online
-    renderSync({ ...syncer.status, mode: "offline", error: "" });
-  } finally {
-    connecting = false;
+/** Load Firebase and start following the signed-in account. Never rejects; check cloud.isConnected() after. */
+function startSync() {
+  if (!syncConfig || cloud.isConnected()) return Promise.resolve();
+  if (!connecting) {
+    connecting = cloud
+      .connect(syncConfig, { emulator: useEmulator })
+      .then(() => {
+        connectFailed = false;
+        cloud.onUser((user) => syncer.setUser(user));
+      })
+      .catch(() => {
+        // Firebase couldn't load (offline?): everything still works on this device, try again when back online
+        connectFailed = true;
+      })
+      .finally(() => {
+        connecting = null;
+        renderSync(syncer.status);
+      });
+    renderSync(syncer.status);
   }
+  return connecting;
 }
 
 const timeAgo = (ms) => {
@@ -367,7 +387,7 @@ function renderSync(status) {
   const pill = $("#sync-pill");
   pill.hidden = !syncConfig;
   const connected = cloud.isConnected();
-  const mode = !connected && status.mode === "off" ? "connecting" : status.mode;
+  const mode = !connected && status.mode === "off" ? (connectFailed ? "offline" : "connecting") : status.mode;
   const waiting = status.pending ? ` · ${status.pending} 项待上传` : "";
   const label = {
     connecting: "连接中",
@@ -427,6 +447,7 @@ $("#forgot").addEventListener("click", async () => {
   }
   try {
     await startSync();
+    if (!cloud.isConnected()) throw { code: "auth/network-request-failed" };
     await cloud.resetPassword(email);
     loginError.textContent = `重设密码的邮件已寄到 ${email}`;
   } catch (error) {
@@ -437,6 +458,7 @@ $("#google").addEventListener("click", async () => {
   loginError.textContent = "";
   try {
     await startSync();
+    if (!cloud.isConnected()) throw { code: "auth/network-request-failed" };
     await cloud.signInGoogle();
   } catch (error) {
     loginError.textContent = cloud.explainError(error);

@@ -18,6 +18,8 @@ export function createSyncer({ cloud, storage, getState, setState, onStatus = ()
   let meta = Y.loadMeta(storage);
   let user = null;
   let unlisten = null;
+  let heard = false; // the listener has answered from the server since it (re)started
+  let listenErrors = 0; // listener failures in a row; only a listener answer resets it
   let flushing = false;
   let again = false;
   let retryTimer = null;
@@ -33,9 +35,14 @@ export function createSyncer({ cloud, storage, getState, setState, onStatus = ()
   const saveMeta = () => Y.saveMeta(storage, meta);
   // updatedAt must grow even if the clock doesn't between two quick changes
   const stamp = () => (lastLocal = Math.max(now(), lastLocal + 1));
+  // "synced" only when nothing is waiting and the listener is live
+  const settledStatus = () =>
+    !Y.pendingCount(meta) && heard && !flushing ? { mode: "synced", error: "", lastSync: now() } : { mode: "syncing", error: "" };
 
-  function applyRemote(records) {
-    const result = Y.applyRemote(getState(), meta, records);
+  /** fromPush: records read inside a push transaction. They must not move the cursor ("downloaded up to here"). */
+  function applyRemote(records, { fromPush = false } = {}) {
+    const list = fromPush ? records.map((r) => ({ ...r, serverAt: null })) : records;
+    const result = Y.applyRemote(getState(), meta, list);
     meta = result.meta;
     saveMeta();
     if (result.changed) setState(result.state);
@@ -44,17 +51,23 @@ export function createSyncer({ cloud, storage, getState, setState, onStatus = ()
   function startListening() {
     stopListening();
     if (!user) return;
+    heard = false;
     unlisten = cloud.listen(
       user.uid,
       meta.cursor,
-      (records) => {
-        applyRemote(records);
-        if (!Y.pendingCount(meta) && !flushing) setStatus({ mode: "synced", error: "", lastSync: now() });
+      (records, info = {}) => {
+        if (records.length) applyRemote(records);
+        if (info.fromCache) return; // not from the server yet: says nothing about being in sync
+        heard = true;
+        listenErrors = 0;
+        if (status.mode !== "offline" || !Y.pendingCount(meta)) setStatus(settledStatus());
         else setStatus({});
       },
       (error) => {
         unlisten = null;
-        setStatus({ mode: "error", error: cloud.explainError(error) });
+        heard = false;
+        listenErrors++;
+        setStatus({ mode: isOffline() ? "offline" : "error", error: cloud.explainError(error) });
         scheduleRetry();
       },
     );
@@ -63,17 +76,18 @@ export function createSyncer({ cloud, storage, getState, setState, onStatus = ()
   function stopListening() {
     if (unlisten) unlisten();
     unlisten = null;
+    heard = false;
   }
 
   function scheduleRetry() {
     clearTimeout(retryTimer);
-    const wait = RETRY_MS[Math.min(retries, RETRY_MS.length - 1)];
+    const step = Math.max(retries, listenErrors - 1);
     retries++;
     retryTimer = setTimeout(() => {
       if (!user) return;
       if (!unlisten) startListening();
       flush();
-    }, wait);
+    }, RETRY_MS[Math.min(step, RETRY_MS.length - 1)]);
   }
 
   async function flush() {
@@ -88,30 +102,41 @@ export function createSyncer({ cloud, storage, getState, setState, onStatus = ()
       scheduleRetry();
       return;
     }
+    const uid = user.uid;
     flushing = true;
+    let failed = null;
     try {
-      do {
+      rounds: do {
         again = false;
         const batches = Y.pushBatches(meta);
         if (batches.length) setStatus({ mode: "syncing" });
         for (const batch of batches) {
-          const uid = user?.uid;
-          if (!uid || uid !== meta.uid) return; // signed out (or switched) meanwhile
+          if (user?.uid !== uid || meta.uid !== uid) break rounds; // signed out (or switched) meanwhile
           const { pushed, newer } = await cloud.push(uid, batch);
-          if (user?.uid !== uid) return;
+          if (user?.uid !== uid) break rounds;
+          // apply the server's versions BEFORE acking: on a tie the still-pending record lets the server's win
+          if (newer.length) applyRemote(newer, { fromPush: true });
           meta = Y.ackPushed(meta, pushed);
           saveMeta();
-          if (newer.length) applyRemote(newer);
         }
       } while (again);
       retries = 0;
-      setStatus({ mode: unlisten ? "synced" : "syncing", error: "", lastSync: now() });
     } catch (error) {
-      setStatus({ mode: isOffline() || /unavailable|network/.test(String(error?.code)) ? "offline" : "error", error: cloud.explainError(error) });
-      scheduleRetry();
+      failed = error;
     } finally {
       flushing = false;
     }
+    if (user?.uid !== uid) {
+      // signed out or switched while pushing: the new account's own flush may have been queued meanwhile
+      if (user && again) flush();
+      return;
+    }
+    if (failed) {
+      setStatus({ mode: isOffline() || /unavailable|network|deadline/.test(String(failed?.code)) ? "offline" : "error", error: cloud.explainError(failed) });
+      scheduleRetry();
+      return;
+    }
+    setStatus(settledStatus());
   }
 
   return {
@@ -142,6 +167,7 @@ export function createSyncer({ cloud, storage, getState, setState, onStatus = ()
       clearTimeout(retryTimer);
       user = next;
       retries = 0;
+      listenErrors = 0;
       if (!user) return setStatus({ mode: "signed-out", error: "" });
       if (meta.uid !== user.uid) meta = Y.adoptLocal(getState(), meta, user.uid);
       saveMeta();
@@ -171,6 +197,7 @@ export function createSyncer({ cloud, storage, getState, setState, onStatus = ()
       clearTimeout(retryTimer);
       clearTimeout(flushTimer);
       user = null;
+      again = false;
       meta = Y.emptyMeta();
       saveMeta();
       setStatus({ mode: "signed-out", error: "" });
