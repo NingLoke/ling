@@ -6,6 +6,6 @@
     "test": "node --test \"scripts/**/*.test.mjs\"",
     "update": "node scripts/update-timetables.mjs",
     "seed": "node scripts/update-timetables.mjs --fixture scripts/fixtures/sws-2026-sem2.json",
-    "build:app": "node scripts/build-planner-app.mjs"
+    "build:app": "node scripts/build-app.mjs"
   }
 }

@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="code-version" content="1ce0817ec40b">
+<meta name="code-version" content="e540753154b4">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>2E3 课表</title>
 <meta name="description" content="Curtin Malaysia 2E3 课表：现在上什么课、下一节在哪里。">
@@ -423,6 +423,126 @@ dialog.viewer .sheet-head { position: static; padding-top: calc(env(safe-area-in
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 [hidden] { display: none !important; }
 
+/* ---------- planner: header gear, list section, my events ---------- */
+.gear-btn {
+  position: relative; width: 36px; height: 36px; display: grid; place-items: center; padding: 0;
+  border-radius: 999px; border: 1px solid var(--line-2); background: var(--paper-hi); color: var(--ink-2); cursor: pointer;
+  box-shadow: 0 6px 16px -14px rgba(29, 28, 26, .6);
+}
+.gear-btn::before { content: ""; position: absolute; inset: -4px; } /* 44px to tap */
+.gear-btn svg { width: 17px; height: 17px; }
+.gear-btn:hover { color: var(--ink); border-color: rgba(181, 65, 46, .5); }
+.gear-btn::after { /* sync status dot */
+  content: ""; position: absolute; top: -1px; right: -1px; width: 9px; height: 9px; border-radius: 50%;
+  border: 2px solid var(--paper); background: transparent;
+}
+.gear-btn[data-mode="synced"]::after { background: #4f8a72; }
+.gear-btn[data-mode="syncing"]::after, .gear-btn[data-mode="connecting"]::after { background: var(--ink-3); }
+.gear-btn[data-mode="offline"]::after, .gear-btn[data-mode="signed-out"]::after { background: #d0a43c; }
+.gear-btn[data-mode="error"]::after { background: var(--seal); }
+
+.plan { margin-top: 26px; }
+.plan-top { display: flex; align-items: baseline; gap: 10px; }
+.plan-top .sec-title { margin-right: 0; }
+.plan-date { font-size: 14px; color: var(--seal); }
+.plan-progress { margin-left: auto; font-size: 15px; color: var(--ink-3); }
+.plan-add {
+  align-self: center; min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--ink);
+  background: var(--ink); color: var(--on-ink); font-size: 13px; cursor: pointer; white-space: nowrap;
+}
+.plan-progress:empty + .plan-add { margin-left: auto; }
+.plan-card {
+  margin-top: 12px; padding: 6px 14px 10px; border-radius: 20px; background: var(--paper-hi); border: 1px solid var(--line);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .7) inset, 0 12px 30px -26px rgba(29, 28, 26, .45);
+}
+.plan-sub { margin: 12px 0 2px; font-size: 12.5px; font-weight: 500; letter-spacing: .12em; color: var(--ink-3); }
+.group-label { margin: 8px 0 0; font-size: 12px; color: var(--ink-3); letter-spacing: .06em; }
+.checks { list-style: none; margin: 0; padding: 0; }
+.check { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; }
+.check + .check { border-top: 1px dashed var(--line); }
+.check .box {
+  flex: none; width: 44px; height: 44px; margin: -6px -8px -6px -10px; padding: 0; display: grid; place-items: center;
+  border: 0; background: none; cursor: pointer; color: transparent;
+}
+.check .box svg {
+  width: 24px; height: 24px; padding: 4px; border-radius: 8px; border: 1.5px solid var(--line-2); background: var(--paper);
+  transition: background .15s, border-color .15s, color .15s;
+}
+.check .box:hover svg { border-color: var(--ink-2); }
+.check.done .box { color: var(--on-ink); }
+.check.done .box svg { background: var(--ink); border-color: var(--ink); }
+.check .txt {
+  flex: 1; min-width: 0; min-height: 32px; padding: 5px 0 3px; border: 0; background: none; text-align: left; cursor: pointer;
+  font-size: 15px; line-height: 1.45; overflow-wrap: anywhere;
+}
+.check .txt b { font-weight: 500; }
+.check .txt .star { margin-left: 6px; color: var(--seal); font-size: 13px; }
+.check .txt small { display: block; font-size: 12px; color: var(--ink-3); }
+.check .txt small.late { color: var(--seal); }
+.check.done .txt b { color: var(--ink-3); text-decoration: line-through; text-decoration-color: var(--line-2); }
+.plan-empty { padding: 6px 0 4px; font-size: 13.5px; color: var(--ink-3); }
+.inline-add { min-height: 32px; padding: 0 6px; border: 0; background: none; color: var(--seal); font-size: 13.5px; cursor: pointer; border-radius: 8px; }
+.inline-add:hover { background: var(--seal-wash); }
+
+/* my events inside the timetable */
+.card.mine { --tone: var(--seal); background: linear-gradient(90deg, var(--seal-wash), transparent 55%), var(--paper-hi); }
+.card.mine::before { opacity: .8; }
+.seal.mine { background: transparent; color: var(--seal); box-shadow: inset 0 0 0 1.5px rgba(181, 65, 46, .55); }
+.card.mine.past { background: transparent; }
+.mine-tag { font-size: 12px; color: var(--seal); }
+.day-add { justify-self: start; min-height: 40px; padding: 0 12px; border-radius: 999px; border: 1px dashed var(--line-2); background: none; color: var(--ink-2); font-size: 13px; cursor: pointer; }
+.day-add:hover { color: var(--seal); border-color: rgba(181, 65, 46, .5); }
+.empty .day-add { margin-top: 12px; }
+.blk.mine { background: rgba(181, 65, 46, .1); box-shadow: inset 3px 0 0 var(--seal); }
+.blk.mine b { color: var(--seal); }
+.day .dots i.mine { background: var(--seal); opacity: .85; }
+.day[aria-pressed="true"] .dots i.mine { background: #f0a493; }
+
+/* the editor and settings sheets */
+.plan-form { display: grid; gap: 14px; }
+.kind-seg { display: grid; grid-template-columns: repeat(3, 1fr); }
+.kind-seg button { min-width: 0; padding: 0 6px; }
+.field { display: grid; gap: 5px; font-size: 13px; color: var(--ink-3); }
+.field input:not([type="checkbox"]) {
+  width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid var(--line-2); border-radius: 12px;
+  background: var(--paper); color: var(--ink); font: inherit; font-size: 16px;
+}
+.field input:focus { border-color: var(--ink-2); outline: none; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.check-field { display: flex; align-items: center; gap: 8px; align-self: end; min-height: 44px; font-size: 15px; color: var(--ink); cursor: pointer; }
+.check-field input { width: 20px; height: 20px; accent-color: var(--seal); }
+.day-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.day-chips button {
+  min-width: 44px; min-height: 40px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--paper);
+  color: var(--ink-2); font-size: 14px; cursor: pointer;
+}
+.day-chips button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+.field-hint { font-size: 12.5px; color: var(--ink-3); line-height: 1.6; }
+.field-hint code { font-size: 12px; padding: 1px 4px; border-radius: 4px; background: var(--wash-2); }
+.form-error { font-size: 13px; color: var(--seal); }
+.form-error:empty { display: none; }
+.form-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.form-actions.start { justify-content: flex-start; }
+.form-actions .danger { margin-right: auto; }
+.mini-btn.danger { color: var(--seal); border-color: rgba(181, 65, 46, .4); }
+.mini-btn.quiet { border-color: transparent; background: none; color: var(--ink-3); }
+.mini-btn:disabled { opacity: .5; cursor: default; }
+.file-btn { cursor: pointer; }
+.sync-box { display: grid; gap: 10px; margin-bottom: 18px; padding: 14px; border-radius: 16px; border: 1px solid var(--line); background: var(--paper); }
+.sync-box h3 { font-family: var(--serif); font-weight: 700; font-size: 16px; }
+.sync-box form, .sync-box > div { display: grid; gap: 10px; }
+.sync-box #google { justify-self: start; }
+.account { font-weight: 600; overflow-wrap: anywhere; }
+#plan-settings .plan-sub { margin-top: 0; margin-bottom: 4px; }
+#plan-settings .form-actions { margin-top: 10px; }
+
+.plan-fab {
+  position: fixed; right: calc(env(safe-area-inset-right) + 16px); bottom: calc(env(safe-area-inset-bottom) + 18px + var(--host-inset, 0px)); z-index: 20;
+  width: 56px; height: 56px; border-radius: 18px; border: 0; background: var(--ink); color: var(--on-ink);
+  font-size: 28px; line-height: 1; cursor: pointer; box-shadow: 0 12px 26px -10px rgba(29, 28, 26, .55);
+}
+html.lock .plan-fab { display: none; }
+
 /* ---------- wider screens ---------- */
 @media (min-width: 600px) {
   :root { --gutter: 24px; --hour: 60px; }
@@ -431,14 +551,16 @@ dialog.viewer .sheet-head { position: static; padding-top: calc(env(safe-area-in
 @media (min-width: 900px) {
   .app {
     max-width: 1140px;
-    display: grid; grid-template-columns: 360px minmax(0, 1fr); grid-template-rows: auto auto auto 1fr;
+    display: grid; grid-template-columns: 360px minmax(0, 1fr); grid-template-rows: auto auto auto auto 1fr;
     column-gap: 48px; padding-top: calc(env(safe-area-inset-top) + 24px);
   }
   .mast { grid-column: 1; grid-row: 1; }
   .now { grid-column: 1; grid-row: 2; }
-  .units { grid-column: 1; grid-row: 3; }
-  .foot { grid-column: 1; grid-row: 4; align-self: start; }
-  .sched { grid-column: 2; grid-row: 1 / span 4; margin-top: 30px; }
+  .plan { grid-column: 1; grid-row: 3; }
+  .units { grid-column: 1; grid-row: 4; }
+  .foot { grid-column: 1; grid-row: 5; align-self: start; }
+  .sched { grid-column: 2; grid-row: 1 / span 5; margin-top: 30px; }
+  .plan-fab { display: none; }
   .mist { right: -40px; width: 460px; }
   .wk-head { top: 0; }
   :root { --hour: 64px; }
@@ -487,10 +609,28 @@ dialog.viewer .sheet-head { position: static; padding-top: calc(env(safe-area-in
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4 3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/></svg>
         校园地图
       </button>
+      <button class="gear-btn" id="plan-gear" type="button" aria-label="设置 · 同步">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3 1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8 1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      </button>
     </div>
   </header>
 
   <section class="now" id="now" aria-label="此刻"></section>
+
+  <section class="plan" id="plan" aria-labelledby="plan-title">
+    <div class="plan-top">
+      <h2 class="sec-title" id="plan-title">清单</h2>
+      <span class="plan-date" id="plan-date"></span>
+      <span class="plan-progress num" id="plan-progress"></span>
+      <button class="plan-add" id="plan-add" type="button">＋ 新建</button>
+    </div>
+    <div class="plan-card">
+      <h3 class="plan-sub">每日任务</h3>
+      <div id="plan-habits"></div>
+      <h3 class="plan-sub">待办</h3>
+      <div id="plan-todos"></div>
+    </div>
+  </section>
 
   <section class="sched" id="sched" aria-label="课表">
     <div class="sched-top">
@@ -526,6 +666,7 @@ dialog.viewer .sheet-head { position: static; padding-top: calc(env(safe-area-in
   <footer class="foot">
     <p id="fresh">课表来自 Curtin SWS</p>
     <p class="note" id="net-note"></p>
+    <p id="sync-note"></p>
     <div class="foot-row">
       <a href="http://sws.curtin.edu.my" target="_blank" rel="noopener"><span>打开 Curtin SWS 官方课表</span></a>
       <button class="egg" id="egg" type="button" aria-label="小游戏" title="小游戏">
@@ -536,6 +677,80 @@ dialog.viewer .sheet-head { position: static; padding-top: calc(env(safe-area-in
 </div>
 <dialog class="sheet" id="check" aria-labelledby="check-title"></dialog>
 <dialog class="viewer" id="shot" aria-labelledby="shot-title"></dialog>
+<dialog class="sheet" id="plan-editor" aria-labelledby="plan-editor-title">
+  <form id="plan-form" novalidate>
+    <div class="sheet-head">
+      <div class="sheet-title"><h2 id="plan-editor-title">新建</h2></div>
+      <button class="mini-btn" type="button" data-close>关闭</button>
+    </div>
+    <div class="sheet-body plan-form">
+      <div class="seg kind-seg" id="plan-kind" role="group" aria-label="类型">
+        <button type="button" data-kind="todos">待办</button>
+        <button type="button" data-kind="events">行程</button>
+        <button type="button" data-kind="habits">每日任务</button>
+      </div>
+      <label class="field">名称<input name="title" required autocomplete="off" maxlength="200" placeholder="要做什么？"></label>
+      <div class="field-row" data-for="events todos">
+        <label class="field">日期<input type="date" name="date"></label>
+        <label class="field check-field" data-for="todos"><input type="checkbox" name="star"> ★ 重要</label>
+        <label class="field" data-for="events">地点<input name="place" autocomplete="off" maxlength="200" placeholder="可不填，比如 SK3 102"></label>
+      </div>
+      <div class="field-row" data-for="events">
+        <label class="field">开始<input type="time" name="start"></label>
+        <label class="field">结束<input type="time" name="end"></label>
+      </div>
+      <div class="field" data-for="habits">重复
+        <div class="day-chips" id="plan-days" role="group" aria-label="每周哪几天"></div>
+      </div>
+      <p class="field-hint" data-for="todos">不填日期 = 随时做，会一直留在「今天」里直到完成。</p>
+      <p class="field-hint" data-for="events">行程会和课一起显示在课表里。</p>
+      <p class="form-error" id="plan-form-error" role="alert"></p>
+      <div class="form-actions">
+        <button type="button" class="mini-btn danger" id="plan-delete">删除</button>
+        <button type="submit" class="mini-btn primary">保存</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+<dialog class="sheet" id="plan-settings" aria-labelledby="plan-settings-title">
+  <div class="sheet-head">
+    <div class="sheet-title"><h2 id="plan-settings-title">设置 · 同步</h2><p>每日任务、行程和待办</p></div>
+    <button class="mini-btn" type="button" data-close>关闭</button>
+  </div>
+  <div class="sheet-body">
+    <section class="sync-box">
+      <h3>云同步</h3>
+      <p class="field-hint" id="sync-unconfigured" hidden>云同步还没设置：先在 Firebase 建一个免费项目，把设置填进 <code>assets/firebase-config.js</code>（步骤见 <code>SYNC-SETUP.md</code>）。在那之前，资料只存在这台设备上。</p>
+      <form id="login-form" hidden>
+        <p class="field-hint">登录同一个账号，手机和电脑的资料就会自动同步。</p>
+        <label class="field">邮箱<input type="email" name="email" autocomplete="username" required></label>
+        <label class="field">密码<input type="password" name="password" autocomplete="current-password" minlength="6" required></label>
+        <p class="form-error" id="login-error" role="alert"></p>
+        <div class="form-actions start">
+          <button type="submit" class="mini-btn primary" data-auth="signin">登录</button>
+          <button type="submit" class="mini-btn" data-auth="signup">注册新账号</button>
+          <button type="button" class="mini-btn quiet" id="forgot">忘记密码</button>
+        </div>
+        <button type="button" class="mini-btn" id="google">用 Google 账号登录</button>
+      </form>
+      <div id="sync-account" hidden>
+        <p class="account" id="account-email"></p>
+        <p class="field-hint" id="sync-detail"></p>
+        <div class="form-actions start">
+          <button type="button" class="mini-btn" id="sync-now">立即同步</button>
+          <button type="button" class="mini-btn danger" id="sign-out">退出登录</button>
+        </div>
+      </div>
+    </section>
+    <h3 class="plan-sub">备份</h3>
+    <p class="field-hint">把每日任务、行程和待办存成一个文件，或从文件恢复。</p>
+    <div class="form-actions start">
+      <button type="button" class="mini-btn" id="plan-export">导出备份</button>
+      <label class="mini-btn file-btn">导入备份<input type="file" id="plan-import" accept="application/json,.json" class="sr"></label>
+    </div>
+  </div>
+</dialog>
+<button class="plan-fab" id="plan-fab" type="button" aria-label="新建待办、行程或每日任务">＋</button>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <noscript><p style="text-align:center;padding:20px">这个课表需要开启 JavaScript。</p></noscript>
 
@@ -543,6 +758,7 @@ dialog.viewer .sheet-head { position: static; padding-top: calc(env(safe-area-in
 <script type="module">
 import * as core from "./assets/timetable-core.js?v=484ad6369e";
 import { buildingForRoom, roomLabel } from "./assets/campus-geo.js?v=23f31ff695";
+import { createPlanner } from "./assets/planner-ui.js?v=51a2e411b1";
 
 const CLASS = "2E3";
 const VIEW_KEY = `tt:${CLASS}:view`;
@@ -601,6 +817,7 @@ let day = 0;
 let follow = true; // keep following "today" until the user navigates
 let lastRefresh = Date.now();
 let refresh = () => Promise.resolve();
+let planner = null; // 每日任务 · 待办 · my own events (assets/planner-ui.js)
 
 const unitOf = (code) => data?.units?.[code] || { code, name: code, short: code, group: "" };
 const typeZh = (type) => core.TYPE_LABELS_ZH[type] || type;
@@ -807,11 +1024,15 @@ function renderSchedule(now) {
   [...$("days").children].forEach((button, i) => {
     const iso = core.dateInWeek(data, week, i);
     const count = perDay[i].length;
+    const mine = mineOn(iso).length;
+    const classDots = Math.min(count, mine ? 3 : 4);
     button.querySelector(".dd").textContent = iso ? String(Number(iso.slice(8))) : "";
-    button.querySelector(".dots").replaceChildren(...Array.from({ length: Math.min(count, 4) }, () => h("i")));
+    button.querySelector(".dots").replaceChildren(
+      ...Array.from({ length: classDots }, () => h("i")),
+      ...Array.from({ length: Math.min(mine, 4 - classDots) }, () => h("i", { class: "mine" })));
     button.classList.toggle("today", iso === now.iso);
     button.setAttribute("aria-pressed", String(i === day));
-    button.setAttribute("aria-label", `${core.DAY_NAMES_ZH[i]} ${iso ? core.formatDateZh(iso) : ""}，${count ? `${count} 节课` : "没课"}${iso === now.iso ? "，今天" : ""}`);
+    button.setAttribute("aria-label", `${core.DAY_NAMES_ZH[i]} ${iso ? core.formatDateZh(iso) : ""}，${count ? `${count} 节课` : "没课"}${mine ? `，${mine} 项行程` : ""}${iso === now.iso ? "，今天" : ""}`);
   });
 
   const keep = document.activeElement?.dataset?.key;
@@ -821,7 +1042,38 @@ function renderSchedule(now) {
   if (view === "day") renderDayView(now, perDay[day]);
   else renderWeekView(now, perDay);
   if (keep) document.querySelector(`[data-key="${CSS.escape(keep)}"]`)?.focus({ preventScroll: true });
+  planner?.showDate(planDate(now));
 }
+
+// ---------- my own events (行程) in the timetable ----------
+const mineOn = (iso) => (iso && planner ? planner.eventsOn(iso) : []);
+/** The date the 清单 shows: today while following today, else the day picked in the timetable. */
+function planDate(now) {
+  if (!data || follow) return now.iso;
+  return core.dateInWeek(data, week, day) || now.iso;
+}
+function mineCard(m, now, isToday) {
+  const live = isToday && now.minutes >= m.start && now.minutes < m.end;
+  const past = isToday && now.minutes >= m.end;
+  return h("article", {
+    class: `card mine${live ? " live" : ""}${past ? " past" : ""}`, dataset: { id: `mine-${m.id}` },
+    "aria-label": `${fmtRange(m)} 我的行程 ${m.title}${live ? "，进行中" : past ? "，已结束" : ""}`,
+  },
+    h("div", { class: "t" },
+      h("span", { class: "s num" }, core.fmtTime(m.start)),
+      h("span", { class: "e num" }, core.fmtTime(m.end)),
+      h("span", { class: "d" }, core.fmtDurationZh(m.end - m.start)),
+      h("button", { class: "verify-btn", type: "button", "aria-label": `编辑行程：${m.title}`, onclick: () => planner.openEditor("events", m.id) }, "编辑")),
+    h("div", null,
+      h("div", { class: "lesson-head" },
+        h("span", { class: "seal mine", "aria-hidden": "true" }, "行"),
+        h("div", { class: "unit-name" }, h("h3", null, m.title), h("div", { class: "sub" }, "我的行程"))),
+      m.place ? roomsBlock({ rooms: [m.place] }) : null,
+      live ? h("div", { class: "live-meta" }, `进行中 · 还剩 ${core.fmtCountdownZh(m.end - now.minutes)}`, progressBar((now.minutes - m.start) / (m.end - m.start))) : null,
+      past ? h("p", { class: "done-tag" }, "已结束") : null));
+}
+const addMineButton = (iso) =>
+  h("button", { class: "day-add", type: "button", onclick: () => planner?.openEditor("events", null, { date: iso }) }, "＋ 在这天加行程");
 
 function renderDayView(now, events) {
   const iso = core.dateInWeek(data, week, day);
@@ -829,18 +1081,31 @@ function renderDayView(now, events) {
   const diff = iso ? core.daysBetween(now.iso, iso) : null;
   const tag = diff === 0 ? "今天" : diff === 1 ? "明天" : diff === -1 ? "昨天" : "";
   const totalMinutes = events.reduce((sum, e) => sum + (e.end - e.start), 0);
+  const mine = mineOn(iso);
+  const summary = [events.length ? `${events.length} 节课 · 共 ${core.fmtDurationZh(totalMinutes)}` : "", mine.length ? `${mine.length} 项行程` : ""].filter(Boolean).join(" · ");
   const head = h("div", { class: "dayhead" },
     h("strong", null, `${core.DAY_NAMES_ZH[day]} · ${iso ? core.formatDateZh(iso) : ""}`),
     tag ? h("span", { class: "tag" }, tag) : null,
-    h("span", null, events.length ? `${events.length} 节课 · 共 ${core.fmtDurationZh(totalMinutes)}` : ""));
+    h("span", null, summary));
 
-  if (!events.length) {
-    $("day-view").replaceChildren(head, h("div", { class: "empty" }, ensoIcon(), h("strong", null, "这天没有课"), day >= 5 ? "周末愉快" : "好好休息，或者去图书馆坐坐"));
+  if (!events.length && !mine.length) {
+    $("day-view").replaceChildren(head, h("div", { class: "empty" }, ensoIcon(), h("strong", null, "这天没有课"), day >= 5 ? "周末愉快" : "好好休息，或者去图书馆坐坐", h("div", null, addMineButton(iso))));
     return;
   }
-  const gaps = new Map(core.gapsBetween(events).filter((g) => g.minutes >= 30).map((g) => [g.after, g]));
+  // classes and my events in time order; a gap is free time after everything before it has ended
+  const timeline = [...events.map((e) => ({ e, mine: false })), ...mine.map((e) => ({ e, mine: true }))]
+    .sort((a, b) => a.e.start - b.e.start || a.e.end - b.e.end);
   const items = [];
-  for (const e of events) {
+  let busyUntil = -1;
+  for (const { e, mine: isMine } of timeline) {
+    if (busyUntil >= 0 && e.start - busyUntil >= 30) {
+      items.push(h("div", { class: "gap" }, `空 ${core.fmtDurationZh(e.start - busyUntil)} · ${core.fmtTime(busyUntil)}–${core.fmtTime(e.start)}`));
+    }
+    busyUntil = Math.max(busyUntil, e.end);
+    if (isMine) {
+      items.push(mineCard(e, now, isToday));
+      continue;
+    }
     const live = isToday && now.minutes >= e.start && now.minutes < e.end;
     const past = isToday && now.minutes >= e.end;
     const unit = unitOf(e.unit);
@@ -863,9 +1128,8 @@ function renderDayView(now, events) {
         e.staff?.length ? h("p", { class: "staff" }, e.staff.join("、")) : null,
         live ? h("div", { class: "live-meta" }, `上课中 · 还剩 ${core.fmtCountdownZh(e.end - now.minutes)}`, progressBar((now.minutes - e.start) / (e.end - e.start))) : null,
         past ? h("p", { class: "done-tag" }, "已结束") : null)));
-    const gap = gaps.get(e);
-    if (gap) items.push(h("div", { class: "gap" }, `空 ${core.fmtDurationZh(gap.minutes)} · ${core.fmtTime(gap.after.end)}–${core.fmtTime(gap.before.start)}`));
   }
+  items.push(addMineButton(iso));
   $("day-view").replaceChildren(head, h("div", { class: "list" }, items));
 }
 
@@ -891,11 +1155,17 @@ function lanes(events) {
 }
 
 function renderWeekView(now, perDay) {
-  const bounds = core.timeBounds(data);
+  const minePer = Array.from({ length: 7 }, (_, i) => mineOn(core.dateInWeek(data, week, i)).map((m) => ({ ...m, mine: true })));
+  const bounds = { ...core.timeBounds(data) };
+  const allMine = minePer.flat();
+  if (allMine.length) { // grow the grid so my early / late events fit
+    bounds.start = Math.min(bounds.start, Math.floor(Math.min(...allMine.map((m) => m.start)) / 60) * 60);
+    bounds.end = Math.max(bounds.end, Math.ceil(Math.max(...allMine.map((m) => m.end)) / 60) * 60);
+  }
   const hour = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--hour")) || 56;
   const ppm = hour / 60;
   const height = (bounds.end - bounds.start) * ppm;
-  const lastDay = perDay[6].length ? 6 : perDay[5].length ? 5 : 4;
+  const lastDay = perDay[6].length || minePer[6].length ? 6 : perDay[5].length || minePer[5].length ? 5 : 4;
   const cols = Array.from({ length: lastDay + 1 }, (_, i) => i);
   const todayCol = cols.find((i) => core.dateInWeek(data, week, i) === now.iso);
   const roomy = ($("week-view").clientWidth - 30) / cols.length >= 86;
@@ -920,11 +1190,49 @@ function renderWeekView(now, perDay) {
     lines.append(line);
   }
 
+  // a block's spot in its day column (side by side when things overlap)
+  const place = (block, e, lane, count) => {
+    block.style.top = `${(e.start - bounds.start) * ppm + 1}px`;
+    block.style.height = `${Math.max(14, (e.end - e.start) * ppm - 2)}px`;
+    if (count > 1) {
+      block.style.left = `calc(${(lane / count) * 100}% + 1px)`;
+      block.style.right = "auto";
+      block.style.width = `calc(${100 / count}% - 2px)`;
+    }
+  };
+  const showCard = (i, id) => {
+    day = i;
+    setView("day", false);
+    syncFollow();
+    renderSchedule(getNow());
+    const card = document.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+    if (card) {
+      card.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+      card.classList.remove("flash");
+      void card.offsetWidth;
+      card.classList.add("flash");
+    }
+  };
+  const mineBlock = (m, i, isToday, lane, count) => {
+    const block = h("button", {
+      class: `blk mine${isToday && now.minutes >= m.end ? " past" : ""}`, type: "button", role: "listitem", dataset: { key: `blk-mine-${m.id}` },
+      "aria-label": `${core.DAY_NAMES_ZH[i]} ${fmtRange(m)} 我的行程 ${m.title}${m.place ? ` ${m.place}` : ""}`,
+      onclick: () => showCard(i, `mine-${m.id}`),
+    }, h("b", null, m.title), m.place ? h("span", null, m.place) : null);
+    place(block, m, lane, count);
+    return block;
+  };
+
   const columns = cols.map((i) => {
     const iso = core.dateInWeek(data, week, i);
     const isToday = i === todayCol;
     const col = h("div", { class: `wk-col${isToday ? " today" : ""}`, role: "list", "aria-label": `${core.DAY_NAMES_ZH[i]} ${core.formatDateZh(iso)}` });
-    for (const { event: e, lane, lanes: count } of lanes(perDay[i])) {
+    const both = [...perDay[i], ...minePer[i]].sort((a, b) => a.start - b.start || a.end - b.end);
+    for (const { event: e, lane, lanes: count } of lanes(both)) {
+      if (e.mine) {
+        col.append(mineBlock(e, i, isToday, lane, count));
+        continue;
+      }
       const tone = subjectOf(e.unit).tone;
       const unit = unitOf(e.unit);
       const live = isToday && now.minutes >= e.start && now.minutes < e.end;
@@ -933,27 +1241,9 @@ function renderWeekView(now, perDay) {
         class: `blk${live ? " live" : ""}${past ? " past" : ""}`, type: "button", role: "listitem",
         vars: { "--tone": tone, "--tint": tint(tone, 0.11) }, dataset: { key: `blk-${e.id}` },
         "aria-label": `${core.DAY_NAMES_ZH[i]} ${fmtRange(e)} ${unit.short} ${typeZh(e.type)} ${roomsOf(e).join("、")}`,
-        onclick: () => {
-          day = i;
-          setView("day", false);
-          syncFollow();
-          renderSchedule(getNow());
-          const card = document.querySelector(`.card[data-id="${CSS.escape(e.id)}"]`);
-          if (card) {
-            card.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
-            card.classList.remove("flash");
-            void card.offsetWidth;
-            card.classList.add("flash");
-          }
-        },
+        onclick: () => showCard(i, e.id),
       }, h("b", null, gridName(e.unit, roomy)), h("span", null, typeZh(e.type)), h("span", null, roomsOf(e).map(core.shortRoom).join(" / ")));
-      block.style.top = `${(e.start - bounds.start) * ppm + 1}px`;
-      block.style.height = `${(e.end - e.start) * ppm - 2}px`;
-      if (count > 1) {
-        block.style.left = `calc(${(lane / count) * 100}% + 1px)`;
-        block.style.right = "auto";
-        block.style.width = `calc(${100 / count}% - 2px)`;
-      }
+      place(block, e, lane, count);
       col.append(block);
     }
     if (isToday && now.minutes >= bounds.start && now.minutes <= bounds.end) {
@@ -967,8 +1257,8 @@ function renderWeekView(now, perDay) {
   const body = h("div", { class: "wk-body", vars: { "--cols": String(cols.length) } }, lines, axis, columns);
   body.style.height = `${height}px`;
   const total = perDay.reduce((n, list) => n + list.length, 0);
-  $("week-view").replaceChildren(h("div", { class: "wk" }, head, body),
-    h("p", { class: "wk-note" }, total ? `这周 ${total} 节课 · 点一节课看详细` : "这周没有课"));
+  const note = [total ? `这周 ${total} 节课` : "这周没有课", allMine.length ? `${allMine.length} 项行程` : "", total || allMine.length ? "点一格看详细" : ""].filter(Boolean).join(" · ");
+  $("week-view").replaceChildren(h("div", { class: "wk" }, head, body), h("p", { class: "wk-note" }, note));
 }
 
 // ---------- units ----------
@@ -1078,19 +1368,20 @@ function openModal(dialog, flag) {
   document.documentElement.classList.add("lock");
   try { history.pushState({ ...(history.state || {}), [flag]: true }, ""); } catch { /* ignore */ }
 }
-for (const [id, flag] of [["check", "check"], ["shot", "shot"]]) {
+const MODALS = [["check", "check"], ["shot", "shot"], ["plan-editor", "planEditor"], ["plan-settings", "planSettings"]];
+for (const [id, flag] of MODALS) {
   const dialog = $(id);
   dialog.addEventListener("close", () => {
-    if (!$("check").open && !$("shot").open) document.documentElement.classList.remove("lock");
+    if (!MODALS.some(([other]) => $(other).open)) document.documentElement.classList.remove("lock");
     if (history.state?.[flag]) history.back();
   });
   dialog.addEventListener("click", (event) => {
-    if (event.target === event.currentTarget && id === "check") event.currentTarget.close(); // tap on the backdrop
+    // tap on the backdrop (not the editor: that would throw away what was typed)
+    if (event.target === event.currentTarget && (id === "check" || id === "plan-settings")) event.currentTarget.close();
   });
 }
 window.addEventListener("popstate", () => {
-  if ($("shot").open && !history.state?.shot) $("shot").close();
-  if ($("check").open && !history.state?.check) $("check").close();
+  for (const [id, flag] of MODALS) if ($(id).open && !history.state?.[flag]) $(id).close();
 });
 
 // ---------- 核准查看: the real SWS list page, as a screenshot ----------
@@ -1309,6 +1600,13 @@ function onData(next, nextInfo) {
 }
 
 // ---------- wire up ----------
+planner = createPlanner({
+  getNow,
+  openModal,
+  toast,
+  onChange: () => { if (data) renderSchedule(getNow()); },
+});
+planner.showDate(getNow().iso);
 buildDays();
 setView(view, false);
 $("view-day").addEventListener("click", () => { setView("day"); renderSchedule(getNow()); });
@@ -1355,6 +1653,11 @@ function mapClasses(now) {
 let mapLoading = false;
 async function openMap(code = null, navigate = false) {
   if (mapLoading) return;
+  // opened as a file (the stand-alone folder): browsers won't run the map's code (MapLibre) from a file
+  if (location.protocol === "file:") {
+    toast("直接打开文件时看不了地图，用网站或 App 打开就可以。");
+    return;
+  }
   mapLoading = true;
   // iPhone only lets a page ask for the compass during a tap, so ask now; the map picks up the answer
   let compassPermission = null;
@@ -1479,7 +1782,7 @@ document.addEventListener("visibilitychange", () => {
 // a page left open for days still gets new code (fixes), not just new timetable data
 core.watchForUpdates({
   // a reload starts over on today: not while the map, the game or a dialog is open, or another week/day is shown
-  isBusy: () => !follow || mapLoading || Boolean(document.querySelector(".cm, .tt-overlay")) || $("check").open || $("shot").open,
+  isBusy: () => !follow || mapLoading || Boolean(document.querySelector(".cm, .tt-overlay")) || MODALS.some(([id]) => $(id).open),
   overlays: ".cm, .tt-overlay",
 });
 </script>

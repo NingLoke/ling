@@ -1,6 +1,6 @@
 // Sync rules between this device and the cloud. No DOM or Firebase code in here, so it can be tested with node.
 //
-// The planner state (see ./store.js) is cut into small records, one per thing that can change on its own:
+// The planner state (see ./planner-store.js) is cut into small records, one per thing that can change on its own:
 //   events~<id>  habits~<id>  todos~<id>   one item each (data = the item)
 //   tick~<date>~<habitId>                  one daily-task tick (data = {date, habit})
 //   setting~<name>                         one setting (data = {value})
@@ -14,7 +14,7 @@
 //   - A record from the server replaces the local one unless this device has a newer pending change to it.
 //   - cursor = the latest server time seen, so a device only downloads what changed since last time.
 
-import { normalize } from "./store.js";
+import { normalize } from "./planner-store.js?v=82271e1095";
 
 export const SYNC_KEY = "planner:sync";
 const KINDS = ["events", "habits", "todos"];

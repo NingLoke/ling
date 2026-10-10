@@ -1,16 +1,16 @@
 // Firebase side of sync: sign-in, pushing pending records, listening for changes. The rules for what to keep
-// live in ./sync.js; this file only talks to Firebase. Firebase is loaded on first use, so the planner works
+// live in ./planner-sync.js; this file only talks to Firebase. Firebase is loaded on first use, so the planner works
 // (offline, on this device only) even when it can't be loaded.
 //
 // Data layout in Firestore:  users/{uid}/records/{docId}
 //   { kind, id, data, deleted, updatedAt, serverAt }   (serverAt = server time of the last write)
 
-import { shouldWrite } from "./sync.js";
+import { shouldWrite } from "./planner-sync.js?v=8c0b4fd8da";
 
-const FIREBASE = "./vendor/firebase-12.19.0.js";
+const FIREBASE = "./vendor/firebase-12.19.0/firebase.js";
 // The first import names the file literally so the stand-alone build (scripts/build-planner-app.mjs) can bundle it.
 // The browser remembers a failed import() for the life of the page, so a retry asks under a new URL.
-const loadFirebase = (attempt) => (attempt ? import(`${FIREBASE}?retry=${attempt}`) : import("./vendor/firebase-12.19.0.js"));
+const loadFirebase = (attempt) => (attempt ? import(`${FIREBASE}?retry=${attempt}`) : import("./vendor/firebase-12.19.0/firebase.js"));
 const CURSOR_SLACK_MS = 10 * 60 * 1000; // re-read the last 10 minutes on reconnect, in case of out-of-order commits
 const PUSH_TIMEOUT_MS = 30_000; // a transaction that hasn't finished by then is treated as "offline" and retried
 

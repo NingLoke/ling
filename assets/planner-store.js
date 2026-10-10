@@ -5,7 +5,7 @@
 //   todos   待办 - a one-off thing to do, with or without a due date
 // Dates are ISO "YYYY-MM-DD" strings, times are minutes after midnight.
 
-import { addDays, daysBetween, dayIndexOf } from "../assets/timetable-core.js";
+import { addDays, daysBetween, dayIndexOf } from "./timetable-core.js?v=484ad6369e";
 
 export const STORAGE_KEY = "planner:v1";
 

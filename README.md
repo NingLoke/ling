@@ -39,6 +39,23 @@ SWS 把选了哪一科存在服务器会话里，网址里不带科目，所以�
 
 改了 `codes.json` 或 `build-campus.mjs` 推送后，Actions 会重新下载并生成地图数据，并检查每间教室都能找到楼和路线。
 
+## 清单 · 行程 · 云同步
+
+课表页上多了自己的东西（`assets/planner-ui.js`）：
+
+- **清单**（「此刻」下面）：每日任务（可以选每周哪几天，记连续天数）和待办（已过期 / 今天到期 / 随时，可标 ★）。显示的是课表里选中的那一天，默认今天。
+- **行程**：自己的事（时间、地点）和课一起排在课表的日视图、周视图里（红色「行」字）。地点写教室（比如 `SK3 102`）就能点开校园地图。
+- **新建**：清单右上角「＋ 新建」、手机右下角的 ＋、课表日视图最后的「＋ 在这天加行程」。
+- **云同步**：右上角齿轮 →「设置 · 同步」，用邮箱密码登录，手机和电脑自动同步，离线时先存在本机。要先建一个免费的 Firebase 项目，把设置填进 `assets/firebase-config.js`，步骤见 [SYNC-SETUP.md](SYNC-SETUP.md)。没设置时资料只存在各自的浏览器里，可以在设置里导出 / 导入备份。
+
+### 打包成文件夹（以后做 APK / EXE）
+
+```bash
+npm run build:app
+```
+
+生成 `dist/timetable-ling/`（和 `dist/timetable-ling.zip`）：整个页面的程序都打包进一个 `index.html`，双击就能打开（直接打开文件时浏览器不让 3D 地图运行，会提示用网站或 App 打开）。文件夹里也放了地图要用的 MapLibre 和校园资料，以后 APK / EXE 从这个文件夹打包。课表和 SWS 截图不放进去：页面自带一份课表，有网时从 GitHub 读最新的。
+
 ## 改班级 / 科目
 
 编辑 `scripts/timetables.config.mjs`，比如：
@@ -55,6 +72,8 @@ SWS 把选了哪一科存在服务器会话里，网址里不带科目，所以�
 ```bash
 node --test "scripts/**/*.test.mjs"
 ```
+
+（`scripts/lib/planner-sync.test.mjs` 用模拟的几台设备和假的云端测同步：离线、同时改同一项、时钟不准、换账号。）
 
 ```bash
 node scripts/update-timetables.mjs --fixture scripts/fixtures/sws-2026-sem2.json

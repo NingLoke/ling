@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import * as S from "../../planner/store.js";
+import * as S from "../../assets/planner-store.js";
 
 const today = "2026-10-10"; // Saturday
 

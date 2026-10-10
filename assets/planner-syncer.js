@@ -1,8 +1,8 @@
-// Runs sync: keeps the bookkeeping from ./sync.js up to date, pushes pending changes, applies what other devices
-// wrote. Talks to the cloud through an adapter with the same functions as ./cloud.js, so tests can swap in a fake.
+// Runs sync: keeps the bookkeeping from ./planner-sync.js up to date, pushes pending changes, applies what other devices
+// wrote. Talks to the cloud through an adapter with the same functions as ./planner-cloud.js, so tests can swap in a fake.
 // No DOM code in here.
 
-import * as Y from "./sync.js";
+import * as Y from "./planner-sync.js?v=8c0b4fd8da";
 
 const RETRY_MS = [3_000, 10_000, 30_000, 60_000];
 // navigator.onLine is only trustworthy when it says false

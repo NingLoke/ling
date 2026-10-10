@@ -1,15 +1,15 @@
-// Tests for planner cloud sync: the pure bookkeeping in planner/sync.js, and planner/syncer.js running on several
-// simulated devices against an in-memory fake of the Firestore adapter (planner/cloud.js).
+// Tests for planner cloud sync: the pure bookkeeping in assets/planner-sync.js, and assets/planner-syncer.js running on several
+// simulated devices against an in-memory fake of the Firestore adapter (assets/planner-cloud.js).
 
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import * as S from "../../planner/store.js";
-import * as Y from "../../planner/sync.js";
-import { createSyncer } from "../../planner/syncer.js";
+import * as S from "../../assets/planner-store.js";
+import * as Y from "../../assets/planner-sync.js";
+import { createSyncer } from "../../assets/planner-syncer.js";
 
 const DAY = "2026-10-10";
 const DAY2 = "2026-10-11";
-const SLACK = 10 * 60 * 1000; // same as CURSOR_SLACK_MS in planner/cloud.js
+const SLACK = 10 * 60 * 1000; // same as CURSOR_SLACK_MS in assets/planner-cloud.js
 const MIN = 60 * 1000;
 const HOUR = 60 * MIN;
 
@@ -59,7 +59,7 @@ const titleOf = (state, kind, id) => state[kind].find((x) => x.id === id)?.title
 const ids = (list) => list.map((x) => x.id).sort();
 
 // ---------------------------------------------------------------------------------------------------------------
-// Fake cloud: one shared server, several devices. Mirrors planner/cloud.js:
+// Fake cloud: one shared server, several devices. Mirrors assets/planner-cloud.js:
 //   - push(uid, batch): one atomic transaction; each record is written only if shouldWrite(serverDoc, rec);
 //     all writes in it get the same commit time (serverAt = request.time). Returns { pushed: batch, newer }.
 //     Throws { code: "unavailable" } when the device is offline (before the commit, or "response lost" after it).
