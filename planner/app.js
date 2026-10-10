@@ -1,6 +1,10 @@
 // Planner page: draws the day and handles taps. Rules live in ./store.js.
 import { addDays, daysBetween, dayIndexOf, malaysiaNow, fmtTime, DAY_SHORT_ZH, DAY_NAMES_ZH, TYPE_LABELS_ZH, eventsOn as classesOnDate, shortRoom } from "../assets/timetable-core.js";
 import * as S from "./store.js";
+import * as cloud from "./cloud.js";
+import { SYNC_KEY } from "./sync.js";
+import { createSyncer } from "./syncer.js";
+import { firebaseConfig } from "./firebase-config.js";
 
 const $ = (sel) => document.querySelector(sel);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -17,9 +21,22 @@ let now = malaysiaNow();
 let selected = now.iso;
 let timetable = null;
 
+// a change made here: save it, queue it for sync
 const commit = (next) => {
+  const prev = state;
   state = next;
   S.save(storage, state);
+  syncer.localChange(prev, next);
+  if (prev.settings.classSource !== next.settings.classSource) loadTimetable();
+  render();
+};
+
+// a change that came from another device
+const setRemoteState = (next) => {
+  const prev = state;
+  state = next;
+  S.save(storage, state);
+  if (prev.settings.classSource !== next.settings.classSource) loadTimetable();
   render();
 };
 
@@ -35,15 +52,24 @@ async function loadTimetable() {
     if (cached) timetable = JSON.parse(cached);
   } catch {}
   render();
-  try {
-    const res = await fetch(`../data/${cls}.json`, { cache: "no-cache" });
-    if (!res.ok) return;
-    timetable = await res.json();
+  // next to the timetable site; the packaged apps (APK / EXE) read it from the site instead
+  for (const url of [`../data/${cls}.json`, `https://ningloke.github.io/ling/data/${cls}.json`]) {
+    try {
+      const res = await fetch(url, { cache: "no-cache" });
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (state.settings.classSource !== cls) return; // switched class meanwhile
+      if (!Array.isArray(data?.events)) continue;
+      timetable = data;
+      break;
+    } catch {}
+  }
+  if (timetable?.class === cls) {
     try {
       storage?.setItem(cacheKey, JSON.stringify(timetable));
     } catch {}
-    render();
-  } catch {}
+  }
+  render();
 }
 
 function classesOn(iso) {
@@ -237,10 +263,9 @@ form.querySelector("[data-close]").addEventListener("click", () => editor.close(
 
 const settings = $("#settings");
 $("#class-source").addEventListener("change", (e) => {
-  state = { ...state, settings: { ...state.settings, classSource: e.target.value } };
-  S.save(storage, state);
-  loadTimetable();
+  commit({ ...state, settings: { ...state.settings, classSource: e.target.value } });
 });
+$("#settings-done").addEventListener("click", () => settings.close());
 $("#export").addEventListener("click", () => {
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
   const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `计划备份-${now.iso}.json` });
@@ -254,7 +279,6 @@ $("#import").addEventListener("change", async (e) => {
     const data = JSON.parse(await file.text());
     if (!confirm("导入会替换这台设备上现有的全部资料，确定吗？")) return;
     commit(S.normalize(data));
-    loadTimetable();
     settings.close();
   } catch {
     alert("这个文件读不出来，确认是「导出备份」生成的 .json 吗？");
@@ -277,6 +301,7 @@ document.addEventListener("click", (e) => {
   else if (t.dataset.edit) return openEditor(t.dataset.edit, t.dataset.id);
   else if (t.hasAttribute("data-open-settings")) {
     $("#class-source").value = state.settings.classSource || "";
+    renderSync(syncer.status);
     return settings.showModal();
   }
   render();
@@ -287,6 +312,8 @@ window.addEventListener("storage", (e) => {
   if (e.key === S.STORAGE_KEY) {
     state = S.load(storage);
     render();
+  } else if (e.key === SYNC_KEY) {
+    syncer.reloadMeta();
   }
 });
 
@@ -298,6 +325,143 @@ setInterval(() => {
   lastDay = n.iso;
   render();
 }, 30_000);
-document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && render());
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible") return;
+  render();
+  syncer.retry();
+});
+
+// ---------- cloud sync ----------
+
+// ?emulator: talk to the local Firebase emulators instead (for testing; see SETUP.md)
+const useEmulator = new URLSearchParams(location.search).has("emulator");
+const syncConfig = useEmulator ? { apiKey: "demo-key", authDomain: "demo-planner.firebaseapp.com", projectId: "demo-planner", appId: "demo" } : firebaseConfig;
+// Google sign-in only works in a real browser, not inside a packaged app's web view
+const inBrowser = /^https?:$/.test(location.protocol) && !window.Capacitor && !window.__TAURI__ && !/Electron/.test(navigator.userAgent);
+const syncer = createSyncer({ cloud, storage, getState: () => state, setState: setRemoteState, onStatus: renderSync });
+let connecting = false;
+
+async function startSync() {
+  if (!syncConfig || connecting || cloud.isConnected()) return;
+  connecting = true;
+  renderSync(syncer.status);
+  try {
+    await cloud.connect(syncConfig, { emulator: useEmulator });
+    cloud.onUser((user) => syncer.setUser(user));
+  } catch {
+    // Firebase couldn't load (offline?): everything still works on this device, try again when back online
+    renderSync({ ...syncer.status, mode: "offline", error: "" });
+  } finally {
+    connecting = false;
+  }
+}
+
+const timeAgo = (ms) => {
+  const s = Math.max(0, (Date.now() - ms) / 1000);
+  if (s < 60) return "刚刚";
+  if (s < 3600) return `${Math.floor(s / 60)} 分钟前`;
+  return `${Math.floor(s / 3600)} 小时前`;
+};
+
+function renderSync(status) {
+  const pill = $("#sync-pill");
+  pill.hidden = !syncConfig;
+  const connected = cloud.isConnected();
+  const mode = !connected && status.mode === "off" ? "connecting" : status.mode;
+  const waiting = status.pending ? ` · ${status.pending} 项待上传` : "";
+  const label = {
+    connecting: "连接中",
+    off: "连接中",
+    "signed-out": "未登录",
+    syncing: "同步中",
+    synced: "已同步",
+    offline: `离线${waiting}`,
+    error: "同步出错",
+  }[mode];
+  pill.dataset.mode = mode;
+  pill.textContent = label || "";
+  pill.setAttribute("aria-label", `云同步：${label}，点这里打开设置`);
+
+  $("#sync-unconfigured").hidden = !!syncConfig;
+  $("#login-form").hidden = !syncConfig || !!status.user;
+  $("#sync-account").hidden = !status.user;
+  $("#google").hidden = !inBrowser;
+  if (status.user) {
+    $("#account-email").textContent = status.user.email || status.user.name || "已登录";
+    const detail = {
+      syncing: `正在同步…${waiting}`,
+      synced: `已同步${status.lastSync ? ` · ${timeAgo(status.lastSync)}` : ""}。手机和电脑登录同一个账号就会自动同步。`,
+      offline: `现在离线${waiting}。改动先存在这台设备上，连上网会自动上传。`,
+      error: `同步出错：${status.error}${waiting}`,
+    }[status.mode];
+    $("#sync-detail").textContent = detail || "";
+  }
+}
+
+// sign in / sign up / reset password
+const loginForm = $("#login-form");
+const loginError = $("#login-error");
+loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const mode = e.submitter?.dataset.auth || "signin";
+  const email = loginForm.email.value.trim();
+  const password = loginForm.password.value;
+  loginError.textContent = "";
+  for (const b of loginForm.querySelectorAll("button")) b.disabled = true;
+  try {
+    await startSync();
+    if (!cloud.isConnected()) throw { code: "auth/network-request-failed" };
+    await (mode === "signup" ? cloud.signUp(email, password) : cloud.signIn(email, password));
+    loginForm.password.value = "";
+  } catch (error) {
+    loginError.textContent = cloud.explainError(error);
+  } finally {
+    for (const b of loginForm.querySelectorAll("button")) b.disabled = false;
+  }
+});
+$("#forgot").addEventListener("click", async () => {
+  const email = loginForm.email.value.trim();
+  if (!email) {
+    loginError.textContent = "先在上面填好邮箱，再点「忘记密码」";
+    return;
+  }
+  try {
+    await startSync();
+    await cloud.resetPassword(email);
+    loginError.textContent = `重设密码的邮件已寄到 ${email}`;
+  } catch (error) {
+    loginError.textContent = cloud.explainError(error);
+  }
+});
+$("#google").addEventListener("click", async () => {
+  loginError.textContent = "";
+  try {
+    await startSync();
+    await cloud.signInGoogle();
+  } catch (error) {
+    loginError.textContent = cloud.explainError(error);
+  }
+});
+$("#sync-now").addEventListener("click", () => syncer.retry());
+$("#sign-out").addEventListener("click", async () => {
+  const n = syncer.status.pending;
+  const message = n
+    ? `还有 ${n} 项改动没上传到云端，退出后会丢失。确定退出吗？`
+    : "退出后，这台设备上的资料会清空（云端的还在，再登录就会回来）。确定退出吗？";
+  if (!confirm(message)) return;
+  syncer.reset();
+  await cloud.signOut().catch(() => {});
+  const classSource = state.settings.classSource;
+  state = { ...S.emptyState(), settings: { ...S.emptyState().settings, classSource } };
+  S.save(storage, state);
+  render();
+});
+
+window.addEventListener("online", () => {
+  startSync();
+  syncer.retry();
+});
 
 loadTimetable();
+renderSync(syncer.status);
+startSync();
