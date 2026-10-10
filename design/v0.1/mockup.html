@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+* { box-sizing:border-box; margin:0; }
+body { background:#d9d9de; font-family:-apple-system,"SF Pro Display","PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif; padding:30px; }
+.wrap { display:flex; gap:34px; align-items:flex-start; }
+.sk { width:400px; }
+.cap { margin:0 4px 14px; color:#1c1c20; }
+.cap h2 { font-size:21px; font-weight:600; }
+.cap h2 b { display:inline-grid; place-items:center; width:26px; height:26px; margin-right:8px; border-radius:50%; background:#1c1c20; color:#fff; font-size:14px; vertical-align:2px; }
+.cap p { margin-top:6px; font-size:14px; color:#4b4b52; line-height:1.6; }
+.phone { position:relative; width:400px; height:800px; border-radius:42px; border:10px solid #161616; overflow:hidden; box-shadow:0 30px 60px -30px rgba(0,0,0,.45); }
+.mono { font-family:"SF Mono","JetBrains Mono",Menlo,Consolas,monospace; }
+
+/* ---------- the >_ wallpaper ---------- */
+.wall { position:absolute; inset:0; overflow:hidden;
+  background:
+    radial-gradient(55% 35% at 85% 8%, var(--glow1), transparent 70%),
+    radial-gradient(60% 40% at 0% 95%, var(--glow2), transparent 70%),
+    radial-gradient(120% 80% at 50% 40%, #15171e 0%, #0b0c10 70%); }
+.wall::before { /* faint dot grid */
+  content:""; position:absolute; inset:0; opacity:.35;
+  background-image:radial-gradient(rgba(255,255,255,.18) 1px, transparent 1.2px); background-size:18px 18px;
+  -webkit-mask:radial-gradient(90% 70% at 50% 60%, #000, transparent); mask:radial-gradient(90% 70% at 50% 60%, #000, transparent); }
+.pair { position:absolute; left:24px; bottom:30px; display:grid; grid-template-columns:auto auto; align-items:end; column-gap:12px; row-gap:8px; }
+.pair .spark { width:52px; height:52px; margin-bottom:4px; }
+.pair .spark svg { width:100%; height:100%; overflow:visible; }
+.pair .names { grid-column:1 / span 2; font-family:"SF Mono","JetBrains Mono",Menlo,monospace; font-size:11px; letter-spacing:.06em; color:rgba(255,255,255,.45); }
+.pair .names b { font-weight:500; }
+.prompt { position:relative; font-family:"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  font-size:64px; font-weight:800; letter-spacing:-.06em; line-height:1; white-space:nowrap; }
+.wall::after { /* a big soft glow in the same colours behind the cards, for the glass to pick up */
+  content:""; position:absolute; left:-10%; right:-10%; top:38%; height:42%; background:var(--grad); filter:blur(70px); opacity:.28; border-radius:50%; }
+.prompt .fill { background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.prompt .halo { position:absolute; inset:0; background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; filter:blur(28px); opacity:.85; }
+.prompt .cursor { animation:none; }
+
+.violet { --grad:linear-gradient(120deg,#2b8fff 0%,#7a5cff 55%,#e06bff 100%); --glow1:rgba(43,143,255,.35); --glow2:rgba(122,92,255,.32); --accent:#5aa7ff; --accent2:#9b7bff; }
+.green  { --grad:linear-gradient(120deg,#10a37f 0%,#3ddc97 60%,#b8ffdf 100%); --glow1:rgba(16,163,127,.32); --glow2:rgba(61,220,151,.22); --accent:#3ddc97; --accent2:#10a37f; }
+
+/* ---------- p1 glass ---------- */
+.scr { position:absolute; inset:0; padding:34px 18px 0; color:#fff; }
+.g { position:relative; border-radius:24px; background:rgba(22,24,34,.38);
+  -webkit-backdrop-filter:blur(16px) saturate(170%); backdrop-filter:blur(16px) saturate(170%);
+  box-shadow:inset 1.5px 1.5px 0 rgba(255,140,140,.18), inset -1.5px -1.5px 0 rgba(120,180,255,.24), inset 0 0 16px rgba(255,255,255,.08), 0 16px 32px -14px rgba(0,0,0,.6); }
+.g::before { content:""; position:absolute; inset:0; border-radius:inherit; padding:1.2px; pointer-events:none;
+  background:linear-gradient(140deg, rgba(255,255,255,.6), rgba(255,255,255,.08) 35%, rgba(255,255,255,.03) 65%, rgba(255,255,255,.4) 120%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; }
+.g::after { content:""; position:absolute; left:8%; right:8%; top:1px; height:38%; border-radius:24px 24px 50% 50%; pointer-events:none;
+  background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,0)); }
+.g > * { position:relative; z-index:1; }
+.fg2 { color:rgba(255,255,255,.62); }
+
+.date { font-size:12.5px; color:rgba(255,255,255,.55); letter-spacing:.02em; }
+.date b { color:var(--accent); font-weight:500; }
+.big { font-size:38px; font-weight:700; line-height:1.1; margin-top:4px; }
+.big span { font-size:16px; font-weight:400; color:rgba(255,255,255,.55); margin-left:8px; }
+.big i { font-style:normal; color:var(--accent); font-family:"SF Mono",Menlo,monospace; font-weight:600; margin-left:2px; }
+.week { display:grid; grid-template-columns:repeat(7,1fr); margin-top:14px; padding:4px; }
+.week div { text-align:center; font-size:12px; color:rgba(255,255,255,.55); padding:5px 0; border-radius:16px; position:relative; }
+.week div b { display:block; font-size:16px; font-weight:500; color:#fff; font-family:"SF Mono",Menlo,monospace; }
+.week .on { background:linear-gradient(140deg, color-mix(in srgb, var(--accent) 45%, transparent), color-mix(in srgb, var(--accent2) 30%, transparent)); box-shadow:inset 0 0 0 1px rgba(255,255,255,.35); }
+.week .d::after { content:""; position:absolute; bottom:2px; left:50%; width:3px; height:3px; margin-left:-1.5px; border-radius:50%; background:var(--accent); }
+.now { margin-top:12px; padding:14px 16px; }
+.now .k { font-size:12px; color:rgba(255,255,255,.6); letter-spacing:.04em; display:flex; align-items:center; gap:6px; }
+.now .k::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); }
+.now .row { display:flex; align-items:baseline; margin-top:4px; }
+.now .tt { font-size:20px; font-weight:600; }
+.now .r { margin-left:auto; font-size:15px; font-weight:600; font-family:"SF Mono",Menlo,monospace; }
+.now .r small { font-weight:400; color:rgba(255,255,255,.55); margin-left:3px; font-family:-apple-system,sans-serif; }
+.now .s { font-size:13px; color:rgba(255,255,255,.6); margin-top:2px; }
+.bar { height:4px; border-radius:4px; background:rgba(255,255,255,.14); margin-top:10px; overflow:hidden; }
+.bar i { display:block; height:100%; width:33%; border-radius:4px; background:var(--grad); }
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
+.w { min-height:132px; padding:14px; display:flex; flex-direction:column; }
+.w .lbl { font-size:13px; color:rgba(255,255,255,.66); display:flex; align-items:center; gap:7px; }
+.w .lbl i { width:8px; height:8px; border-radius:50%; background:var(--c); }
+.w .n { font-size:34px; font-weight:700; margin-top:auto; line-height:1; font-family:"SF Mono",Menlo,monospace; letter-spacing:-.03em; }
+.w .n small { font-size:14px; font-weight:400; color:rgba(255,255,255,.55); margin-left:3px; font-family:-apple-system,sans-serif; }
+.w .line { font-size:12px; color:rgba(255,255,255,.58); margin-top:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.w .line.warn { color:#ff8f86; }
+.fab { position:absolute; right:20px; bottom:24px; width:56px; height:56px; border-radius:50%; display:grid; place-items:center; font-size:28px; font-weight:300; color:#fff; }
+.fab::before { background:var(--grad) !important; padding:1.5px !important; }
+
+.pr { position:relative; font-family:"SF Mono","JetBrains Mono",Menlo,Consolas,monospace; font-weight:800; letter-spacing:-.06em; line-height:1; white-space:nowrap; }
+.pr .fill { background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.pr .halo { position:absolute; inset:0; background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; filter:blur(10px); opacity:.8; }
+.sp svg { width:100%; height:100%; overflow:visible; display:block; }
+.nm { font-family:"SF Mono",Menlo,monospace; letter-spacing:.06em; color:rgba(255,255,255,.42); }
+/* A: badge in the header */
+.badge { position:absolute; top:44px; right:20px; z-index:3; display:flex; align-items:center; gap:8px; padding:7px 12px 7px 11px; border-radius:999px; }
+.badge .pr { font-size:17px; } .badge .sp { width:17px; height:17px; }
+/* B: credit line at the bottom centre */
+.credit { position:absolute; left:0; right:0; bottom:36px; display:flex; flex-direction:column; align-items:center; gap:6px; }
+.credit .row { display:flex; align-items:center; gap:12px; } .credit .pr { font-size:30px; } .credit .sp { width:26px; height:26px; }
+.credit .nm { font-size:10.5px; }
+/* C: faint watermark behind the cards */
+.mark { position:absolute; left:50%; top:81%; transform:translate(-50%,-50%); display:flex; align-items:center; gap:30px; opacity:.16; }
+.mark .pr { font-size:150px; } .mark .sp { width:130px; height:130px; }
+
+/* B moved to the top right, opposite 今天 */
+.credit.tr { left:auto; right:22px; top:40px; bottom:auto; align-items:center; gap:5px; z-index:3; }
+.credit.tr .pr { font-size:26px; } .credit.tr .sp { width:22px; height:22px; } .credit.tr .row { gap:10px; }
+.credit.tr .nm { font-size:10px; }
+
+/* ---------- bottom AI bar ---------- */
+.askbar { position:absolute; left:16px; right:86px; bottom:24px; height:56px; border-radius:28px; display:flex; align-items:center; gap:10px; padding:0 8px 0 16px; z-index:6; }
+.askbar .ph { flex:1; font-size:14px; color:rgba(255,255,255,.5); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.askbar .mic { width:40px; height:40px; border-radius:50%; display:grid; place-items:center; background:rgba(255,255,255,.08); }
+.askbar .mic svg { width:18px; height:18px; }
+.askbar .ai { width:22px; height:22px; border-radius:7px; display:grid; place-items:center; background:var(--grad); font-size:12px; color:#fff; font-weight:700; }
+.phone .fab { bottom:24px; right:16px; width:56px; height:56px; z-index:6; }
+/* ---------- half-height in-app browser with chatgpt.com ---------- */
+.dim { position:absolute; inset:0; background:rgba(5,6,10,.35); z-index:7; }
+.cg { position:absolute; left:0; right:0; bottom:0; height:52%; z-index:8; background:#212121; border-radius:22px 22px 0 0; box-shadow:0 -20px 50px -20px rgba(0,0,0,.7); overflow:hidden; color:#ececec; font-size:14px; }
+.cg .grab { width:36px; height:4px; border-radius:2px; background:rgba(255,255,255,.25); margin:7px auto 0; }
+.cg .url { display:flex; align-items:center; gap:8px; padding:6px 14px 8px; border-bottom:1px solid rgba(255,255,255,.08); font-size:12.5px; color:rgba(255,255,255,.65); }
+.cg .url b { color:#fff; font-weight:500; }
+.cg .url .x { margin-left:auto; font-size:16px; color:rgba(255,255,255,.6); }
+.cg .msgs { padding:12px 14px; display:flex; flex-direction:column; gap:10px; }
+.cg .me { align-self:flex-end; max-width:78%; background:#303030; border-radius:18px; padding:9px 13px; }
+.cg .bot { max-width:92%; line-height:1.55; }
+.cg .bot p + p { margin-top:6px; }
+.cg .lnk { display:inline-flex; align-items:center; gap:6px; margin-top:6px; padding:7px 11px; border-radius:12px; background:rgba(90,167,255,.12); color:#8fc1ff; border:1px solid rgba(90,167,255,.35); font-size:13px; }
+.cg .comp { position:absolute; left:12px; right:12px; bottom:14px; height:46px; border-radius:23px; background:#303030; display:flex; align-items:center; padding:0 6px 0 16px; color:rgba(255,255,255,.45); font-size:14px; }
+.cg .comp i { margin-left:auto; width:34px; height:34px; border-radius:50%; background:#fff; color:#111; display:grid; place-items:center; font-style:normal; font-weight:700; }
+.tap { position:absolute; width:34px; height:34px; border-radius:50%; border:2px solid #fff; background:rgba(255,255,255,.25); box-shadow:0 0 0 6px rgba(255,255,255,.12); z-index:9; }
+/* ---------- confirm card ---------- */
+.confirm { position:absolute; left:16px; right:16px; bottom:92px; z-index:7; padding:14px 16px; border-radius:24px; color:#fff; background:rgba(24,26,42,.9) !important; }
+.confirm .k { font-size:12px; color:rgba(255,255,255,.6); display:flex; align-items:center; gap:6px; }
+.confirm .k .sp { width:14px; height:14px; }
+.confirm .t { font-size:18px; font-weight:600; margin-top:4px; }
+.confirm .s { font-size:13px; color:rgba(255,255,255,.65); margin-top:2px; }
+.confirm .btns { display:flex; gap:10px; margin-top:12px; }
+.confirm .btns span { flex:1; text-align:center; padding:10px 0; border-radius:14px; font-size:14px; background:rgba(255,255,255,.08); }
+.confirm .btns .ok { background:var(--grad); color:#fff; font-weight:600; }
+.blurcards { filter:blur(1.5px); opacity:.55; }
+
+/* ---------- ChatGPT trimmed down to just the conversation, in our glass ---------- */
+.pane { position:absolute; left:8px; right:8px; bottom:8px; height:63%; z-index:8; border-radius:30px; overflow:hidden; color:#f2f2f7;
+  background:rgba(18,20,34,.82) !important; }
+.pane .grab { width:38px; height:4px; border-radius:2px; background:rgba(255,255,255,.28); margin:9px auto 4px; }
+.pane .who { text-align:center; font-size:11px; letter-spacing:.08em; color:rgba(255,255,255,.4); }
+.pane .msgs { padding:10px 16px 0; display:flex; flex-direction:column; gap:10px; font-size:14px; line-height:1.55; }
+.pane .me { align-self:flex-end; max-width:80%; padding:8px 13px; border-radius:18px 18px 6px 18px; background:linear-gradient(135deg, rgba(43,143,255,.55), rgba(122,92,255,.55)); }
+.pane .bot { max-width:92%; }
+.pane .img { width:150px; height:190px; border-radius:16px; position:relative; overflow:hidden; box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);
+  background:radial-gradient(60% 40% at 80% 15%, rgba(43,143,255,.6), transparent 70%), radial-gradient(60% 45% at 10% 90%, rgba(122,92,255,.55), transparent 70%), #0d0e14; }
+.pane .img b { position:absolute; left:16px; bottom:18px; font-family:"SF Mono",Menlo,monospace; font-size:54px; font-weight:800; letter-spacing:-.06em;
+  background:linear-gradient(120deg,#2b8fff,#7a5cff 55%,#e06bff); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.pane .imgrow { display:flex; align-items:flex-end; gap:8px; }
+.pane .chip { display:inline-flex; align-items:center; gap:5px; padding:6px 10px; border-radius:12px; font-size:12px; background:rgba(255,255,255,.08); color:rgba(255,255,255,.8); }
+.pane .lnk { display:inline-flex; align-items:center; gap:6px; margin-top:6px; padding:8px 12px; border-radius:14px; font-size:13px;
+  background:rgba(90,167,255,.14); color:#9cc9ff; box-shadow:inset 0 0 0 1px rgba(90,167,255,.4); }
+.pane .comp { position:absolute; left:12px; right:12px; bottom:12px; height:52px; border-radius:26px; display:flex; align-items:center; gap:8px; padding:0 6px 0 14px;
+  background:rgba(255,255,255,.08); box-shadow:inset 0 0 0 1px rgba(255,255,255,.14); color:rgba(255,255,255,.45); font-size:14px; }
+.pane .comp .plus { font-size:20px; color:rgba(255,255,255,.6); }
+.pane .comp .mic2 { margin-left:auto; width:38px; height:38px; border-radius:50%; display:grid; place-items:center; background:rgba(255,255,255,.08); }
+.pane .comp .send { width:38px; height:38px; border-radius:50%; display:grid; place-items:center; background:var(--grad); color:#fff; font-weight:700; }
+.pane .comp svg { width:17px; height:17px; }
+.pane::after { display:none; }
+
+/* ---------- panel header: ☰  [聊天|工作]  ✎ ---------- */
+.phdr { display:flex; align-items:center; padding:2px 12px 6px; }
+.phdr .ic { width:36px; height:36px; display:grid; place-items:center; border-radius:12px; color:rgba(255,255,255,.8); }
+.phdr .ic svg { width:19px; height:19px; }
+.phdr .tog { margin:0 auto; display:flex; padding:3px; border-radius:999px; background:rgba(255,255,255,.08); font-size:13px; }
+.phdr .tog span { padding:5px 14px; border-radius:999px; color:rgba(255,255,255,.55); }
+.phdr .tog .on { background:rgba(255,255,255,.9); color:#16171f; }
+/* ---------- composer: +  text  [高⌄] 🎤 (voice) ---------- */
+.comp2 { position:absolute; left:10px; right:10px; bottom:10px; border-radius:24px; padding:8px 8px 8px 14px; background:rgba(255,255,255,.07); box-shadow:inset 0 0 0 1px rgba(255,255,255,.14); }
+.comp2 .txt { font-size:14px; color:rgba(255,255,255,.42); padding:2px 0 8px; }
+.comp2 .row { display:flex; align-items:center; gap:8px; }
+.comp2 .b { height:34px; min-width:34px; border-radius:17px; display:grid; place-items:center; background:rgba(255,255,255,.08); color:rgba(255,255,255,.8); font-size:13px; padding:0 10px; }
+.comp2 .b svg { width:16px; height:16px; }
+.comp2 .sp1 { flex:1; }
+.comp2 .voice { background:var(--grad); }
+.comp2.inline { display:flex; align-items:center; gap:8px; padding:7px 7px 7px 10px; }
+.comp2.inline .txt { flex:1; padding:0; }
+/* ---------- compact schedule (half) ---------- */
+.mini { position:absolute; left:16px; right:16px; top:34px; }
+.mini .hd { display:flex; align-items:baseline; gap:8px; }
+.mini .hd b { font-size:24px; } .mini .hd span { font-size:13px; color:rgba(255,255,255,.55); }
+.mini .wk { display:grid; grid-template-columns:repeat(7,1fr); margin-top:8px; padding:3px; border-radius:18px; }
+.mini .wk div { text-align:center; font-size:11px; color:rgba(255,255,255,.55); padding:3px 0; border-radius:12px; }
+.mini .wk div b { display:block; font-size:14px; color:#fff; font-family:"SF Mono",Menlo,monospace; }
+.mini .wk .on { background:linear-gradient(140deg, color-mix(in srgb, var(--accent) 45%, transparent), color-mix(in srgb, var(--accent2) 30%, transparent)); }
+.mini .nowc { margin-top:8px; padding:10px 14px; border-radius:20px; }
+.mini .nowc .r1 { display:flex; align-items:baseline; } .mini .nowc .r1 b { font-size:16px; } .mini .nowc .r1 i { margin-left:auto; font-style:normal; font-family:"SF Mono",Menlo,monospace; font-size:13px; }
+.mini .nowc .r2 { font-size:12px; color:rgba(255,255,255,.58); margin-top:1px; }
+.mini .nowc .bar { margin-top:7px; }
+.mini .chips { display:flex; gap:6px; margin-top:8px; }
+.mini .chips span { flex:1; text-align:center; padding:7px 0; border-radius:14px; font-size:12px; color:rgba(255,255,255,.8); }
+.mini .chips span em { font-style:normal; font-family:"SF Mono",Menlo,monospace; color:#fff; font-weight:700; margin-left:3px; }
+/* ---------- one-line schedule strip (full) ---------- */
+.strip1 { position:absolute; left:12px; right:12px; top:30px; height:44px; border-radius:22px; display:flex; align-items:center; gap:8px; padding:0 14px; font-size:13px; z-index:9; color:#fff; }
+.strip1 .dot { width:7px; height:7px; border-radius:50%; background:var(--accent); flex:none; }
+.strip1 .s { color:rgba(255,255,255,.6); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.strip1 .chev { margin-left:auto; color:rgba(255,255,255,.6); }
+.sugg { display:flex; gap:8px; padding:0 14px; margin-top:auto; }
+.sugg span { font-size:12px; padding:7px 11px; border-radius:14px; background:rgba(255,255,255,.07); color:rgba(255,255,255,.7); white-space:nowrap; }
+.ratio { position:absolute; right:-2px; z-index:20; font-size:11px; font-family:"SF Mono",Menlo,monospace; color:#fff; background:rgba(210,69,58,.92); padding:3px 7px; border-radius:8px 0 0 8px; }
+.pane::after { display:none; }
+.mini { color:#fff; }
+.phone .g.fab { display:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  
+
+
+<section class="sk" id="r1"><div class="cap"><h2><b>1</b>收起 · 日程 100%</h2><p>平常就是 v0.1。底部输入栏放下你圈的按钮：＋、高、麦克风、语音。往上拉（或点一下）打开 ChatGPT。</p></div>
+    <div class="phone violet"><div class="wall"></div><div class="scr"></div><div class="credit tr"><div class="row"><span class="pr"><span class="halo">&gt;_</span><span class="fill">&gt;_</span></span><span class="sp"><svg viewBox="-60 -60 120 120"><defs><linearGradient id="SG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ee9a7c"/><stop offset="1" stop-color="#d97757"/></linearGradient></defs><g fill="url(#SG)" style="filter:blur(6px);opacity:.55"><rect x="-4.6" y="-52" width="9.2" height="52" rx="4.6" transform="rotate(0)"/><rect x="-4.6" y="-40" width="9.2" height="40" rx="4.6" transform="rotate(37)"/><rect x="-4.6" y="-48" width="9.2" height="48" rx="4.6" transform="rotate(60)"/><rect x="-4.6" y="-36" width="9.2" height="36" rx="4.6" transform="rotate(97)"/><rect x="-4.6" y="-54" width="9.2" height="54" rx="4.6" transform="rotate(120)"/><rect x="-4.6" y="-42" width="9.2" height="42" rx="4.6" transform="rotate(157)"/><rect x="-4.6" y="-50" width="9.2" height="50" rx="4.6" transform="rotate(180)"/><rect x="-4.6" y="-38" width="9.2" height="38" rx="4.6" transform="rotate(217)"/><rect x="-4.6" y="-53" width="9.2" height="53" rx="4.6" transform="rotate(240)"/><rect x="-4.6" y="-41" width="9.2" height="41" rx="4.6" transform="rotate(277)"/><rect x="-4.6" y="-47" width="9.2" height="47" rx="4.6" transform="rotate(300)"/><rect x="-4.6" y="-37" width="9.2" height="37" rx="4.6" transform="rotate(337)"/></g><g fill="url(#SG)"><rect x="-4.6" y="-52" width="9.2" height="52" rx="4.6" transform="rotate(0)"/><rect x="-4.6" y="-40" width="9.2" height="40" rx="4.6" transform="rotate(37)"/><rect x="-4.6" y="-48" width="9.2" height="48" rx="4.6" transform="rotate(60)"/><rect x="-4.6" y="-36" width="9.2" height="36" rx="4.6" transform="rotate(97)"/><rect x="-4.6" y="-54" width="9.2" height="54" rx="4.6" transform="rotate(120)"/><rect x="-4.6" y="-42" width="9.2" height="42" rx="4.6" transform="rotate(157)"/><rect x="-4.6" y="-50" width="9.2" height="50" rx="4.6" transform="rotate(180)"/><rect x="-4.6" y="-38" width="9.2" height="38" rx="4.6" transform="rotate(217)"/><rect x="-4.6" y="-53" width="9.2" height="53" rx="4.6" transform="rotate(240)"/><rect x="-4.6" y="-41" width="9.2" height="41" rx="4.6" transform="rotate(277)"/><rect x="-4.6" y="-47" width="9.2" height="47" rx="4.6" transform="rotate(300)"/><rect x="-4.6" y="-37" width="9.2" height="37" rx="4.6" transform="rotate(337)"/></g></svg></span></div><div class="nm"><b style="color:#8fb4ff;font-weight:500">Codex</b> × <b style="color:#ee9a7c;font-weight:500">Claude</b></div></div><div class="g comp2 inline" style="position:absolute;left:14px;right:14px;bottom:22px;background:rgba(22,24,34,.55)!important;z-index:6"><span class="b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span><span class="txt">问问 ChatGPT…</span><span class="b">高 ⌄</span><span class="b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span><span class="b voice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10v4M10 7v10M14 5v14M18 9v6"/></svg></span></div><span class="ratio" style="bottom:92px">AI 一行</span></div></section><section class="sk" id="r2"><div class="cap"><h2><b>2</b>半屏 · 日程 1/3 ／ AI 2/3</h2><p>打开时的默认高度。日程缩成精简版：日期、七天、此刻、四个数字都还在；下面是 ChatGPT，顶部 ☰ 聊天/工作 ✎，底部 ＋ 高 麦克风 语音。</p></div>
+    <div class="phone violet"><div class="wall"></div><div class="mini"><div class="hd"><b>今天</b><span>周一 · 10/12 · W42</span></div>
+<div class="g wk"><div class="on">一<b>12</b></div><div>二<b>13</b></div><div>三<b>14</b></div><div>四<b>15</b></div><div>五<b>16</b></div><div>六<b>17</b></div><div>日<b>18</b></div></div>
+<div class="g nowc"><div class="r1"><b>Physics 2</b><i>01:20 剩</i></div><div class="r2">此刻 · SK3 102 · 下一个 12:15 吃午饭</div><div class="bar"><i></i></div></div>
+<div class="chips"><span class="g">课程<em>4</em></span><span class="g">行程<em>2</em></span><span class="g">待办<em>3</em></span><span class="g">每日<em>1/3</em></span></div></div><div class="g pane" style="top:262px;height:auto;left:6px;right:6px;bottom:6px"><div class="grab"></div><div class="phdr"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h11M4 17h16"/></svg></span><span class="tog"><span class="on">聊天</span><span>工作</span></span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span></div><div class="msgs" style="padding-top:4px">
+  <div class="me">明天三点去健身，帮我排进去</div>
+  <div class="bot">好～明天下午 3 点后你没课 💪<br><span class="lnk">＋ 加到日程：10/13 周二 15:00 健身房</span></div>
+</div><div class="comp2"><div class="txt">问问 ChatGPT</div><div class="row"><span class="b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span><span class="sp1"></span><span class="b">高 ⌄</span><span class="b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span><span class="b voice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10v4M10 7v10M14 5v14M18 9v6"/></svg></span></div></div></div><span class="ratio" style="top:150px">1/3</span><span class="ratio" style="top:470px">2/3</span></div></section><section class="sk" id="r3"><div class="cap"><h2><b>3</b>全屏 · 日程一行 ／ AI 90%</h2><p>往上拉到顶：日程缩成最上面一行（现在的课、剩多久、下一个），点它就退回半屏。聊长一点、看图片时用。</p></div>
+    <div class="phone violet"><div class="wall"></div><div class="g strip1"><span class="dot"></span><b>Physics 2</b><span class="s">剩 1:20 · 下一个 12:15 吃午饭</span><span class="chev">⌄</span></div><div class="g pane" style="top:84px;height:auto;left:6px;right:6px;bottom:6px;display:flex;flex-direction:column"><div class="grab"></div><div class="phdr"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h11M4 17h16"/></svg></span><span class="tog"><span class="on">聊天</span><span>工作</span></span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span></div><div class="msgs" style="padding-top:4px">
+  <div class="me">这周哪天适合复习 Maths？</div>
+  <div class="bot">看了你的课表：周三下午和周五上午最空。我建议周三 15:00–17:00 先做 Tutorial 作业，周五 9:00 复习 Lecture 笔记。<br><span class="lnk">＋ 加到日程：10/14 周三 15:00 复习 Maths</span></div>
+  <div class="me">好，再提醒我周四交 Physics lab report</div>
+  <div class="bot">没问题！<br><span class="lnk">＋ 加待办：10/15 周四 交 Physics lab report ★</span></div>
+</div><div style="height:110px"></div><div class="comp2"><div class="txt">问问 ChatGPT</div><div class="row"><span class="b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span><span class="sp1"></span><span class="b">高 ⌄</span><span class="b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span><span class="b voice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10v4M10 7v10M14 5v14M18 9v6"/></svg></span></div></div></div><span class="ratio" style="top:46px">一行</span></div></section>
+<template id="screen">
+    <div class="date mono"><b>~/today</b> · 2026-10-12 · W42</div>
+    <div class="big">今天<span>周一</span></div>
+    <div class="g week"><div class="on d">一<b>12</b></div><div class="d">二<b>13</b></div><div class="d">三<b>14</b></div><div class="d">四<b>15</b></div><div class="d">五<b>16</b></div><div>六<b>17</b></div><div>日<b>18</b></div></div>
+    <div class="g now"><div class="k">此刻 · 上课中</div><div class="row"><span class="tt">Physics 2</span><span class="r">01:20<small>剩</small></span></div><div class="s">SK3 102 · 10:00–12:00</div><div class="bar"><i></i></div></div>
+    <div class="grid">
+      <div class="g w" style="--c:var(--accent)"><div class="lbl"><i></i>课程</div><div class="n">4<small>节</small></div><div class="line">下一节 13:00 Programming</div></div>
+      <div class="g w" style="--c:#ff7aa8"><div class="lbl"><i></i>行程</div><div class="n">2<small>项</small></div><div class="line">12:15 和小林吃午饭</div></div>
+      <div class="g w" style="--c:#c9cfdb"><div class="lbl"><i></i>待办</div><div class="n">3<small>项</small></div><div class="line warn">1 项已过期</div></div>
+      <div class="g w" style="--c:var(--accent2)"><div class="lbl"><i></i>每日任务</div><div class="n">1<small>/3</small></div><div class="line">背单词 连续 4 天</div></div>
+    </div>
+    <div class="g fab">+</div>
+  </template>
+
+  
+  
+</div>
+<script>
+const tpl = document.getElementById("screen");
+for (const scr of document.querySelectorAll(".scr")) scr.append(tpl.content.cloneNode(true));
+</script>
+</body>
+</html>
