@@ -5,6 +5,8 @@
 import * as Y from "./sync.js";
 
 const RETRY_MS = [3_000, 10_000, 30_000, 60_000];
+// navigator.onLine is only trustworthy when it says false
+const isOffline = () => typeof navigator !== "undefined" && navigator.onLine === false;
 
 /**
  * createSyncer({ cloud, storage, getState, setState, onStatus, now })
@@ -80,6 +82,12 @@ export function createSyncer({ cloud, storage, getState, setState, onStatus = ()
       again = true;
       return;
     }
+    if (isOffline()) {
+      // don't wait for a transaction to time out: say so now, try again later (or on the "online" event)
+      if (Y.pendingCount(meta)) setStatus({ mode: "offline", error: "" });
+      scheduleRetry();
+      return;
+    }
     flushing = true;
     try {
       do {
@@ -99,8 +107,7 @@ export function createSyncer({ cloud, storage, getState, setState, onStatus = ()
       retries = 0;
       setStatus({ mode: unlisten ? "synced" : "syncing", error: "", lastSync: now() });
     } catch (error) {
-      const offline = typeof navigator !== "undefined" && navigator.onLine === false;
-      setStatus({ mode: offline || /unavailable|network/.test(String(error?.code)) ? "offline" : "error", error: cloud.explainError(error) });
+      setStatus({ mode: isOffline() || /unavailable|network/.test(String(error?.code)) ? "offline" : "error", error: cloud.explainError(error) });
       scheduleRetry();
     } finally {
       flushing = false;
@@ -122,7 +129,7 @@ export function createSyncer({ cloud, storage, getState, setState, onStatus = ()
       meta = Y.recordLocalChanges(meta, changes, stamp());
       saveMeta();
       if (!user) return setStatus({});
-      setStatus({ mode: "syncing" });
+      setStatus({ mode: isOffline() ? "offline" : "syncing" });
       clearTimeout(flushTimer);
       flushTimer = setTimeout(flush, 400);
     },

@@ -457,6 +457,7 @@ $("#sign-out").addEventListener("click", async () => {
   render();
 });
 
+window.addEventListener("offline", () => syncer.retry());
 window.addEventListener("online", () => {
   startSync();
   syncer.retry();
