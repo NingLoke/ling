@@ -1,5 +1,5 @@
 // Planner page: draws the day and handles taps. Rules live in ./store.js.
-import { addDays, daysBetween, dayIndexOf, malaysiaNow, fmtTime, DAY_SHORT_ZH, DAY_NAMES_ZH, TYPE_LABELS_ZH, eventsOn as classesOnDate, shortRoom } from "../assets/timetable-core.js";
+import { addDays, daysBetween, dayIndexOf, malaysiaNow, fmtTime, DAY_SHORT_ZH, DAY_NAMES_ZH, TYPE_LABELS_ZH, eventsOn as classesOnDate, shortRoom, pickNewer } from "../assets/timetable-core.js";
 import * as S from "./store.js";
 import * as cloud from "./cloud.js";
 import { SYNC_KEY } from "./sync.js";
@@ -51,6 +51,8 @@ async function loadTimetable() {
     const cached = storage?.getItem(cacheKey);
     if (cached) timetable = JSON.parse(cached);
   } catch {}
+  // the stand-alone build (scripts/build-planner-app.mjs) carries a copy, so classes show even offline on first open
+  timetable = pickNewer(timetable, window.PLANNER_BUILTIN_TIMETABLES?.[cls]);
   render();
   // next to the timetable site; the packaged apps (APK / EXE) read it from the site instead
   for (const url of [`../data/${cls}.json`, `https://ningloke.github.io/ling/data/${cls}.json`]) {
@@ -60,7 +62,7 @@ async function loadTimetable() {
       const data = await res.json();
       if (state.settings.classSource !== cls) return; // switched class meanwhile
       if (!Array.isArray(data?.events)) continue;
-      timetable = data;
+      timetable = pickNewer(timetable, data);
       break;
     } catch {}
   }

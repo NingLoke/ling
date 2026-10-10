@@ -8,6 +8,9 @@
 import { shouldWrite } from "./sync.js";
 
 const FIREBASE = "./vendor/firebase-12.19.0.js";
+// The first import names the file literally so the stand-alone build (scripts/build-planner-app.mjs) can bundle it.
+// The browser remembers a failed import() for the life of the page, so a retry asks under a new URL.
+const loadFirebase = (attempt) => (attempt ? import(`${FIREBASE}?retry=${attempt}`) : import("./vendor/firebase-12.19.0.js"));
 const CURSOR_SLACK_MS = 10 * 60 * 1000; // re-read the last 10 minutes on reconnect, in case of out-of-order commits
 const PUSH_TIMEOUT_MS = 30_000; // a transaction that hasn't finished by then is treated as "offline" and retried
 
@@ -20,8 +23,7 @@ let attempts = 0;
 /** Load Firebase and connect. `config` is the web app config from the Firebase console. */
 export async function connect(config, { emulator = false } = {}) {
   if (app) return true;
-  // the browser remembers a failed import() for the life of the page, so a retry asks under a new URL
-  fb = await import(attempts++ ? `${FIREBASE}?retry=${attempts}` : FIREBASE);
+  fb = await loadFirebase(attempts++);
   app = fb.initializeApp(config);
   auth = fb.getAuth(app);
   db = fb.getFirestore(app);
