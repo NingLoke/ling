@@ -95,14 +95,14 @@ export function createPlanner({ getNow, openModal, toast = () => {}, onChange = 
   }
 
   function renderList() {
-    const section = $("plan");
-    if (!section) return;
+    if (!$("plan-habits") || !$("plan-todos")) return;
     const today = getNow().iso;
     const iso = shownDate;
     const diff = daysBetween(today, iso);
-    $("plan-date").textContent = diff === 0 ? "今天" : diff === 1 ? "明天" : diff === -1 ? "昨天" : `${formatDateZh(iso)} ${DAY_NAMES_ZH[dayIndexOf(iso)]}`;
+    const dateText = diff === 0 ? "今天" : diff === 1 ? "明天" : diff === -1 ? "昨天" : `${formatDateZh(iso)} ${DAY_NAMES_ZH[dayIndexOf(iso)]}`;
     const { done, total } = S.progress(state, iso, today);
-    $("plan-progress").textContent = total ? `${done}/${total}` : "";
+    if ($("plan-date")) $("plan-date").textContent = dateText;
+    if ($("plan-progress")) $("plan-progress").textContent = total ? `${done}/${total}` : "";
 
     const habits = S.habitsOn(state, iso);
     $("plan-habits").replaceChildren(
@@ -132,6 +132,40 @@ export function createPlanner({ getNow, openModal, toast = () => {}, onChange = 
     renderList();
   }
 
+  /** Everything on a date, for the home cards: my events, the to-do groups, the daily tasks (with streaks). */
+  function summary(iso) {
+    const today = getNow().iso;
+    return {
+      events: eventsOn(iso),
+      todos: S.todosOn(state, iso, today),
+      habits: S.habitsOn(state, iso).map((x) => ({ ...x, streak: S.streak(state, x, today) })),
+    };
+  }
+
+  /** My events after a date, soonest first. */
+  const upcoming = (afterIso, limit = 6) =>
+    state.events
+      .filter((e) => e.date > afterIso)
+      .sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start)
+      .slice(0, limit);
+
+  /** Add a new item (from the AI bar or a ChatGPT link), already checked by the user. */
+  function add(kind, fields) {
+    const item = { ...fields, id: S.newId(), created: Date.now() };
+    if (kind === "habits") {
+      item.days = Array.isArray(fields.days) && fields.days.length ? fields.days : ALL_DAYS;
+      item.from = getNow().iso;
+    }
+    if (kind === "todos") item.due = fields.due || null;
+    commit(S.upsert(state, kind, item));
+    return item.id;
+  }
+  const removeItem = (kind, id) => commit(S.remove(state, kind, id));
+  const setSetting = (name, value) => {
+    if (state.settings[name] === value) return;
+    commit({ ...state, settings: { ...state.settings, [name]: value } });
+  };
+
   // ---------- editor ----------
 
   const editor = $("plan-editor");
@@ -149,7 +183,7 @@ export function createPlanner({ getNow, openModal, toast = () => {}, onChange = 
 
   const roundUp = (minutes) => Math.min(23 * 60, Math.ceil((minutes + 1) / 30) * 30);
 
-  /** defaults: { date, start, end } for a new event */
+  /** defaults for a new item: { title, date, due, start, end, place, star, days } */
   function openEditor(kind = "todos", id = null, defaults = {}) {
     const item = id ? state[kind].find((x) => x.id === id) : null;
     if (id && !item) return;
@@ -159,20 +193,20 @@ export function createPlanner({ getNow, openModal, toast = () => {}, onChange = 
     $("plan-kind").hidden = !!item;
     $("plan-delete").hidden = !item;
     $("plan-form-error").textContent = "";
-    form.title.value = item?.title || "";
-    form.date.value = item ? item.date || item.due || "" : kind === "todos" ? "" : defaults.date || shownDate;
-    form.place.value = item?.place || "";
-    form.star.checked = !!item?.star;
+    form.title.value = item?.title || defaults.title || "";
+    form.date.value = item ? item.date || item.due || "" : kind === "todos" ? defaults.due || "" : defaults.date || shownDate;
+    form.place.value = item?.place || defaults.place || "";
+    form.star.checked = item ? !!item.star : !!defaults.star;
     const now = getNow();
     const start = item?.start ?? defaults.start ?? (form.date.value === now.iso ? roundUp(now.minutes) : 9 * 60);
     const end = item?.end ?? defaults.end ?? Math.min(start + 60, 24 * 60 - 1);
     form.start.value = fmtTime(start);
     form.end.value = fmtTime(end);
-    const days = item?.days || ALL_DAYS;
+    const days = item?.days || defaults.days || ALL_DAYS;
     for (const b of $("plan-days").children) b.setAttribute("aria-pressed", String(days.includes(Number(b.dataset.day))));
     setKind(kind);
     openModal(editor, "planEditor");
-    if (!item) form.title.focus();
+    if (!item && !defaults.title) form.title.focus();
   }
 
   $("plan-kind").addEventListener("click", (e) => {
@@ -412,7 +446,6 @@ export function createPlanner({ getNow, openModal, toast = () => {}, onChange = 
     if (document.visibilityState === "visible") syncer.retry();
   });
 
-  for (const id of ["plan-add", "plan-fab"]) $(id)?.addEventListener("click", () => openEditor("todos"));
   $("plan-gear").addEventListener("click", openSettings);
 
   renderSync(syncer.status);
@@ -421,6 +454,15 @@ export function createPlanner({ getNow, openModal, toast = () => {}, onChange = 
   return {
     eventsOn,
     showDate,
+    summary,
+    upcoming,
+    add,
+    removeItem,
+    items: (kind) => state[kind].slice(),
+    get settings() {
+      return { ...state.settings };
+    },
+    setSetting,
     openEditor,
     openSettings,
     get busy() {
