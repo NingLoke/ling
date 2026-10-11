@@ -15,6 +15,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const dist = path.join(root, "dist");
 const out = path.join(dist, "timetable-ling");
 const work = path.join(dist, ".build");
+const windows = process.platform === "win32";
 const STAMP = /(["'])(\.\/(?:assets\/)?[\w-]+\.js)\?v=[0-9a-f]*\1/g; // "./x.js?v=abc" -> "./x.js" (esbuild wants plain paths)
 const unstamp = (code) => code.replace(STAMP, "$1$2$1");
 
@@ -32,9 +33,9 @@ for (const name of await readdir(path.join(root, "assets"))) {
 await cp(path.join(root, "assets", "vendor", "firebase-12.19.0"), path.join(work, "assets", "vendor", "firebase-12.19.0"), { recursive: true });
 await writeFile(path.join(work, "page.js"), unstamp(match[1]));
 const bundle = execFileSync(
-  "npx",
+  windows ? "npx.cmd" : "npx",
   ["--yes", "esbuild@0.25.10", "page.js", "--bundle", "--format=iife", "--minify", "--target=es2020", "--legal-comments=eof", "--log-level=error"],
-  { cwd: work, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+  { cwd: work, shell: windows, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
 );
 await rm(work, { recursive: true, force: true });
 
@@ -77,5 +78,9 @@ await writeFile(
 
 // 3. a zip next to it, for downloading
 await rm(path.join(dist, "timetable-ling.zip"), { force: true });
-execFileSync("zip", ["-qr", "timetable-ling.zip", "timetable-ling"], { cwd: dist });
+if (windows) {
+  execFileSync("tar.exe", ["-a", "-cf", "timetable-ling.zip", "timetable-ling"], { cwd: dist });
+} else {
+  execFileSync("zip", ["-qr", "timetable-ling.zip", "timetable-ling"], { cwd: dist });
+}
 console.log(`built ${path.relative(root, out)}/ and dist/timetable-ling.zip`);

@@ -2,7 +2,7 @@
 <html lang="zh-CN" data-theme="dark" data-glass="grey">
 <head>
 <meta charset="UTF-8">
-<meta name="code-version" content="176c7eba6a1e">
+<meta name="code-version" content="02b442446386">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>2E3 课表</title>
 <meta name="description" content="Curtin Malaysia 2E3 课表，加上每日任务、行程和待办：今天上什么课、要做什么。">
@@ -560,6 +560,56 @@ html.detail-open { overflow: hidden; }
 @keyframes pulse-op { 50% { opacity: .35; } }
 .ai-send { background: var(--grad); color: #fff; box-shadow: 0 6px 16px -8px rgba(122, 92, 255, .9); }
 .ai-send:hover { background: var(--grad); filter: brightness(1.1); }
+
+/* Compact the planner as the native ChatGPT sheet grows. */
+html[data-chatgpt-panel="half"], html[data-chatgpt-panel="full"] { overflow: hidden; }
+html[data-chatgpt-panel="half"] .app, html[data-chatgpt-panel="full"] .app { display: block; }
+html[data-chatgpt-panel="half"] .home, html[data-chatgpt-panel="full"] .home { position: static; }
+html[data-chatgpt-panel="half"] .detail, html[data-chatgpt-panel="full"] .detail { display: none; }
+html[data-chatgpt-panel="half"] .app {
+  box-sizing: border-box; width: 100%; max-width: none; height: 34dvh; margin: 0; overflow: hidden;
+  padding: calc(env(safe-area-inset-top) + 4px) max(12px, env(safe-area-inset-right)) 3px max(12px, env(safe-area-inset-left));
+}
+html[data-chatgpt-panel="half"] .mast { align-items: center; padding: 2px 2px 4px; }
+html[data-chatgpt-panel="half"] .path, html[data-chatgpt-panel="half"] .mark,
+html[data-chatgpt-panel="half"] .strip-head { display: none; }
+html[data-chatgpt-panel="half"] .big { margin: 0; font-size: 24px; line-height: 1.15; }
+html[data-chatgpt-panel="half"] .big small { font-size: 12px; }
+html[data-chatgpt-panel="half"] .strip { margin: 0; padding: 4px 8px; border-radius: 17px; }
+html[data-chatgpt-panel="half"] .day { min-height: 48px; padding: 2px 0 4px; border-radius: 14px; }
+html[data-chatgpt-panel="half"] .day .dn { font-size: 10px; }
+html[data-chatgpt-panel="half"] .day .dd { font-size: 14px; }
+html[data-chatgpt-panel="half"] .now:not([hidden]) { margin: 4px 0 0; padding: 7px 10px; border-radius: 15px; }
+html[data-chatgpt-panel="half"] .now-label, html[data-chatgpt-panel="half"] .now .rooms,
+html[data-chatgpt-panel="half"] .now .bar, html[data-chatgpt-panel="half"] .now .go-row { display: none; }
+html[data-chatgpt-panel="half"] .now-row { gap: 7px; margin: 0; }
+html[data-chatgpt-panel="half"] .now .seal { width: 25px; height: 25px; border-radius: 8px; font-size: 12px; }
+html[data-chatgpt-panel="half"] .now .unit-name h3 { overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+html[data-chatgpt-panel="half"] .now .unit-name .sub { overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+html[data-chatgpt-panel="half"] .now-left { font-size: 12px; }
+html[data-chatgpt-panel="half"] .cards { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; margin-top: 5px; }
+html[data-chatgpt-panel="half"] .w { min-width: 0; min-height: 38px; padding: 4px 5px; flex-direction: row; align-items: center; justify-content: center; gap: 4px; border-radius: 999px; }
+html[data-chatgpt-panel="half"] .w .lbl { gap: 4px; font-size: 10px; white-space: nowrap; }
+html[data-chatgpt-panel="half"] .w .lbl i { width: 6px; height: 6px; }
+html[data-chatgpt-panel="half"] .w .lbl svg, html[data-chatgpt-panel="half"] .w .line { display: none; }
+html[data-chatgpt-panel="half"] .w .n { margin: 0; padding: 0; font-size: 13px; white-space: nowrap; }
+html[data-chatgpt-panel="half"] .w .n small { font-size: 10px; }
+html[data-chatgpt-panel="half"] .ai { display: none; }
+html[data-chatgpt-panel="full"] .app {
+  box-sizing: border-box; width: 100%; max-width: none; height: 10dvh; min-height: 72px; margin: 0; overflow: hidden;
+  padding: calc(env(safe-area-inset-top) + 5px) 12px 0;
+}
+html[data-chatgpt-panel="full"] .mast, html[data-chatgpt-panel="full"] .strip,
+html[data-chatgpt-panel="full"] .cards, html[data-chatgpt-panel="full"] .ai { display: none; }
+html[data-chatgpt-panel="full"] .now { box-sizing: border-box; display: flex; height: 100%; margin: 0; padding: 6px 13px; align-items: center; border-radius: 999px; }
+html[data-chatgpt-panel="full"] .now-label, html[data-chatgpt-panel="full"] .now .rooms,
+html[data-chatgpt-panel="full"] .now .bar, html[data-chatgpt-panel="full"] .now .go-row { display: none; }
+html[data-chatgpt-panel="full"] .panel-now-line { display: flex; width: 100%; min-width: 0; align-items: center; gap: 8px; font-size: 13px; }
+html[data-chatgpt-panel="full"] .panel-now-line i { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+html[data-chatgpt-panel="full"] .panel-now-line b { overflow: hidden; font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
+html[data-chatgpt-panel="full"] .panel-now-line span { overflow: hidden; color: var(--fg-2); text-overflow: ellipsis; white-space: nowrap; }
+html[data-chatgpt-panel="full"] .panel-now-line .panel-next { margin-left: auto; }
+
 .confirm {
   position: fixed; z-index: 40; left: 50%; bottom: calc(env(safe-area-inset-bottom) + var(--ai-h) + 22px + var(--host-inset, 0px));
   width: min(520px, calc(100% - 2 * var(--gutter))); padding: 16px 16px 14px; border-radius: 24px;
@@ -977,7 +1027,9 @@ input[type="range"] { width: 100%; accent-color: var(--accent-2); }
     <label class="look-label" for="look-clarity">透明度<span>磨砂 ← → 通透</span></label>
     <input type="range" id="look-clarity" min="0" max="100" step="5" value="50">
     <h3 class="plan-sub">ChatGPT</h3>
-    <p class="field-hint">底部输入栏：像「明天三点健身」「周五交报告」「每天背单词」这样的话，这里会自己听懂，先问你再加；其他问题会在新分页打开 ChatGPT（用你自己的账号和记忆）。</p>
+    <p class="field-hint" id="gpt-login-hint">打开 ChatGPT，用你原来的网页版账号登录。浏览器会保留登录状态，已登录时可以直接聊天。</p>
+    <div class="form-actions start"><button type="button" class="mini-btn" id="gpt-open">登录 / 打开 ChatGPT</button></div>
+    <p class="field-hint">底部输入栏：像「明天三点健身」「周五交报告」「每天背单词」这样的话，这里会自己听懂，先问你再加；其他问题会打开 ChatGPT，用上面的同一个账号。</p>
     <p class="field-hint">想让 ChatGPT 的回答也能一点就加进来：把下面这段贴到 ChatGPT 的「设置 → 个性化 → 自定义指令」。</p>
     <pre class="gpt-rule" id="gpt-rule"></pre>
     <div class="form-actions start"><button type="button" class="mini-btn" id="gpt-copy">复制这段</button></div>
@@ -1017,10 +1069,20 @@ const store = {
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 // inside the Android app (Capacitor puts window.Capacitor on the page before any script runs)
 const inApp = !!window.Capacitor?.isNativePlatform?.();
-/** A web address outside the page: a new tab on the website; in the app, the phone's browser (or the ChatGPT app). */
-function openExternal(url) {
-  if (inApp) location.assign(url); // Capacitor stops the navigation and hands the address to Android
-  else window.open(url, "_blank", "noopener");
+let panelMode = "closed";
+/** Android embeds ChatGPT in its own WebView; the website uses a new tab. */
+async function openChatGPT(text = "") {
+  if (inApp) {
+    try {
+      await window.Capacitor.nativePromise("ChatGPTPanel", "open", { prompt: text, theme: document.documentElement.dataset.theme });
+    } catch {
+      toast("打开 ChatGPT 面板失败，请关闭后重试。");
+      return false;
+    }
+  } else {
+    window.open(text ? `${CHATGPT}?q=${encodeURIComponent(text)}` : CHATGPT, "_blank", "noopener");
+  }
+  return true;
 }
 
 // ?now=2026-10-05T08:30 pretends it is that Malaysia time (for testing)
@@ -1159,6 +1221,21 @@ function renderHeader(now) {
 const SOON = 30; // minutes before a class when the card shows up
 function renderNow(now) {
   const card = $("now");
+  if (panelMode === "full") {
+    const iso = selectedIso(now);
+    const classes = data ? core.eventsOn(data, iso) : [];
+    const current = iso === now.iso ? classes.find((event) => now.minutes >= event.start && now.minutes < event.end) : null;
+    const next = current ? classes.find((event) => event.start >= current.end)
+      : iso === now.iso ? classes.find((event) => event.start > now.minutes) : classes[0];
+    const event = current || next;
+    card.hidden = false;
+    card.replaceChildren(h("div", { class: "panel-now-line" },
+      h("i", { class: current ? "pulse" : "", "aria-hidden": "true" }),
+      h("b", null, event ? unitOf(event.unit).short : "课表"),
+      h("span", null, current ? `剩 ${core.fmtTime(Math.ceil(current.end - now.minutes))}` : next ? `下一节 ${core.fmtTime(next.start)}` : data ? "今天没课" : "课表载入中"),
+      current && next ? h("span", { class: "panel-next" }, `下一个 ${core.fmtTime(next.start)} ${unitOf(next.unit).short}`) : null));
+    return;
+  }
   const s = data ? core.currentStatus(data, now) : null;
   const show = !!s && selectedIso(now) === now.iso && (s.kind === "live" || (s.kind === "next" && s.minutesUntil <= SOON));
   card.hidden = !show;
@@ -1884,6 +1961,7 @@ function renderAll() {
   const now = getNow();
   if (!data) {
     renderHeader(now);
+    renderNow(now);
     renderCards(now);
     return;
   }
@@ -1894,6 +1972,13 @@ function renderAll() {
   renderSchedule(now);
   renderFooter(now);
 }
+
+window.addEventListener("planner:chatgpt-panel", (event) => {
+  panelMode = ["half", "full"].includes(event.detail) ? event.detail : "closed";
+  if (panelMode === "closed") delete document.documentElement.dataset.chatgptPanel;
+  else document.documentElement.dataset.chatgptPanel = panelMode;
+  renderAll();
+});
 
 function renderProblem() {
   $("now").hidden = false;
@@ -2122,7 +2207,7 @@ function findForDelete({ query, date }) {
   return null;
 }
 
-$("ai").addEventListener("submit", (event) => {
+$("ai").addEventListener("submit", async (event) => {
   event.preventDefault();
   const input = $("ai-input");
   const text = input.value.trim();
@@ -2142,9 +2227,7 @@ $("ai").addEventListener("submit", (event) => {
     showConfirm({ action: "delete", ...hit, source: "typed" });
     return;
   }
-  // a question: ChatGPT in a new tab, signed in with your own account (memory, models, pictures)
-  openExternal(text ? `${CHATGPT}?q=${encodeURIComponent(text)}` : CHATGPT);
-  input.value = "";
+  if (await openChatGPT(text) && input.value.trim() === text) input.value = "";
 });
 $("ai-plus").addEventListener("click", () => newItem(detailOpen() || wide.matches ? PANE_KIND[pane] : "todos"));
 
@@ -2184,6 +2267,12 @@ if (Speech && !inApp) {
   });
 }
 
+$("gpt-open").addEventListener("click", () => openChatGPT());
+if (inApp) {
+  $("gpt-open").textContent = "打开内置 ChatGPT";
+  $("gpt-login-hint").textContent = "ChatGPT 网页在 App 的下方面板里，可以全屏或收起。Google 登录不能在内嵌页完成。先在浏览器用 Google 登录同一账号，到 ChatGPT「设置 → 账户」查看能否添加单独的 ChatGPT 密码；若可以，回 App 用同一 Gmail 地址和这个新密码登录（不是 Google 密码）。底部提问会开启新对话；续聊请用面板里 ChatGPT 自己的输入框。";
+}
+
 // the instructions to paste into ChatGPT, so its answers carry links back here
 $("gpt-rule").textContent = [
   "我有一个自己的课表 App，用来记行程、待办和每日任务。当我请你帮我安排、提醒或规划事情时，在回答最后为每一项附上一个链接，我点一下就能加进去（App 会先让我确认）：",
@@ -2210,6 +2299,12 @@ $("gpt-copy").addEventListener("click", async (event) => {
 });
 
 /** A link from ChatGPT (…/?add=event&title=…): ask before adding, then tidy the address. */
+function showChatGPTAddLink(link) {
+  if (!link) return;
+  if (link.error) toast(link.error);
+  else showConfirm({ action: "add", ...link, source: "chatgpt" });
+}
+
 function importFromLink() {
   const params = new URLSearchParams(location.search);
   const link = parseAddLink(params);
@@ -2217,9 +2312,16 @@ function importFromLink() {
   for (const key of ["add", "title", "date", "start", "end", "place", "due", "star", "days"]) params.delete(key);
   const rest = params.toString();
   try { history.replaceState(history.state, "", `${location.pathname}${rest ? `?${rest}` : ""}${location.hash}`); } catch { /* ignore */ }
-  if (link.error) toast(link.error);
-  else showConfirm({ action: "add", ...link, source: "chatgpt" });
+  showChatGPTAddLink(link);
 }
+
+window.addEventListener("planner:chatgpt-action-link", ({ detail }) => {
+  let url;
+  try { url = new URL(detail); } catch { return; }
+  if (url.protocol !== "https:" || url.hostname !== "ningloke.github.io" || url.port
+    || !/^\/ling\/?$/.test(url.pathname)) return;
+  showChatGPTAddLink(parseAddLink(url.searchParams));
+});
 
 document.addEventListener("keydown", (event) => {
   if (event.key !== "Escape" || document.querySelector("dialog[open], .cm, .tt-overlay")) return;

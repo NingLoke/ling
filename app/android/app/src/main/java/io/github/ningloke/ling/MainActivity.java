@@ -9,6 +9,7 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        registerPlugin(ChatGPTPanelPlugin.class);
         super.onCreate(savedInstanceState);
         // Capacitor does nothing on back by itself (the app would just leave). The page pushes a history entry for
         // each dialog, sheet, map layer and the game, so back walks the WebView history: popstate closes what is
