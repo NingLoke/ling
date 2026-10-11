@@ -58,11 +58,30 @@ SWS 把选了哪一科存在服务器会话里，网址里不带科目，所以�
 
 https://github.com/NingLoke/ling/releases/download/app-latest/ling.apk
 
-- 手机打开上面的链接下载，允许「安装未知来源的应用」后安装。新版直接装在旧版上面，资料不会丢（签名固定，用的是仓库里的 `app/android/app/debug.keystore`；只适合自己用）。版本号（versionCode）按编译时间往上加，所以在 GitHub 或自己电脑上编的新版都能装在旧版上面；版本名是 0.3.<Actions 第几次>，自己编的是 0.3.local。
+- 手机打开上面的链接下载，允许「安装未知来源的应用」后安装。新版直接装在旧版上面，资料保留（签名固定，用的是仓库里的 `app/android/app/debug.keystore`；只适合自己用）。版本号（versionCode）按编译时间往上加；版本名是 0.4.<Actions 第几次>，本地管家测试版是 0.4.local-admin。
 - App 里：返回键会先关掉打开的页面 / 对话框；设置里的「打开内置 ChatGPT」和底部提问会打开 App 自己的 WebView 对话面板，默认占下方约 2/3，可以全屏或收起。收起后保留当前网页；首次用邮箱登录同一个 ChatGPT 账号，登录状态存在 App 的 WebView 里，与手机浏览器分开。Google 登录不能在这个面板完成。底部提问开启新对话，续聊用面板里的 ChatGPT 输入框。导出备份会复制到剪贴板（App 里不能存文件）；云同步只能用邮箱密码登录。
-- 内置 ChatGPT 保留网站原来的界面；网络或网页错误会显示提示并可刷新。没有注入脚本读取对话，也没有把课表的原生桥暴露给 ChatGPT。附件选择、语音权限及外部链接暂未接入；真实账号登录需要在手机上验证。
-- ChatGPT 回答里的「加到日程」链接会打开网站，不会打开 App。要两边资料一样，就得开云同步。
+- 内置 ChatGPT 保留网站原来的界面；网络或网页错误会显示提示并可刷新。只在点击下载安排文件时读取那个文件，没有读取对话正文，也没有把原生桥暴露给 ChatGPT。上传附件、语音权限及其他外部链接暂未接入；真实账号登录和 ChatGPT 下载仍需手机验证。
+- 内置 ChatGPT 回答里的「加到日程」链接直接加进 App，可以撤销；网页上仍先确认。网页与 App 要共享资料，需要开启云同步。
 - 自己编译：`npm run build:app`，然后在 `app/` 里 `npm ci && npx cap sync android`，再在 `app/android` 里 `./gradlew assembleDebug`（要 JDK 21 和 Android SDK）。
+
+### 本地管家（Android 0.4）
+
+1. 在设置里下载 Qwen3-1.7B 模型（约 1.1GB，留出至少 1.3GB 空间）。下载由 Android 管理，可退出 App；完成后校验 SHA-256。只需首次下载，理解文字在手机上运行。运行库支持 ARM64，目标手机是天玑 9300+；速度与内存占用需要真机验证。
+2. 底部点 **GPT** 切成 **管家**，输入任务、行程、修改、删除或提醒。新增直接执行，提示里可以撤销；删除和修改会列出整批内容，确认才执行。也可以在设置里的「让管家执行」输入。
+3. 让 ChatGPT 提供 `version:1` 的 JSON 指令文件，或单次日期的 ICS 日历。点击内置 ChatGPT 的文件下载会尝试导入；不支持的下载地址可先保存，再用设置里的「导入 GPT 文件」选择。TXT 交给本地模型；ZIP 可装 JSON / ICS / TXT。每次最多 512KB、20 个文件、100 条指令。备份文件继续用原来的导入备份。
+4. App 通知要先点「允许准时提醒」，允许通知及闹钟与提醒权限。`mode:notification` 支持未来日期；`mode:clock` 交给系统时钟，需核对时钟界面；`mode:both` 请求两种提醒。Android 时钟接口只能设置下一次该时刻，较远日期使用 App 通知。一次只交给系统时钟一个闹钟。
+
+所有文件和模型指令都会先校验整批内容。删除 / 修改仅匹配自己的、唯一的项目，不改课程表。重复新增和相同通知会跳过；撤销仅移除本批仍未修改的新增项目，已排通知在「查看已排提醒」里单独取消。所有日期与时间按马来西亚 UTC+8 解释。ICS 暂不支持重复、全天及跨日行程，需展开 / 拆开或改成待办。
+
+JSON 示例（时间可写 `HH:MM` 或当天分钟数）：
+
+```json
+{"version":1,"commands":[{"action":"add","kind":"todos","item":{"title":"交报告","due":"2026-10-12","star":true}},{"action":"add","kind":"events","item":{"title":"健身","date":"2026-10-12","start":"15:00","end":"16:00","place":"健身房"}}]}
+```
+
+修改使用 `{"action":"update","kind":"events","query":"健身","date":"2026-10-12","item":{"start":"16:00","end":"17:00"}}`；删除使用 `{"action":"delete","kind":"todos","query":"交报告"}`；提醒使用 `{"action":"alarm","title":"交报告","date":"2026-10-12","time":"09:00","mode":"notification"}`。`kind` 可用 `events` / `todos` / `habits`；每日任务的 `days` 为 0（周一）到 6（周日）。也可以用现有项目的 `id` 精确定位。
+
+模型与原生依赖版本、来源及许可见 [LOCAL-MODEL.md](LOCAL-MODEL.md)。
 
 ### 打包成文件夹（以后做 APK / EXE）
 

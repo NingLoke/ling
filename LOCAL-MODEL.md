@@ -1,0 +1,14 @@
+# Local administrator runtime
+
+This branch continues Claude's `fa4e87b` (v0.3.2) with an Android local administrator. Web users keep the existing GPT workflow. Planner schema and signing key are unchanged.
+
+- Model: [Unsloth Qwen3-1.7B-GGUF](https://huggingface.co/unsloth/Qwen3-1.7B-GGUF), `Qwen3-1.7B-Q4_K_M.gguf`, revision `d7f544eead698dbd1f15126ef60b45a1e1933222`. The file is 1,107,409,472 bytes, SHA-256 `b139949c5bd74937ad8ed8c8cf3d9ffb1e99c866c823204dc42c0d91fa181897`. Apache 2.0; the model is downloaded on the phone, not bundled in the APK. The upstream model is [Qwen3-1.7B](https://huggingface.co/Qwen/Qwen3-1.7B).
+- Inference: MIT [llama-cpp-capacitor 0.1.5](https://github.com/arusatech/llama-cpp). The exact npm package supplies Java and an ARM64 llama.cpp JNI library; its CMake plugin build is excluded. `LocalModelPlugin` registers the Java engine directly. The binary reports CPU inference; no GPU acceleration is claimed.
+- C++ runtime: `libc++_shared.so` from Google's [Android NDK r29 Windows archive](https://dl.google.com/android/repository/android-ndk-r29-windows.zip), member `android-ndk-r29/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so`, SHA-256 `0c52cfab2df0d957d8b346a2bdc5ae8d71feca2591924d77e1cd724d5bf74352`. Checked-in binary and notices allow a normal build without downloading an NDK. Both native libraries have 16KB-aligned load segments. Full NDK / LLVM notices and both MIT licenses are bundled at `assets/licenses/` inside the APK.
+- Reminders: exact pinned `@capacitor/local-notifications` 8.0.2; Clock intents use Android's `ACTION_SET_ALARM` with the Clock UI shown. Planner additions and notification scheduling are separate operations; scheduling failures are reported and saved planner records are retained.
+
+Build with Node 22+, JDK 21 and Android SDK, following README. Run `node --test "scripts/**/*.test.mjs"`, `npx cap sync android` in `app/`, and `./gradlew testDebugUnitTest assembleDebug` in `app/android`.
+
+Model output and imported files can only request validated planner operations or alarms. No URLs, shell code, account changes or settings are executed. Files are UTF-8; ZIP entries are read in memory with size and path limits. A failed validation imports no planner data. The review checks records again before saving so concurrent edits cannot be overwritten.
+
+Local validation: JavaScript unit tests, Android unit tests and APK build pass. Headless Chromium with a mocked native bridge exercised actual mobile UI for import/deduplication, rejected batches, consecutive confirmation/cancel, update/delete, undo, reminder permissions and UTC+8 scheduling, cancellation, safe title rendering and inference dispatch. Native library ABI, dependencies and APK signature are inspected separately. No online Android device was connected: real model loading/speed, notification delivery, Clock behavior, login and downloading attachments remain phone checks.

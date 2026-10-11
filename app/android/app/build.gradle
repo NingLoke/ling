@@ -9,9 +9,9 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Seconds since Nov 2023: every build (GitHub Actions or a computer) gets a higher versionCode than any
         // earlier one, so a newer APK always installs over an older one (stays under Android's limit until ~2089).
-        // The name says where it came from: 0.3.<Actions run>, or 0.3.local.
+        // The name says where it came from: 0.4.<Actions run>, or 0.4.local-admin.
         versionCode((System.currentTimeMillis().intdiv(1000) - 1_700_000_000).toInteger())
-        versionName "0.3.${System.getenv("GITHUB_RUN_NUMBER") ?: "local"}"
+        versionName "0.4.${System.getenv("GITHUB_RUN_NUMBER") ?: "local-admin"}"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -30,6 +30,10 @@ android {
             keyPassword "android"
         }
     }
+    // Use the pinned package's ARM64 binary and Java API; its source-build configuration requires an unrelated NDK.
+    sourceSets.main.java.srcDir '../../node_modules/llama-cpp-capacitor/android/src/main/java'
+    sourceSets.main.java.exclude '**/LlamaCppPlugin.java'
+    sourceSets.main.jniLibs.srcDir '../../node_modules/llama-cpp-capacitor/android/src/main/jniLibs'
     buildTypes {
         debug {
             signingConfig signingConfigs.debug

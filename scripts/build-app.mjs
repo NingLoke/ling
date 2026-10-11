@@ -20,7 +20,7 @@ const STAMP = /(["'])(\.\/(?:assets\/)?[\w-]+\.js)\?v=[0-9a-f]*\1/g; // "./x.js?
 const unstamp = (code) => code.replace(STAMP, "$1$2$1");
 
 let html = await readFile(path.join(root, "index.html"), "utf8");
-const MODULE = /<script type="module">\n([\s\S]*?)<\/script>/;
+const MODULE = /<script type="module">\r?\n([\s\S]*?)<\/script>/;
 const match = MODULE.exec(html);
 if (!match) throw new Error('index.html no longer has its <script type="module">');
 

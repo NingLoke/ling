@@ -22,6 +22,7 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.URLUtil;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import androidx.activity.ComponentDialog;
@@ -35,6 +36,11 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.HttpURLConnection;
+import java.io.InputStream;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 
 @CapacitorPlugin(name = "ChatGPTPanel")
 public class ChatGPTPanelPlugin extends Plugin {
@@ -53,10 +59,26 @@ public class ChatGPTPanelPlugin extends Plugin {
     private int imeHeight;
     private boolean imeVisible;
     private boolean lightTheme;
+    private final ExecutorService fileWorker = Executors.newSingleThreadExecutor();
+    private String blobMarker, blobFilename;
 
     @Override
     public void load() {
         webChromeClient = new BridgeWebChromeClient(getBridge()) {
+            @Override public boolean onConsoleMessage(android.webkit.ConsoleMessage message) {
+                if (blobMarker == null || !message.message().startsWith(blobMarker)) return super.onConsoleMessage(message);
+                String encoded = message.message().substring(blobMarker.length());
+                String filename = blobFilename;
+                blobMarker = null;
+                if (!isChatGPTUrl(chat.getUrl())) return true;
+                if (encoded.startsWith("ERROR:")) showStatus(encoded.substring(6));
+                else if (encoded.length() <= PlannerFiles.LIMIT * 4 / 3 + 8) fileWorker.execute(() -> {
+                    try { dispatchFile(filename, android.util.Base64.decode(encoded, android.util.Base64.DEFAULT)); }
+                    catch (Exception error) { fileError(error); }
+                });
+                else showStatus("文件太大：每次最多512KB");
+                return true;
+            }
             @Override
             public void onProgressChanged(WebView view, int value) {
                 if (progress != null) {
@@ -231,6 +253,21 @@ public class ChatGPTPanelPlugin extends Plugin {
         CookieManager.getInstance().setAcceptCookie(true);
         chat.setBackgroundColor(Color.TRANSPARENT);
         chat.setWebChromeClient(webChromeClient);
+        chat.setDownloadListener((url, agent, disposition, mime, length) -> {
+            if (!isChatGPTUrl(chat.getUrl())) { showStatus("请从 ChatGPT 回答里的下载按钮导入文件"); return; }
+            String name = URLUtil.guessFileName(url, disposition, mime);
+            if (!PlannerFiles.supported(name)) {
+                name = "download" + ("application/json".equals(mime) ? ".json" : "text/calendar".equals(mime) ? ".ics" : "application/zip".equals(mime) ? ".zip" : ".txt");
+            }
+            final String filename = name;
+            if (length > PlannerFiles.LIMIT) { showStatus("安排文件每次最多 512KB"); return; }
+            if (url.startsWith("blob:")) {
+                readBlobDownload(url, filename);
+            } else if (safeDownloadUrl(url)) {
+                final String cookie = isChatGPTUrl(url) ? CookieManager.getInstance().getCookie(url) : null;
+                fileWorker.execute(() -> downloadPlannerFile(url, filename, agent, cookie));
+            } else showStatus("这个下载地址不支持；请在浏览器下载后从设置导入文件");
+        });
         chat.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
@@ -392,6 +429,69 @@ public class ChatGPTPanelPlugin extends Plugin {
         status.setVisibility(View.VISIBLE);
     }
 
+    static boolean safeDownloadUrl(String value) {
+        try {
+            URI url = new URI(value);
+            String host = url.getHost();
+            return "https".equalsIgnoreCase(url.getScheme()) && url.getRawUserInfo() == null
+                && (url.getPort() == -1 || url.getPort() == 443) && host != null
+                && (isChatGPTUrl(value) || host.toLowerCase(java.util.Locale.ROOT).endsWith(".oaiusercontent.com")
+                    || host.toLowerCase(java.util.Locale.ROOT).endsWith(".blob.core.windows.net"));
+        } catch (URISyntaxException error) { return false; }
+    }
+
+    private void readBlobDownload(String url, String filename) {
+        // A scoped, random callback reads only the clicked file; no conversation text or native JS interface is exposed.
+        final String marker = "ling-file-" + java.util.UUID.randomUUID() + ":";
+        if (blobMarker != null) { showStatus("上一份文件仍在读取，请稍后重试"); return; }
+        blobMarker = marker; blobFilename = filename;
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            if (marker.equals(blobMarker)) { blobMarker = null; showStatus("文件读取超时，请从设置手动导入"); }
+        }, 30000);
+        chat.evaluateJavascript("(async function(){try{var r=await fetch(" + org.json.JSONObject.quote(url)
+            + ");var b=await r.blob();if(b.size>" + PlannerFiles.LIMIT + ")throw Error('文件超过512KB');"
+            + "var data=await new Promise(function(ok,no){var f=new FileReader();f.onload=function(){ok(f.result.split(',')[1])};f.onerror=no;f.readAsDataURL(b)});"
+            + "console.log(" + org.json.JSONObject.quote(marker) + "+data)"
+            + "}catch(e){console.log(" + org.json.JSONObject.quote(marker) + "+'ERROR:'+e.message)}})()", null);
+    }
+
+    private void downloadPlannerFile(String value, String filename, String agent, String cookie) {
+        HttpURLConnection connection = null;
+        try {
+            URL url = new URL(value);
+            for (int redirects = 0; redirects < 6; redirects++) {
+                if (!safeDownloadUrl(url.toString())) throw new Exception("下载跳转地址不支持，请手动下载后导入");
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setInstanceFollowRedirects(false);
+                connection.setConnectTimeout(15000); connection.setReadTimeout(30000);
+                connection.setRequestProperty("User-Agent", agent);
+                if (redirects == 0 && cookie != null) connection.setRequestProperty("Cookie", cookie);
+                int code = connection.getResponseCode();
+                if (code >= 300 && code < 400) {
+                    String next = connection.getHeaderField("Location");
+                    if (next == null) throw new Exception("下载跳转地址缺失");
+                    URL redirected = new URL(url, next);
+                    connection.disconnect(); connection = null; url = redirected; continue;
+                }
+                if (code != 200) throw new Exception("文件下载失败（" + code + "）");
+                if (connection.getContentLengthLong() > PlannerFiles.LIMIT) throw new Exception("安排文件每次最多512KB");
+                try (InputStream input = connection.getInputStream()) { dispatchFile(filename, PlannerFiles.readBounded(input, PlannerFiles.LIMIT)); }
+                return;
+            }
+            throw new Exception("下载跳转次数过多");
+        } catch (Exception error) { fileError(error); }
+        finally { if (connection != null) connection.disconnect(); }
+    }
+
+    private void dispatchFile(String filename, byte[] bytes) throws Exception {
+        String data = ai.annadata.plugin.capacitor.LocalModelPlugin.filesResult(filename, bytes).toString();
+        getActivity().runOnUiThread(() -> {
+            if (getBridge() != null) getBridge().eval("window.dispatchEvent(new CustomEvent('planner:import-files',{detail:" + data + "}))", null);
+            if (panel != null && panel.isShowing()) applyMode(CLOSED);
+        });
+    }
+    private void fileError(Exception error) { getActivity().runOnUiThread(() -> { if (status != null) showStatus("导入失败：" + error.getMessage()); }); }
+
     private boolean blockNavigation(String url) {
         if (isChatGPTUrl(url) || isGoogleLoginUrl(url)) return false;
         if (isPlannerActionUrl(url) && getBridge() != null) {
@@ -425,6 +525,7 @@ public class ChatGPTPanelPlugin extends Plugin {
 
     @Override
     protected void handleOnDestroy() {
+        fileWorker.shutdown();
         if (panel != null) panel.dismiss();
         if (chat != null) {
             chat.stopLoading();

@@ -2,7 +2,8 @@
 <html lang="zh-CN" data-theme="dark" data-glass="grey">
 <head>
 <meta charset="UTF-8">
-<meta name="code-version" content="02b442446386">
+<meta name="code-version" content="ba4405fee22d">
+
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>2E3 课表</title>
 <meta name="description" content="Curtin Malaysia 2E3 课表，加上每日任务、行程和待办：今天上什么课、要做什么。">
@@ -279,7 +280,7 @@ body::after { /* the Android app draws under the status bar: keep that strip pla
 .problem .now-title { font-size: 20px; font-weight: 700; color: var(--fg); }
 
 /* ---------- the four cards ---------- */
-.cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+.cards { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin-top: 12px; }
 .w {
   min-height: 128px; padding: 14px; display: flex; flex-direction: column; align-items: stretch; text-align: left;
   border: 0; color: var(--fg); cursor: pointer; transition: transform .15s;
@@ -698,11 +699,12 @@ dialog.viewer .sheet-head { position: static; padding-top: calc(env(safe-area-in
 .kind-seg { display: grid; grid-template-columns: repeat(3, 1fr); }
 .kind-seg button { min-width: 0; padding: 0 6px; }
 .field { display: grid; gap: 5px; font-size: 13px; color: var(--fg-3); }
-.field input:not([type="checkbox"]) {
+.field input:not([type="checkbox"]), .field textarea {
   width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid var(--line-2); border-radius: 12px;
   background: var(--field); color: var(--fg); font: inherit; font-size: 16px;
 }
-.field input:focus { border-color: var(--accent); outline: none; }
+.field input:focus, .field textarea:focus { border-color: var(--accent); outline: none; }
+.field textarea { resize: vertical; }
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .check-field { display: flex; align-items: center; gap: 8px; align-self: end; min-height: 44px; font-size: 15px; color: var(--fg); cursor: pointer; }
 .check-field input { width: 20px; height: 20px; accent-color: var(--accent-2); }
@@ -930,6 +932,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent-2); }
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
   </button>
   <input id="ai-input" name="q" type="text" enterkeyhint="send" maxlength="2000" placeholder="问 ChatGPT，或加日程" aria-label="问 ChatGPT，或输入要加的日程">
+  <button class="mini-btn" id="admin-mode" type="button" aria-label="切换 ChatGPT 或本地管家" aria-pressed="false" hidden>GPT</button>
   <button class="ai-btn" id="ai-mic" type="button" aria-label="语音输入" hidden>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
   </button>
@@ -1033,6 +1036,18 @@ input[type="range"] { width: 100%; accent-color: var(--accent-2); }
     <p class="field-hint">想让 ChatGPT 的回答也能一点就加进来：把下面这段贴到 ChatGPT 的「设置 → 个性化 → 自定义指令」。</p>
     <pre class="gpt-rule" id="gpt-rule"></pre>
     <div class="form-actions start"><button type="button" class="mini-btn" id="gpt-copy">复制这段</button></div>
+    <section id="admin-settings" hidden>
+      <h3 class="plan-sub">本地管家</h3>
+      <p class="field-hint" id="admin-model-status">Qwen3-1.7B · 约 1.1GB，首次下载后离线使用。请预留 1.3GB 空间。</p>
+      <div class="form-actions start"><button type="button" class="mini-btn" id="admin-download">下载 / 重试</button><button type="button" class="mini-btn" id="admin-permission">允许准时提醒</button></div>
+      <p class="field-hint">底部 GPT 按钮可切到管家。新增直接执行，可撤销；删除和修改会先确认。JSON 和 ICS 直接导入，TXT 由手机模型理解。ZIP 可以包含这些文件，每次最多 512KB、100 条指令。</p>
+      <p class="field-hint">点 ChatGPT 回答里的文件下载按钮后，App 会读取并导入该文件；也可以在这里手动选择。系统闹钟只支持下一次响铃时间，较远日期请用 App 通知提醒。</p>
+      <label class="field">让管家执行<textarea id="admin-text" rows="3" maxlength="1800" placeholder="明天早上七点设起床闹钟"></textarea></label>
+      <div class="form-actions start"><button type="button" class="mini-btn primary" id="admin-run">执行</button><button type="button" class="mini-btn" id="admin-import">导入 GPT 文件</button><button type="button" class="mini-btn" id="admin-undo" hidden>撤销上次新增</button></div>
+      <p class="field-hint" id="admin-status" role="status" aria-live="polite"></p>
+      <button type="button" class="mini-btn" id="admin-pending">查看已排提醒</button>
+      <div id="admin-pending-list" class="field-hint"></div>
+    </section>
     <h3 class="plan-sub">备份</h3>
     <p class="field-hint">把每日任务、行程和待办存成一个文件，或从文件恢复。</p>
     <div class="form-actions start">
@@ -1041,14 +1056,19 @@ input[type="range"] { width: 100%; accent-color: var(--accent-2); }
     </div>
   </div>
 </dialog>
+<dialog class="sheet" id="admin-review" aria-labelledby="admin-review-title">
+  <div class="sheet-head"><div class="sheet-title"><h2 id="admin-review-title">确认修改或删除</h2><p>这一批包含会改变现有资料的操作，请核对后确认。</p></div></div>
+  <div class="sheet-body"><ul id="admin-review-list"></ul><div class="form-actions"><button type="button" class="mini-btn" id="admin-cancel">取消整批</button><button type="button" class="mini-btn danger" id="admin-approve">确认执行整批</button></div></div>
+</dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <noscript><p style="text-align:center;padding:20px">这个课表需要开启 JavaScript。</p></noscript>
 <script type="application/json" id="embedded-timetable">{"schema":1,"class":"2E3","title":"2E3","semester":"Semester Two","timezone":"Asia/Kuching","source":"http://sws.curtin.edu.my","weeks":[{"week":39,"start":"2026-09-21"},{"week":40,"start":"2026-09-28"},{"week":41,"start":"2026-10-05"},{"week":42,"start":"2026-10-12"},{"week":43,"start":"2026-10-19"},{"week":44,"start":"2026-10-26"},{"week":45,"start":"2026-11-02"},{"week":46,"start":"2026-11-09"},{"week":47,"start":"2026-11-16"},{"week":48,"start":"2026-11-23"},{"week":49,"start":"2026-11-30"},{"week":50,"start":"2026-12-07"},{"week":51,"start":"2026-12-14"},{"week":52,"start":"2026-12-21"}],"units":{"CMFP0042":{"code":"CMFP0042","name":"Mathematics 2","short":"Maths 2","group":"K"},"CMFP0051":{"code":"CMFP0051","name":"Physics 2","short":"Physics 2","group":"2E3"},"CMFP0061":{"code":"CMFP0061","name":"Programming","short":"Programming","group":"2E3"},"FP-070":{"code":"FP-070","name":"Academic English 060","short":"Academic English","group":"*"},"CMFP0021":{"code":"CMFP0021","name":"Effective Communication Skills","short":"ECS","group":"2E3"}},"events":[{"id":"CMFP0042/CSM/1/3/LEC/2","unit":"CMFP0042","type":"Lecture","day":0,"firstDate":"2026-10-05","start":480,"end":600,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["Auditorium"],"staff":["Jameson Malang"],"group":"K-Q;V-W"},{"id":"CMFP0051/CSM/1/3/LEC/1","unit":"CMFP0051","type":"Lecture","day":0,"firstDate":"2026-10-05","start":600,"end":720,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["SK3 102 Lecture 1"],"staff":["Lukman Mohd Najib"],"group":"3E1-3; 2E1-7"},{"id":"CMFP0061/CSM/1/3/LEC/1","unit":"CMFP0061","type":"Lecture","day":0,"firstDate":"2026-10-05","start":780,"end":900,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["Auditorium"],"staff":["Kamaroizan Mohamad"],"group":"2E1-7; 2F1-3; 3E4"},{"id":"FP-070/CSM/1/3/SEM/01/2","unit":"FP-070","type":"Seminar","day":0,"firstDate":"2026-10-05","start":1020,"end":1200,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["SK3 104 Lecture 3"],"staff":["Grace Abigail","Harith Firajudeen Bin Jeferie"],"group":"Group 1 & 2"},{"id":"CMFP0021/CSM/1/3/SEM/03/1","unit":"CMFP0021","type":"Seminar","day":1,"firstDate":"2026-10-06","start":480,"end":570,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["LTCL 9 (HL2-109)"],"staff":["Chai Kang Ming"],"group":"2E3"},{"id":"CMFP0051/CSM/1/3/WS/06","unit":"CMFP0051","type":"Workshop","day":1,"firstDate":"2026-10-06","start":840,"end":1020,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["SK2 101 (ME 101) Physic Lab","SK3 206 Collaborative Room 2"],"staff":["John Wong Sze Yong"],"group":"2E3"},{"id":"CMFP0042/CSM/1/3/C/1","unit":"CMFP0042","type":"Clinic","day":1,"firstDate":"2026-10-06","start":1020,"end":1110,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["SK3 205 Collaborative Room 1"],"staff":["Fong Ai Ling","Puteri Nurul Fatihah Binti Mohamad Azli","Jameson Malang","Bejay Anak Ugon"],"group":"A-F; K-Q; V-W"},{"id":"CMFP0061/CSM/1/3/LAB/03","unit":"CMFP0061","type":"Lab","day":2,"firstDate":"2026-10-07","start":660,"end":840,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["PA3 106 (Computer Lab)"],"staff":[],"group":"2E3"},{"id":"CMFP0051/CSM/1/3/C/1","unit":"CMFP0051","type":"Clinic","day":3,"firstDate":"2026-10-08","start":660,"end":780,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["Auditorium"],"staff":["Lukman Mohd Najib"],"group":"3E1-3; 2E1-7"},{"id":"CMFP0042/CSM/1/3/TUT/06/1","unit":"CMFP0042","type":"Tutorial","day":3,"firstDate":"2026-10-08","start":930,"end":1020,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["PA3 209"],"staff":["Shubashini Krishnan"],"group":"K"},{"id":"CMFP0021/CSM/1/3/SEM/03/2","unit":"CMFP0021","type":"Seminar","day":3,"firstDate":"2026-10-08","start":1020,"end":1110,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["PA3 203"],"staff":["Chai Kang Ming"],"group":"2E3"},{"id":"CMFP0042/CSM/1/3/TUT/06/2","unit":"CMFP0042","type":"Tutorial","day":4,"firstDate":"2026-10-09","start":600,"end":690,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["PA3 210"],"staff":["Shubashini Krishnan"],"group":"K"},{"id":"FP-070/CSM/1/3/SEM/01/1","unit":"FP-070","type":"Seminar","day":4,"firstDate":"2026-10-09","start":960,"end":1140,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["LTBS LT II (HL2-111)"],"staff":["Grace Abigail","Harith Firajudeen Bin Jeferie"],"group":"Group 1 & 2"}],"updatedAt":"2026-10-06T16:51:41.906Z"}</script>
 <script type="module">
 import * as core from "./assets/timetable-core.js?v=484ad6369e";
 import { buildingForRoom, roomLabel } from "./assets/campus-geo.js?v=23f31ff695";
-import { createPlanner } from "./assets/planner-ui.js?v=a5d9eb3bbd";
+import { createPlanner } from "./assets/planner-ui.js?v=0e189d97b6";
 import { parseCommand, parseAddLink, describe } from "./assets/planner-parse.js?v=4523820e4f";
+import { createAdmin } from "./assets/planner-admin-ui.js?v=edd3912bec";
 
 const CLASS = "2E3";
 const VIEW_KEY = `tt:${CLASS}:view`;
@@ -1774,7 +1794,7 @@ function openModal(dialog, flag) {
   document.documentElement.classList.add("lock");
   try { history.pushState({ ...(history.state || {}), [flag]: true }, ""); } catch { /* ignore */ }
 }
-const MODALS = [["check", "check"], ["shot", "shot"], ["plan-editor", "planEditor"], ["plan-settings", "planSettings"]];
+const MODALS = [["check", "check"], ["shot", "shot"], ["plan-editor", "planEditor"], ["plan-settings", "planSettings"], ["admin-review", "adminReview"]];
 for (const [id, flag] of MODALS) {
   const dialog = $(id);
   dialog.addEventListener("close", () => {
@@ -1993,12 +2013,17 @@ function renderProblem() {
 }
 
 let toastTimer = 0;
-function toast(text) {
+function toast(text, undo = null) {
   const el = $("toast");
   el.textContent = text;
+  if (undo) {
+    const button = document.createElement("button");
+    button.type = "button"; button.className = "mini-btn"; button.textContent = "撤销新增";
+    button.addEventListener("click", undo); el.append(" ", button);
+  }
   el.classList.add("show");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove("show"), 3500);
+  toastTimer = setTimeout(() => el.classList.remove("show"), undo ? 10000 : 3500);
 }
 
 function onData(next, nextInfo) {
@@ -2030,6 +2055,7 @@ planner = createPlanner({
   },
 });
 planner.showDate(getNow().iso);
+const admin = createAdmin({ planner, getNow, openModal, toast, native: inApp });
 buildDays();
 setView(view, false);
 showPane("class");
@@ -2211,6 +2237,11 @@ $("ai").addEventListener("submit", async (event) => {
   event.preventDefault();
   const input = $("ai-input");
   const text = input.value.trim();
+  if (admin.enabled && text) {
+    input.value = "";
+    await admin.submit(text);
+    return;
+  }
   const cmd = text ? parseCommand(text, getNow().iso) : null;
   if (cmd?.action === "add") {
     input.value = "";
@@ -2281,6 +2312,15 @@ $("gpt-rule").textContent = [
   `每日任务：${APP_URL}?add=habit&title=标题&days=0123456（0 是周一，6 是周日，只写要重复的那几天）`,
   "链接里的中文和空格要做网址编码。链接文字写成「＋ 加到日程：10/13 周二 15:00 健身」这样。时间用马来西亚时间（UTC+8）。",
 ].join("\n");
+if (inApp) $("gpt-rule").textContent += [
+  "\n批量安排、修改、删除或闹钟请交付一个可下载的 UTF-8 JSON 文件，格式为 {\"version\":1,\"commands\":[…]}。新增直接执行可撤销，删除和修改会先让我确认。",
+  '行程指令：{"action":"add","kind":"events","item":{"title":"健身","date":"2026-10-12","start":"15:00","end":"16:00","place":"健身房"}}',
+  '待办指令：{"action":"add","kind":"todos","item":{"title":"交报告","due":"2026-10-16","star":false}}',
+  '每日任务：{"action":"add","kind":"habits","item":{"title":"背单词","days":[0,1,2,3,4,5,6]}}',
+  '修改：{"action":"update","kind":"events","query":"健身","date":"2026-10-12","item":{"start":"16:00","end":"17:00"}}；删除：{"action":"delete","kind":"events","query":"健身","date":"2026-10-12"}。同名不唯一时请给日期，不猜测。',
+  '闹钟：{"action":"alarm","title":"起床","date":"2026-10-12","time":"07:00","mode":"both"}。通知用 notification、系统时钟用 clock；系统时钟只支持下一次响铃且一次一个，批量和较远日期使用 notification。',
+  "不要自动增加我没要求的闹钟。日期和时间用 UTC+8。每批最多100条。ICS 请展开重复项目、给出明确开始和结束时间；TXT 每次最多1800字。ZIP 只放 JSON、ICS 或 TXT。",
+].join("\n");
 $("gpt-copy").addEventListener("click", async (event) => {
   const button = event.currentTarget;
   let ok = false;
@@ -2302,6 +2342,7 @@ $("gpt-copy").addEventListener("click", async (event) => {
 function showChatGPTAddLink(link) {
   if (!link) return;
   if (link.error) toast(link.error);
+  else if (inApp) admin.addFromLink({ action: "add", ...link });
   else showConfirm({ action: "add", ...link, source: "chatgpt" });
 }
 

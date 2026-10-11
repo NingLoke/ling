@@ -7,6 +7,7 @@ import { SYNC_KEY } from "./planner-sync.js?v=8c0b4fd8da";
 import { createSyncer } from "./planner-syncer.js?v=05657dfffe";
 import { firebaseConfig } from "./firebase-config.js?v=c615ce6fe6";
 import { daysBetween, dayIndexOf, fmtTime, formatDateZh, DAY_SHORT_ZH, DAY_NAMES_ZH } from "./timetable-core.js?v=484ad6369e";
+import { sameItem } from "./planner-admin.js?v=d64ede6233";
 
 const $ = (id) => document.getElementById(id);
 
@@ -55,8 +56,8 @@ export function createPlanner({ getNow, openModal, toast = () => {}, onChange = 
   // a change made here: save it, queue it for sync
   const commit = (next) => {
     const prev = state;
+    if (!storage || !S.save(storage, next)) throw new Error("储存失败，资料没有修改；请先检查设备储存空间");
     state = next;
-    S.save(storage, state);
     syncer.localChange(prev, next);
     changed();
   };
@@ -161,6 +162,35 @@ export function createPlanner({ getNow, openModal, toast = () => {}, onChange = 
     return item.id;
   }
   const removeItem = (kind, id) => commit(S.remove(state, kind, id));
+  function applyAdminBatch(commands) {
+    let next = state;
+    const added = [];
+    let count = 0;
+    for (const c of commands) {
+      if (c.action === "alarm") continue;
+      if (c.action === "add") {
+        if (next[c.kind].some((x) => sameItem(c.kind, x, c.item))) continue;
+        const item = { ...c.item, id: S.newId(), created: Date.now(), ...(c.kind === "habits" ? { from: getNow().iso } : {}) };
+        next = S.upsert(next, c.kind, item);
+        added.push({ kind: c.kind, id: item.id, item });
+      } else {
+        const current = next[c.kind].find((x) => x.id === c.id);
+        if (JSON.stringify(current) !== JSON.stringify(c.old)) throw new Error("项目刚有变化，请重新发出指令，避免改错资料");
+        next = c.action === "delete" ? S.remove(next, c.kind, c.id) : S.upsert(next, c.kind, { ...c.item, id: c.id });
+      }
+      count++;
+    }
+    if (count) commit(next);
+    return { added, count };
+  }
+  function undoAdminAdds(added) {
+    let next = state;
+    for (const c of added) {
+      const current = next[c.kind].find((x) => x.id === c.id);
+      if (current && JSON.stringify(current) === JSON.stringify(c.item)) next = S.remove(next, c.kind, c.id);
+    }
+    if (next !== state) commit(next);
+  }
   const setSetting = (name, value) => {
     if (state.settings[name] === value) return;
     commit({ ...state, settings: { ...state.settings, [name]: value } });
@@ -478,6 +508,8 @@ export function createPlanner({ getNow, openModal, toast = () => {}, onChange = 
     summary,
     upcoming,
     add,
+    applyAdminBatch,
+    undoAdminAdds,
     removeItem,
     items: (kind) => state[kind].slice(),
     get settings() {

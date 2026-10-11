@@ -2,6 +2,7 @@
   "appId": "io.github.ningloke.ling",
   "appName": "2E3 课表",
   "webDir": "../dist/timetable-ling",
+  "includePlugins": ["@capacitor/local-notifications"],
   "android": {
     "backgroundColor": "#0b0c10",
     "minWebViewVersion": 80

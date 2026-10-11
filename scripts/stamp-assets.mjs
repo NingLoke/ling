@@ -35,7 +35,8 @@ async function stamped(file, stack = []) {
     });
     hashes.set(ref, body == null ? null : createHash("sha256").update(body).digest("hex").slice(0, 10));
   }
-  const after = before.replace(pattern, (all, quote, ref) => (hashes.get(ref) ? `${quote}${ref}?v=${hashes.get(ref)}${quote}` : all));
+  // Windows checkout line endings must not change cache hashes or break Linux CI checks.
+  const after = before.replace(/\r\n/g, "\n").replace(pattern, (all, quote, ref) => (hashes.get(ref) ? `${quote}${ref}?v=${hashes.get(ref)}${quote}` : all));
   files.set(file, { before, after });
   return after;
 }

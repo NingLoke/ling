@@ -6,6 +6,11 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 public class ChatGPTPanelTest {
+    @Test public void fileDownloadsStayOnSecureAttachmentHosts() {
+        assertTrue(ChatGPTPanelPlugin.safeDownloadUrl("https://files.oaiusercontent.com/file.json?signature=x"));
+        assertTrue(ChatGPTPanelPlugin.safeDownloadUrl("https://chatgpt.com/backend-api/file"));
+        for (String url : new String[] { "http://files.oaiusercontent.com/a", "https://oaiusercontent.com.evil/a", "https://user@files.oaiusercontent.com/a", "https://files.oaiusercontent.com:444/a", "https://127.0.0.1/a" }) assertFalse(url, ChatGPTPanelPlugin.safeDownloadUrl(url));
+    }
     @Test
     public void chatAndEmailLoginStayInThePanel() {
         for (String url : new String[] {
