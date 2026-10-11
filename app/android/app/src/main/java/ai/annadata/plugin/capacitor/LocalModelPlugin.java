@@ -37,8 +37,27 @@ public class LocalModelPlugin extends Plugin {
     private DownloadManager downloads() { return (DownloadManager) getContext().getSystemService(Context.DOWNLOAD_SERVICE); }
     private android.content.SharedPreferences prefs() { return getContext().getSharedPreferences("local-model", Context.MODE_PRIVATE); }
     private boolean verifyModel() throws Exception {
+        int status = -1;
+        long id = prefs().getLong("download", -1);
+        if (id != -1) {
+            try (Cursor cursor = downloads().query(new DownloadManager.Query().setFilterById(id))) {
+                if (cursor != null && cursor.moveToFirst()) status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
+            }
+        }
+        return verifyModel(status);
+    }
+
+    private boolean verifyModel(int downloadStatus) throws Exception {
         File file = modelFile();
-        if (!file.isFile() || file.length() != MODEL_SIZE) return false;
+        if (!verifyModelFile(file, MODEL_SIZE, HASH, downloadStatus, verifiedTime)) return false;
+        verifiedTime = file.lastModified();
+        return true;
+    }
+
+    static boolean verifyModelFile(File file, long expectedSize, String expectedHash, int downloadStatus, long verifiedTime) throws Exception {
+        // DownloadManager can preallocate the full file before writing it: only a successful download is final.
+        if (downloadStatus != -1 && downloadStatus != DownloadManager.STATUS_SUCCESSFUL) return false;
+        if (!file.isFile() || file.length() != expectedSize) return false;
         if (verifiedTime == file.lastModified()) return true;
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         try (InputStream in = new FileInputStream(file)) {
@@ -48,8 +67,7 @@ public class LocalModelPlugin extends Plugin {
         }
         StringBuilder hex = new StringBuilder();
         for (byte b : digest.digest()) hex.append(String.format(java.util.Locale.ROOT, "%02x", b & 255));
-        if (!HASH.equals(hex.toString())) throw new Exception("模型校验失败，请重新下载");
-        verifiedTime = file.lastModified();
+        if (!expectedHash.equals(hex.toString())) throw new Exception("模型校验失败，请重新下载");
         return true;
     }
 
@@ -60,16 +78,21 @@ public class LocalModelPlugin extends Plugin {
                 JSObject result = new JSObject();
                 result.put("model", MODEL);
                 result.put("size", MODEL_SIZE);
-                if (verifyModel()) { result.put("state", "ready"); call.resolve(result); return; }
+                int status = -1;
                 long id = prefs().getLong("download", -1);
                 try (Cursor cursor = downloads().query(new DownloadManager.Query().setFilterById(id))) {
                     if (cursor != null && cursor.moveToFirst()) {
-                        int status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
+                        status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
                         result.put("downloaded", cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)));
-                        result.put("state", status == DownloadManager.STATUS_FAILED || status == DownloadManager.STATUS_SUCCESSFUL ? "failed" : "downloading");
                         result.put("reason", cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON)));
-                    } else result.put("state", "missing");
+                    }
                 }
+                String state;
+                if (verifyModel(status)) state = "ready";
+                else if (status == -1) state = "missing";
+                else if (status == DownloadManager.STATUS_FAILED || status == DownloadManager.STATUS_SUCCESSFUL) state = "failed";
+                else state = "downloading";
+                result.put("state", state);
                 call.resolve(result);
             } catch (Exception error) { call.reject(error.getMessage(), error); }
         });
@@ -79,16 +102,17 @@ public class LocalModelPlugin extends Plugin {
     public void download(PluginCall call) {
         worker.execute(() -> {
             try {
-                if (verifyModel()) { call.resolve(); return; }
-            } catch (Exception ignored) { /* Replace a corrupt model, never user planner data. */ }
-            try {
                 long id = prefs().getLong("download", -1);
+                int status = -1;
                 try (Cursor cursor = downloads().query(new DownloadManager.Query().setFilterById(id))) {
                     if (cursor != null && cursor.moveToFirst()) {
-                        int status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
+                        status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
                         if (status == DownloadManager.STATUS_PENDING || status == DownloadManager.STATUS_RUNNING || status == DownloadManager.STATUS_PAUSED) { call.resolve(); return; }
                     }
                 }
+                try {
+                    if (verifyModel(status)) { call.resolve(); return; }
+                } catch (Exception ignored) { /* Replace a corrupt model, never user planner data. */ }
                 if (id != -1) downloads().remove(id);
                 File file = modelFile();
                 if (file.exists() && !file.delete()) throw new Exception("旧模型无法移除，请检查储存空间");
@@ -110,7 +134,7 @@ public class LocalModelPlugin extends Plugin {
         worker.execute(() -> {
             LlamaCpp engine = null;
             try {
-                if (!verifyModel()) throw new Exception("请先在设置里下载本地管家模型");
+                if (!verifyModel()) throw new Exception("模型尚未准备好，请在设置里查看下载进度");
                 engine = new LlamaCpp(getContext());
                 JSObject params = new JSObject();
                 params.put("model", modelFile().getAbsolutePath());

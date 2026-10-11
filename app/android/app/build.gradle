@@ -9,9 +9,9 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Seconds since Nov 2023: every build (GitHub Actions or a computer) gets a higher versionCode than any
         // earlier one, so a newer APK always installs over an older one (stays under Android's limit until ~2089).
-        // The name says where it came from: 0.4.<Actions run>, or 0.4.local-admin.
+        // The name says where it came from: 0.4.<Actions run>, or 0.4.local-admin-fix1.
         versionCode((System.currentTimeMillis().intdiv(1000) - 1_700_000_000).toInteger())
-        versionName "0.4.${System.getenv("GITHUB_RUN_NUMBER") ?: "local-admin"}"
+        versionName "0.4.${System.getenv("GITHUB_RUN_NUMBER") ?: "local-admin-fix1"}"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
