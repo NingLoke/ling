@@ -52,6 +52,17 @@ SWS 把选了哪一科存在服务器会话里，网址里不带科目，所以�
 - **设置**：点右上角的 `>_ ✦` 签名。云同步、外观（深色 / 浅色 / 跟随系统、七种玻璃颜色、透明度，跟着账号同步）、ChatGPT 指令、备份。
 - **云同步**：用邮箱密码登录，手机和电脑自动同步，离线时先存在本机。要先建一个免费的 Firebase 项目，把设置填进 `assets/firebase-config.js`，步骤见 [SYNC-SETUP.md](SYNC-SETUP.md)。没设置时资料只存在各自的浏览器里，可以在设置里导出 / 导入备份。
 
+### Android App（APK）
+
+`app/` 是 Capacitor 8 的 Android 项目，显示的就是 `dist/timetable-ling` 这一页。每次推送改到页面或 `app/`，GitHub Actions（`.github/workflows/android.yml`）就会编译 APK，放到 Releases 里的 **app-latest**：
+
+https://github.com/NingLoke/ling/releases/download/app-latest/ling.apk
+
+- 手机打开上面的链接下载，允许「安装未知来源的应用」后安装。新版直接装在旧版上面，资料不会丢（签名固定，用的是仓库里的 `app/android/app/debug.keystore`；只适合自己用）。
+- App 里：返回键会先关掉打开的页面 / 对话框；问 ChatGPT 会打开手机的浏览器或 ChatGPT App；导出备份会复制到剪贴板（App 里不能存文件）；云同步只能用邮箱密码登录。
+- ChatGPT 回答里的「加到日程」链接会打开网站，不会打开 App。要两边资料一样，就得开云同步。
+- 自己编译：`npm run build:app`，然后在 `app/` 里 `npm ci && npx cap sync android`，再在 `app/android` 里 `./gradlew assembleDebug`（要 JDK 21 和 Android SDK）。
+
 ### 打包成文件夹（以后做 APK / EXE）
 
 ```bash

@@ -1,0 +1,102 @@
+name: Android APK
+
+# Builds the Android app (the Capacitor project in app/, which shows the same page as the website, from
+# dist/timetable-ling) and puts the APK on the "app-latest" GitHub Release, so there is one fixed download link.
+# Runs when the page, its assets or the app project change, or by hand from the Actions tab.
+# The APK is signed with the fixed debug key in app/android/app/debug.keystore and its versionCode is the run
+# number, so each new APK installs over the previous one without losing data.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, "claude/**"]
+    paths:
+      - "index.html"
+      - "assets/**"
+      - "app/**"
+      - "manifest.webmanifest"
+      - "data/campus/**"
+      - "package.json"
+      - "scripts/build-app.mjs"
+      - ".github/workflows/android.yml"
+
+permissions:
+  contents: write
+
+# Every run publishes to the same release: one at a time.
+concurrency:
+  group: android-apk
+  cancel-in-progress: false
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TAG: app-latest
+      APK_NAME: ling.apk
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      # Capacitor 8 compiles Java 21: the runner's default JDK (17) is too old, 25 too new for Gradle 8.14.3.
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+          cache-dependency-path: |
+            app/android/**/*.gradle*
+            app/android/**/gradle-wrapper.properties
+            app/package-lock.json
+
+      - name: Test
+        run: node --test "scripts/**/*.test.mjs"
+
+      - name: Build the page (dist/timetable-ling)
+        run: npm run build:app
+
+      - name: Install Capacitor
+        working-directory: app
+        run: npm ci
+
+      - name: Copy the page into the Android project
+        working-directory: app
+        run: npx cap sync android
+
+      - name: Build the APK
+        working-directory: app/android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Name the APK
+        run: cp app/android/app/build/outputs/apk/debug/app-debug.apk "$APK_NAME"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ling-apk
+          path: ${{ env.APK_NAME }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish to the app-latest release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          title="Android app (latest build)"
+          notes="Built from ${GITHUB_REF_NAME} at ${GITHUB_SHA::7} by run #${GITHUB_RUN_NUMBER} (version 0.2.${GITHUB_RUN_NUMBER}). Install ${APK_NAME} over the previous one; your data is kept."
+          # The tag is never pointed at this commit: GITHUB_TOKEN can't set a ref on a commit whose workflow files
+          # differ from the default branch (e.g. a branch commit that adds this file). So the first run creates the
+          # tag at the default branch (gh's default without --target) and later runs only replace the APK.
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "$title" --notes "$notes"
+            gh release upload "$TAG" "$APK_NAME" --clobber
+          else
+            gh release create "$TAG" "$APK_NAME" --title "$title" --notes "$notes" --latest
+          fi
+          echo "APK: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/download/${TAG}/${APK_NAME}" >> "$GITHUB_STEP_SUMMARY"

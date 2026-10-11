@@ -2,7 +2,7 @@
 <html lang="zh-CN" data-theme="dark" data-glass="grey">
 <head>
 <meta charset="UTF-8">
-<meta name="code-version" content="a29013f734c9">
+<meta name="code-version" content="176c7eba6a1e">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>2E3 课表</title>
 <meta name="description" content="Curtin Malaysia 2E3 课表，加上每日任务、行程和待办：今天上什么课、要做什么。">
@@ -184,6 +184,9 @@ a { color: inherit; }
     calc(env(safe-area-inset-left) + var(--gutter));
 }
 .home { text-shadow: var(--text-shadow); }
+body::after { /* the Android app draws under the status bar: keep that strip plain */
+  content: ""; position: fixed; z-index: 29; left: 0; right: 0; top: 0; height: env(safe-area-inset-top); background: var(--bg); pointer-events: none;
+}
 
 /* ---------- header: ~/today · date · week, the day, the Codex × Claude mark (= settings) ---------- */
 .mast { display: flex; align-items: flex-start; gap: 12px; padding: 16px 2px 0; }
@@ -689,6 +692,10 @@ dialog.viewer .sheet-head { position: static; padding-top: calc(env(safe-area-in
 .sw[aria-checked="true"] { color: var(--fg); font-weight: 600; }
 .sw[aria-checked="true"] i { box-shadow: inset 0 0 0 2px var(--fg), 0 0 0 3px var(--accent-2); }
 input[type="range"] { width: 100%; accent-color: var(--accent-2); }
+.backup-text {
+  display: block; width: 100%; margin-top: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line-2);
+  background: var(--field); color: var(--fg); font-family: var(--mono); font-size: 11.5px; resize: vertical;
+}
 .gpt-rule {
   margin: 8px 0 0; padding: 10px 12px; max-height: 190px; overflow: auto; border-radius: 12px; background: var(--wash-2);
   font-family: var(--mono); font-size: 11.5px; line-height: 1.6; color: var(--fg-2); white-space: pre-wrap; overflow-wrap: anywhere;
@@ -978,7 +985,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent-2); }
     <p class="field-hint">把每日任务、行程和待办存成一个文件，或从文件恢复。</p>
     <div class="form-actions start">
       <button type="button" class="mini-btn" id="plan-export">导出备份</button>
-      <label class="mini-btn file-btn">导入备份<input type="file" id="plan-import" accept="application/json,.json" class="sr"></label>
+      <label class="mini-btn file-btn">导入备份<input type="file" id="plan-import" accept="application/json,.json,text/plain" class="sr"></label>
     </div>
   </div>
 </dialog>
@@ -988,7 +995,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent-2); }
 <script type="module">
 import * as core from "./assets/timetable-core.js?v=484ad6369e";
 import { buildingForRoom, roomLabel } from "./assets/campus-geo.js?v=23f31ff695";
-import { createPlanner } from "./assets/planner-ui.js?v=7c3694655e";
+import { createPlanner } from "./assets/planner-ui.js?v=a5d9eb3bbd";
 import { parseCommand, parseAddLink, describe } from "./assets/planner-parse.js?v=4523820e4f";
 
 const CLASS = "2E3";
@@ -1008,6 +1015,13 @@ const store = {
   set(key, value) { try { localStorage.setItem(key, value); } catch { /* private mode */ } },
 };
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+// inside the Android app (Capacitor puts window.Capacitor on the page before any script runs)
+const inApp = !!window.Capacitor?.isNativePlatform?.();
+/** A web address outside the page: a new tab on the website; in the app, the phone's browser (or the ChatGPT app). */
+function openExternal(url) {
+  if (inApp) location.assign(url); // Capacitor stops the navigation and hands the address to Android
+  else window.open(url, "_blank", "noopener");
+}
 
 // ?now=2026-10-05T08:30 pretends it is that Malaysia time (for testing)
 const override = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})$/.exec(new URLSearchParams(location.search).get("now") || "");
@@ -1698,6 +1712,7 @@ for (const [id, flag] of MODALS) {
 window.addEventListener("popstate", () => {
   for (const [id, flag] of MODALS) if ($(id).open && !history.state?.[flag]) $(id).close();
   if (detailOpen() && !history.state?.detail) closeDetail(true);
+  if (pending && !history.state?.confirm) hideConfirm(true);
 });
 
 // ---------- 核准查看: the real SWS list page, as a screenshot ----------
@@ -1998,6 +2013,25 @@ function applyLook() {
   for (const b of $("look-theme").children) b.setAttribute("aria-pressed", String(b.dataset.themeSet === look.theme));
   for (const b of $("look-glass").children) b.setAttribute("aria-checked", String(b.dataset.glass === look.glass));
   $("look-clarity").value = String(look.clarity);
+  syncSystemBars();
+}
+/** In the app: light status-bar icons on the dark page, dark ones on the light page (when the page is under the bar). */
+function syncSystemBars() {
+  const cap = window.Capacitor;
+  if (!inApp || !cap.nativePromise) return;
+  let probe = syncSystemBars.probe;
+  if (!probe) {
+    // how tall the status bar is over the page: 0 when Android keeps the page below it
+    probe = syncSystemBars.probe = h("div", { "aria-hidden": "true" });
+    probe.style.cssText = "position:fixed;top:0;left:0;width:1px;height:env(safe-area-inset-top);visibility:hidden;pointer-events:none";
+    document.body.append(probe);
+    new ResizeObserver(() => syncSystemBars()).observe(probe);
+  }
+  const under = probe.getBoundingClientRect().height > 0;
+  const style = document.documentElement.dataset.theme === "light" && under ? "LIGHT" : "DARK"; // DARK = light icons
+  if (style === syncSystemBars.last) return;
+  syncSystemBars.last = style;
+  cap.nativePromise("SystemBars", "setStyle", { style }).catch(() => { syncSystemBars.last = ""; });
 }
 $("look-glass").replaceChildren(...GLASSES.map(([id, name]) =>
   h("button", { class: "sw", type: "button", role: "radio", dataset: { glass: id }, "aria-checked": "false", onclick: () => planner.setSetting("glass", id) },
@@ -2030,19 +2064,28 @@ function showConfirm(next) {
   $("confirm-ok").textContent = del ? "删除" : "确认添加";
   $("confirm-ok").classList.toggle("danger", del);
   $("confirm-edit").hidden = del;
+  if (box.hidden) {
+    try { history.pushState({ ...(history.state || {}), confirm: true }, ""); } catch { /* ignore */ }
+  }
   box.hidden = false;
   requestAnimationFrame(() => box.classList.add("show"));
   $("confirm-ok").focus({ preventScroll: true });
 }
-function hideConfirm() {
+/** fromHistory: back was pressed (the entry is gone already); keep: leave the entry (the editor replaces it) */
+function hideConfirm(fromHistory = false, keep = false) {
+  if (!pending) return;
   pending = null;
   $("confirm").classList.remove("show");
   $("confirm").hidden = true;
+  if (fromHistory || !history.state?.confirm) return;
+  if (keep) {
+    try { history.replaceState({ ...history.state, confirm: false }, ""); } catch { /* ignore */ }
+  } else history.back();
 }
-$("confirm-cancel").addEventListener("click", hideConfirm);
+$("confirm-cancel").addEventListener("click", () => hideConfirm());
 $("confirm-edit").addEventListener("click", () => {
   const p = pending;
-  hideConfirm();
+  hideConfirm(false, true); // history.back() here would race with the editor's own history entry
   if (p) planner.openEditor(p.kind, null, p.item);
 });
 $("confirm-ok").addEventListener("click", () => {
@@ -2100,14 +2143,14 @@ $("ai").addEventListener("submit", (event) => {
     return;
   }
   // a question: ChatGPT in a new tab, signed in with your own account (memory, models, pictures)
-  window.open(text ? `${CHATGPT}?q=${encodeURIComponent(text)}` : CHATGPT, "_blank", "noopener");
+  openExternal(text ? `${CHATGPT}?q=${encodeURIComponent(text)}` : CHATGPT);
   input.value = "";
 });
 $("ai-plus").addEventListener("click", () => newItem(detailOpen() || wide.matches ? PANE_KIND[pane] : "todos"));
 
-// voice typing, where the browser has it (Chrome, Android)
+// voice typing, where the browser has it (Chrome); not in the app, whose web view has no speech service
 const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-if (Speech) {
+if (Speech && !inApp) {
   const mic = $("ai-mic");
   let listening = null;
   mic.hidden = false;
@@ -2228,7 +2271,7 @@ async function openMap(code = null, navigate = false) {
     }
   }
   try {
-    const { openCampusMap } = await import("./assets/campus-map.js?v=52c6628fe1");
+    const { openCampusMap } = await import("./assets/campus-map.js?v=89c8023325");
     openCampusMap({
       maplibreUrl: "./assets/vendor/maplibre-gl-6.12.0/maplibre-gl.mjs",
       campusUrl: "data/campus/campus.geojson",

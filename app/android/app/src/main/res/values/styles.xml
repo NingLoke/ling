@@ -13,6 +13,8 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <!-- the page's dark background: shows behind the status / navigation bars on older WebViews -->
+        <item name="android:windowBackground">@color/ic_launcher_background</item>
     </style>
 
 

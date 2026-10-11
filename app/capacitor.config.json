@@ -1,5 +1,16 @@
 {
   "appId": "io.github.ningloke.ling",
   "appName": "2E3 课表",
-  "webDir": "../dist/timetable-ling"
+  "webDir": "../dist/timetable-ling",
+  "android": {
+    "backgroundColor": "#0b0c10",
+    "minWebViewVersion": 80
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "initialViewportFitValueHint": "cover",
+      "style": "DARK"
+    }
+  }
 }

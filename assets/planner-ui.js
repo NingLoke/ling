@@ -266,8 +266,29 @@ export function createPlanner({ getNow, openModal, toast = () => {}, onChange = 
     openModal(settings, "planSettings");
   }
 
-  $("plan-export").addEventListener("click", () => {
-    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  $("plan-export").addEventListener("click", async (e) => {
+    const button = e.currentTarget; // currentTarget is gone after the await below
+    const json = JSON.stringify(state, null, 2);
+    // the Android app's web view can't save a download: copy the backup instead (or show it to copy by hand)
+    if (window.Capacitor?.isNativePlatform?.()) {
+      try {
+        await navigator.clipboard.writeText(json);
+        toast("备份已复制：贴到备忘录或发给自己存好。");
+      } catch {
+        const row = button.parentElement;
+        let box = row.parentElement.querySelector("textarea.backup-text");
+        if (!box) {
+          box = h("textarea", { class: "backup-text", readonly: true, rows: "6", "aria-label": "备份内容" });
+          row.after(box);
+        }
+        box.value = json;
+        box.focus();
+        box.select();
+        toast("长按全选，复制这段备份存好。");
+      }
+      return;
+    }
+    const blob = new Blob([json], { type: "application/json" });
     const a = h("a", { href: URL.createObjectURL(blob), download: `计划备份-${getNow().iso}.json` });
     document.body.append(a);
     a.click();
