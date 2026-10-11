@@ -3,8 +3,8 @@ name: Android APK
 # Builds the Android app (the Capacitor project in app/, which shows the same page as the website, from
 # dist/timetable-ling) and puts the APK on the "app-latest" GitHub Release, so there is one fixed download link.
 # Runs when the page, its assets or the app project change, or by hand from the Actions tab.
-# The APK is signed with the fixed debug key in app/android/app/debug.keystore and its versionCode is the run
-# number, so each new APK installs over the previous one without losing data.
+# The APK is signed with the fixed debug key in app/android/app/debug.keystore and its versionCode grows with time
+# (app/android/app/build.gradle), so each new APK installs over the previous one without losing data.
 on:
   workflow_dispatch:
   push:
@@ -68,9 +68,9 @@ jobs:
         working-directory: app
         run: npx cap sync android
 
-      - name: Build the APK
+      - name: Test and build the APK
         working-directory: app/android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: ./gradlew testDebugUnitTest assembleDebug --no-daemon --stacktrace
 
       - name: Name the APK
         run: cp app/android/app/build/outputs/apk/debug/app-debug.apk "$APK_NAME"
@@ -89,11 +89,17 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           title="Android app (latest build)"
-          notes="Built from ${GITHUB_REF_NAME} at ${GITHUB_SHA::7} by run #${GITHUB_RUN_NUMBER} (version 0.2.${GITHUB_RUN_NUMBER}). Install ${APK_NAME} over the previous one; your data is kept."
+          notes="Built from ${GITHUB_REF_NAME} at ${GITHUB_SHA::7} by run #${GITHUB_RUN_NUMBER} (version 0.3.${GITHUB_RUN_NUMBER}). Install ${APK_NAME} over the previous one; your data is kept."
           # The tag is never pointed at this commit: GITHUB_TOKEN can't set a ref on a commit whose workflow files
           # differ from the default branch (e.g. a branch commit that adds this file). So the first run creates the
           # tag at the default branch (gh's default without --target) and later runs only replace the APK.
           if gh release view "$TAG" >/dev/null 2>&1; then
+            # a re-run of an old run must not replace a newer APK
+            published=$(gh release view "$TAG" --json body -q .body | sed -n 's/.* by run #\([0-9][0-9]*\).*/\1/p' | head -n1)
+            if [ "${published:-0}" -gt "$GITHUB_RUN_NUMBER" ]; then
+              echo "Not published: ${TAG} already has run #${published}, newer than this run #${GITHUB_RUN_NUMBER}." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
             gh release edit "$TAG" --title "$title" --notes "$notes"
             gh release upload "$TAG" "$APK_NAME" --clobber
           else
