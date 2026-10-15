@@ -1,0 +1,16 @@
+rules_version = '2';
+// Each signed-in account can only read and write its own planner records: users/{uid}/records/{docId}.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/records/{docId} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(["kind", "id", "data", "deleted", "updatedAt", "serverAt"])
+        && request.resource.data.kind in ["events", "habits", "todos", "tick", "setting"]
+        && request.resource.data.id is string && request.resource.data.id.size() <= 200
+        && request.resource.data.deleted is bool
+        && request.resource.data.updatedAt is number
+        && request.resource.data.serverAt == request.time;
+    }
+  }
+}
