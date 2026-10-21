@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- launch screen: the page's dark background with the icon's >_ and spark in the middle -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item><color android:color="@color/ic_launcher_background"/></item>
+    <item android:drawable="@mipmap/ic_launcher_foreground" android:gravity="center" android:width="216dp" android:height="216dp"/>
+</layer-list>

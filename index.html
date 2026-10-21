@@ -1,54 +1,130 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="dark" data-glass="grey">
 <head>
 <meta charset="UTF-8">
-<meta name="code-version" content="1ce0817ec40b">
+<meta name="code-version" content="02b442446386">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>2E3 课表</title>
-<meta name="description" content="Curtin Malaysia 2E3 课表：现在上什么课、下一节在哪里。">
-<meta name="theme-color" content="#f3efe6">
-<meta name="color-scheme" content="light">
+<meta name="description" content="Curtin Malaysia 2E3 课表，加上每日任务、行程和待办：今天上什么课、要做什么。">
+<meta name="theme-color" content="#0b0c10">
+<meta name="color-scheme" content="dark light">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="2E3 课表">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap&text=%E8%AF%BE%E8%A1%A8">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<script>
+// the look chosen in settings (saved with the planner data), before the first paint
+try {
+  var look = (JSON.parse(localStorage.getItem("planner:v1")) || {}).settings || {};
+  var light = look.theme === "light" || (look.theme === "auto" && matchMedia("(prefers-color-scheme: light)").matches);
+  document.documentElement.dataset.theme = light ? "light" : "dark";
+  if (/^[a-z]{1,12}$/.test(look.glass || "")) document.documentElement.dataset.glass = look.glass;
+  if (typeof look.clarity === "number") document.documentElement.style.setProperty("--gk", String(1.6 - Math.min(100, Math.max(0, look.clarity)) * 0.012));
+} catch (e) { /* first visit, or storage blocked */ }
+</script>
 <style>
 :root {
-  --paper: #f3efe6;
-  --paper-hi: #f9f6ef;
-  --ink: #1d1c1a;
-  --ink-2: #4f4b45;
-  --ink-3: #6b665d;
-  --wash: rgba(29, 28, 26, .045);
-  --wash-2: rgba(29, 28, 26, .08);
-  --line: rgba(29, 28, 26, .12);
-  --line-2: rgba(29, 28, 26, .22);
-  --seal: #b5412e;
-  --seal-wash: rgba(181, 65, 46, .07);
-  --on-ink: #f8f4ec;
-  --serif: "Noto Serif SC", "Songti SC", "STSong", "SimSun", serif;
-  --sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", Roboto, "Segoe UI", sans-serif;
-  --brush: "Ma Shan Zheng", var(--serif);
-  --radius: 16px;
+  color-scheme: dark;
+  --bg: #0b0c10;
+  --bg-hi: #15171e;
+  --glow-1: rgba(43, 143, 255, .35);
+  --glow-2: rgba(122, 92, 255, .32);
+  --dots: rgba(255, 255, 255, .18);
+  --fg: #fff;
+  --fg-2: rgba(255, 255, 255, .8);
+  --fg-3: rgba(255, 255, 255, .58);
+  --line: rgba(255, 255, 255, .12);
+  --line-2: rgba(255, 255, 255, .22);
+  --wash: rgba(255, 255, 255, .05);
+  --wash-2: rgba(255, 255, 255, .09);
+  --accent: #6aafff;
+  --accent-2: #a58bff;
+  --accent-wash: rgba(122, 92, 255, .18);
+  --grad: linear-gradient(120deg, #2b8fff 0%, #7a5cff 55%, #e06bff 100%);
+  --mine: #ff7aa8;
+  --todo: #c9cfdb;
+  --warn: #ffa197;
+  --ok: #6fe0b0;
+  --star: #ffcf5c;
+  --solid: #fff;
+  --on-solid: #0b0c10;
+  --sheet: rgba(17, 19, 28, .88);
+  --sheet-head: rgb(17, 19, 28);
+  --field: rgba(255, 255, 255, .06);
+  --shadow: 0 16px 32px -16px rgba(0, 0, 0, .6);
+  --text-shadow: 0 1px 8px rgba(0, 0, 0, .35);
+  --rim: rgba(255, 255, 255, .55);
+  /* the glass: colour (r g b), how much of it, and the clarity slider's factor */
+  --glass: 232 235 242;
+  --ga: .18;
+  --gk: 1;
+  --blur: 20px;
+  --sat: 120%;
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", Roboto, "Segoe UI", sans-serif;
+  --mono: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --radius: 22px;
   --gutter: 16px;
   --hour: 56px;
+  --ai-h: 56px;
+  --dh: calc(env(safe-area-inset-top) + 62px); /* height of the detail header (week grid sticks under it) */
 }
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #e6e8ed;
+  --bg-hi: #f3f4f7;
+  --glow-1: rgba(43, 143, 255, .14);
+  --glow-2: rgba(122, 92, 255, .12);
+  --dots: rgba(20, 24, 40, .12);
+  --fg: #1c1d22;
+  --fg-2: rgba(28, 29, 34, .78);
+  --fg-3: rgba(28, 29, 34, .6);
+  --line: rgba(20, 24, 40, .1);
+  --line-2: rgba(20, 24, 40, .2);
+  --wash: rgba(20, 24, 40, .04);
+  --wash-2: rgba(20, 24, 40, .07);
+  --accent: #2c6ad6;
+  --accent-2: #6a4ce0;
+  --accent-wash: rgba(106, 76, 224, .1);
+  --mine: #d0457c;
+  --todo: #8a92a3;
+  --warn: #c0392b;
+  --ok: #23845a;
+  --star: #c98a00;
+  --solid: #1c1d22;
+  --on-solid: #fff;
+  --sheet: rgba(248, 249, 252, .9);
+  --sheet-head: rgb(248, 249, 252);
+  --field: rgba(255, 255, 255, .75);
+  --shadow: 0 1px 2px rgba(20, 24, 40, .05), 0 12px 28px -14px rgba(40, 50, 80, .28);
+  --text-shadow: none;
+  --rim: rgba(255, 255, 255, .95);
+  --sat: 140%;
+}
+/* glass colours (settings → 外观). Light theme has its own lighter set. The swatches use the same rules. */
+[data-glass="grey"] { --glass: 232 235 242; --ga: .18; }
+[data-glass="ink"] { --glass: 22 24 34; --ga: .42; }
+[data-glass="clear"] { --glass: 255 255 255; --ga: .02; }
+[data-glass="sky"] { --glass: 96 165 255; --ga: .24; }
+[data-glass="lavender"] { --glass: 150 120 255; --ga: .26; }
+[data-glass="rose"] { --glass: 255 120 170; --ga: .24; }
+[data-glass="amber"] { --glass: 255 170 90; --ga: .24; }
+[data-theme="light"][data-glass="grey"], [data-theme="light"] [data-glass="grey"] { --glass: 255 255 255; --ga: .58; }
+[data-theme="light"][data-glass="ink"], [data-theme="light"] [data-glass="ink"] { --glass: 222 225 233; --ga: .66; }
+[data-theme="light"][data-glass="clear"], [data-theme="light"] [data-glass="clear"] { --glass: 255 255 255; --ga: .16; }
+[data-theme="light"][data-glass="sky"], [data-theme="light"] [data-glass="sky"] { --glass: 212 229 255; --ga: .64; }
+[data-theme="light"][data-glass="lavender"], [data-theme="light"] [data-glass="lavender"] { --glass: 229 220 255; --ga: .64; }
+[data-theme="light"][data-glass="rose"], [data-theme="light"] [data-glass="rose"] { --glass: 255 221 234; --ga: .64; }
+[data-theme="light"][data-glass="amber"], [data-theme="light"] [data-glass="amber"] { --glass: 255 232 208; --ga: .64; }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; background: var(--bg); }
 body {
   margin: 0;
   min-height: 100vh;
-  background-color: var(--paper);
-  /* very faint paper grain */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .11 0 0 0 0 .1 0 0 0 0 .09 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  color: var(--ink);
+  background: var(--bg);
+  color: var(--fg);
   font-family: var(--sans);
   font-size: 15px;
   line-height: 1.55;
@@ -58,315 +134,549 @@ body {
 button { font: inherit; color: inherit; }
 h1, h2, h3, p { margin: 0; }
 a { color: inherit; }
-:focus-visible { outline: 2px solid var(--seal); outline-offset: 2px; border-radius: 8px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.num { font-family: var(--serif); font-variant-numeric: tabular-nums lining-nums; }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* ---------- background: dark charcoal, a faint dot grid, blue / violet glows ---------- */
+.bg { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+  background:
+    radial-gradient(55% 35% at 85% 8%, var(--glow-1), transparent 70%),
+    radial-gradient(60% 40% at 0% 95%, var(--glow-2), transparent 70%),
+    radial-gradient(120% 80% at 50% 40%, var(--bg-hi) 0%, var(--bg) 70%); }
+.bg::before { content: ""; position: absolute; inset: 0; opacity: .35;
+  background-image: radial-gradient(var(--dots) 1px, transparent 1.2px); background-size: 18px 18px;
+  -webkit-mask: radial-gradient(90% 70% at 50% 60%, #000, transparent); mask: radial-gradient(90% 70% at 50% 60%, #000, transparent); }
+.bg i { position: absolute; border-radius: 50%; filter: blur(48px); opacity: .5; }
+.bg i:nth-child(1) { left: -12%; top: 34%; width: 50vmin; height: 50vmin; background: #2b8fff; }
+.bg i:nth-child(2) { right: -14%; top: 55%; width: 56vmin; height: 56vmin; background: #7a5cff; }
+.bg i:nth-child(3) { left: 22%; top: 78%; width: 44vmin; height: 34vmin; background: #e06bff; opacity: .3; }
+[data-theme="light"] .bg i { opacity: .2; }
+[data-theme="light"] .bg i:nth-child(3) { opacity: .12; }
+
+/* ---------- frosted glass ---------- */
+.g {
+  position: relative;
+  border-radius: var(--radius);
+  background: rgb(var(--glass) / calc(var(--ga) * var(--gk)));
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(var(--sat));
+  backdrop-filter: blur(var(--blur)) saturate(var(--sat));
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, .2), inset -1px -1px 0 rgba(255, 255, 255, .08), var(--shadow);
+}
+.g::before { /* a thin bright rim, brighter at the top left, like light on glass */
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.2px; pointer-events: none;
+  background: linear-gradient(140deg, var(--rim), rgba(255, 255, 255, .08) 35%, rgba(255, 255, 255, .03) 65%, rgba(255, 255, 255, .35) 120%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+}
+.g::after { /* soft sheen on the top */
+  content: ""; position: absolute; left: 8%; right: 8%; top: 1px; height: 38%; border-radius: var(--radius) var(--radius) 50% 50%; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .12), rgba(255, 255, 255, 0));
+}
+.g > * { position: relative; z-index: 1; }
 
 .app {
   max-width: 560px;
   margin: 0 auto;
   padding:
-    calc(env(safe-area-inset-top) + 8px)
+    calc(env(safe-area-inset-top) + 10px)
     calc(env(safe-area-inset-right) + var(--gutter))
-    calc(env(safe-area-inset-bottom) + 28px + var(--host-inset, 0px))
+    calc(env(safe-area-inset-bottom) + var(--ai-h) + 34px + var(--host-inset, 0px))
     calc(env(safe-area-inset-left) + var(--gutter));
 }
+.home { text-shadow: var(--text-shadow); }
+body::after { /* the Android app draws under the status bar: keep that strip plain */
+  content: ""; position: fixed; z-index: 29; left: 0; right: 0; top: 0; height: env(safe-area-inset-top); background: var(--bg); pointer-events: none;
+}
 
-/* ---------- masthead ---------- */
-.mast { position: relative; padding: 22px 0 20px; isolation: isolate; }
-.mist {
-  position: absolute; z-index: -1; pointer-events: none;
-  top: 0; right: calc(-1 * var(--gutter)); width: min(118%, 560px); height: 150px;
+/* ---------- header: ~/today · date · week, the day, the Codex × Claude mark (= settings) ---------- */
+.mast { display: flex; align-items: flex-start; gap: 12px; padding: 16px 2px 0; }
+.mast-main { min-width: 0; margin-right: auto; }
+.path { font-size: 12.5px; color: var(--fg-3); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.path b { color: var(--accent); font-weight: 500; }
+.big { font-size: 38px; font-weight: 700; line-height: 1.12; margin-top: 4px; letter-spacing: -.01em; }
+.big small { font-size: 16px; font-weight: 400; color: var(--fg-3); margin-left: 8px; letter-spacing: 0; }
+.mark {
+  position: relative; flex: none; display: flex; flex-direction: column; align-items: center; gap: 5px;
+  margin: 2px -6px 0 0; padding: 8px 6px 6px; border: 0; border-radius: 16px; background: none; cursor: pointer; text-shadow: none;
 }
-.kicker { font-size: 12px; letter-spacing: .14em; color: var(--ink-3); }
-.title-row { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
-.title {
-  font-family: var(--serif); font-weight: 700; font-size: 46px; line-height: 1.05; letter-spacing: .02em;
+.mark:hover { background: var(--wash); }
+.mark-row { display: flex; align-items: center; gap: 10px; }
+.pr { position: relative; font-family: var(--mono); font-size: 24px; font-weight: 800; letter-spacing: -.06em; line-height: 1; white-space: nowrap; }
+.pr .fill, .pr .halo { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.pr .halo { position: absolute; inset: 0; filter: blur(10px); opacity: .8; }
+[data-theme="light"] .pr .halo { opacity: .35; }
+.spark { width: 21px; height: 21px; overflow: visible; display: block; }
+.nm { font-family: var(--mono); font-size: 10px; letter-spacing: .06em; color: var(--fg-3); white-space: nowrap; }
+.nm b { font-weight: 500; color: #8fb4ff; }
+.nm b + b { color: #ee9a7c; }
+[data-theme="light"] .nm b { color: #3b6fd8; }
+[data-theme="light"] .nm b + b { color: #c4613f; }
+.mark::after { /* sync status dot */
+  content: ""; position: absolute; top: 4px; right: 0; width: 7px; height: 7px; border-radius: 50%; background: transparent;
 }
-.stamp {
-  display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
-  width: 30px; height: 46px; border-radius: 5px; background: var(--seal); color: var(--on-ink);
-  font-family: var(--brush); font-size: 17px; line-height: 1.05; transform: rotate(-4deg) translateY(2px);
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .16), 0 1px 0 rgba(0, 0, 0, .08);
-}
-.today-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin-top: 12px; }
-.today-date { font-family: var(--serif); font-weight: 500; font-size: 17px; }
-.chip {
-  display: inline-flex; align-items: center; min-height: 26px; padding: 0 10px; border-radius: 999px;
-  border: 1px solid var(--line-2); font-size: 13px; color: var(--ink-2); background: rgba(249, 246, 239, .6);
-}
-.chip:empty { display: none; }
-.map-btn {
-  position: relative; margin-left: auto; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px 0 11px;
-  border-radius: 999px; border: 1px solid var(--line-2); background: var(--paper-hi); color: var(--ink); font-size: 13px; cursor: pointer;
-  box-shadow: 0 6px 16px -14px rgba(29, 28, 26, .6);
-}
-.map-btn::after { content: ""; position: absolute; inset: -4px; } /* 44px to tap */
-.map-btn svg { width: 15px; height: 15px; color: var(--seal); }
-.map-btn:hover { border-color: rgba(181, 65, 46, .5); }
+.mark[data-mode="synced"]::after { background: var(--ok); }
+.mark[data-mode="syncing"]::after, .mark[data-mode="connecting"]::after { background: var(--fg-3); }
+.mark[data-mode="offline"]::after, .mark[data-mode="signed-out"]::after { background: #e7b84a; }
+.mark[data-mode="error"]::after { background: var(--warn); }
 
-/* ---------- now card ---------- */
-.now {
-  position: relative; overflow: hidden;
-  min-height: 196px; padding: 18px 18px 16px;
-  border-radius: 20px; background: var(--paper-hi);
-  border: 1px solid var(--line);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, .7) inset, 0 12px 30px -24px rgba(29, 28, 26, .45);
+/* ---------- the week strip ---------- */
+.strip { margin-top: 14px; padding: 4px 4px 5px; touch-action: pan-y; }
+.strip-head { display: flex; align-items: center; gap: 2px; min-height: 30px; padding: 0 2px; }
+.week-label { margin-right: auto; padding-left: 10px; font-size: 11.5px; color: var(--fg-3); letter-spacing: .02em; white-space: nowrap; }
+.week-label b { font-weight: 500; color: var(--fg-2); }
+.nav-btn {
+  position: relative; width: 30px; height: 30px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%;
+  background: none; color: var(--fg-2); cursor: pointer;
 }
-.now::after { /* an ink wash in the corner */
-  content: ""; position: absolute; right: -60px; bottom: -70px; width: 220px; height: 180px; pointer-events: none;
-  background: radial-gradient(closest-side, rgba(29, 28, 26, .06), transparent); border-radius: 50%;
+.nav-btn::after { content: ""; position: absolute; inset: -7px; }
+.nav-btn:hover { background: var(--wash-2); }
+.nav-btn:disabled { opacity: .3; cursor: default; background: none; }
+.nav-btn svg { width: 16px; height: 16px; }
+.back-btn {
+  min-height: 26px; margin-right: 4px; padding: 0 10px; border: 0; border-radius: 999px; background: var(--accent-wash);
+  color: var(--accent); font-size: 12px; cursor: pointer; white-space: nowrap;
 }
-.now[data-kind="live"] { border-color: rgba(181, 65, 46, .45); }
-.now-label { display: flex; align-items: center; gap: 8px; font-size: 13px; letter-spacing: .08em; color: var(--ink-2); }
-.now-label .when { margin-left: auto; letter-spacing: 0; color: var(--ink-3); font-size: 13px; }
-.now[data-kind="live"] .now-label > span:first-of-type { color: var(--seal); font-weight: 600; }
-.pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--seal); box-shadow: 0 0 0 0 rgba(181, 65, 46, .4); animation: pulse 2.4s ease-out infinite; }
-.calm-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); opacity: .55; }
-@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(181, 65, 46, .38); } 70%, 100% { box-shadow: 0 0 0 9px rgba(181, 65, 46, 0); } }
-.now-caption { margin-top: 14px; font-size: 13px; color: var(--ink-3); }
-.now-big { margin-top: 12px; font-family: var(--serif); font-weight: 500; font-size: 28px; line-height: 1.2; letter-spacing: .01em; }
-.now-big small { font-size: 15px; color: var(--ink-2); margin-right: 6px; font-family: var(--sans); font-weight: 400; }
-.now .lesson-head { margin-top: 12px; }
+.days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
+.day {
+  position: relative; min-height: 54px; padding: 4px 0 6px; border: 0; border-radius: 17px; background: transparent; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; color: var(--fg);
+}
+.day .dn { font-size: 12px; color: var(--fg-3); line-height: 1.4; }
+.day .dd { font-family: var(--mono); font-size: 16px; font-weight: 500; line-height: 1.3; }
+.day .dots { display: flex; gap: 3px; height: 4px; margin-top: 4px; }
+.day .dots i { width: 4px; height: 4px; border-radius: 50%; background: var(--accent); }
+.day .dots i.mine { background: var(--mine); }
+.day.weekend .dd { color: var(--fg-2); }
+.day.today .dn { color: var(--accent); font-weight: 600; }
+.day:not([aria-pressed="true"]):hover { background: var(--wash); }
+.day[aria-pressed="true"] {
+  background: linear-gradient(140deg, color-mix(in srgb, var(--accent) 45%, transparent), color-mix(in srgb, var(--accent-2) 32%, transparent));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .35);
+}
+.day[aria-pressed="true"] .dn, .day[aria-pressed="true"] .dd { color: #fff; }
+[data-theme="light"] .day[aria-pressed="true"] { background: var(--solid); box-shadow: none; }
+[data-theme="light"] .day[aria-pressed="true"] .dots i { background: #fff; opacity: .85; }
+
+/* ---------- 此刻: only while a class is on (or about to start) ---------- */
+.now { margin-top: 12px; padding: 14px 16px 15px; }
+.now-label { display: flex; align-items: center; gap: 8px; font-size: 12px; letter-spacing: .04em; color: var(--fg-2); }
+.now-label .when { margin-left: auto; font-family: var(--mono); letter-spacing: 0; color: var(--fg-3); }
+.pulse, .calm-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.pulse { animation: pulse 2.4s ease-out infinite; }
+.calm-dot { background: var(--fg-3); }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 50%, transparent); } 70%, 100% { box-shadow: 0 0 0 8px transparent; } }
+.now-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.now-row .lesson-head { flex: 1; }
+.now-left { flex: none; font-size: 17px; font-weight: 600; white-space: nowrap; }
+.now-left small { font-family: var(--sans); font-size: 12px; font-weight: 400; color: var(--fg-3); margin-left: 3px; }
 .now .rooms { margin-top: 8px; }
-.now-after { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line-2); font-size: 14px; color: var(--ink-2); }
-.now-after b { font-family: var(--serif); font-weight: 500; color: var(--ink); margin: 0 4px; }
-.now-quiet { margin-top: 16px; display: flex; align-items: center; gap: 14px; color: var(--ink-2); }
-.now-quiet svg { width: 54px; height: 54px; flex: none; }
-.now-title { font-family: var(--serif); font-weight: 700; font-size: 22px; color: var(--ink); }
-.link-btn {
-  display: inline-flex; align-items: center; gap: 4px; min-height: 44px; margin: 6px -8px -10px auto; padding: 0 8px;
-  border: 0; background: none; color: var(--ink-2); font-size: 13px; cursor: pointer; border-radius: 10px;
-}
-.link-btn:hover { color: var(--seal); }
-.now-foot { display: flex; }
-.bar { position: relative; height: 4px; margin-top: 12px; border-radius: 4px; background: var(--wash-2); overflow: hidden; }
-.bar i { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: var(--seal); }
+.now-after { font-size: 12.5px; color: var(--fg-3); }
+.now-after b { font-family: var(--mono); font-weight: 500; color: var(--fg-2); margin: 0 4px; }
+.bar { position: relative; height: 4px; margin-top: 10px; border-radius: 4px; background: var(--wash-2); overflow: hidden; }
+.bar i { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: var(--grad); }
+.problem { text-align: center; padding: 10px 6px 4px; }
+.problem p { color: var(--fg-2); margin: 6px 0 14px; font-size: 14px; }
+.problem .now-title { font-size: 20px; font-weight: 700; color: var(--fg); }
 
-/* ---------- lesson pieces (shared by cards) ---------- */
+/* ---------- the four cards ---------- */
+.cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+.w {
+  min-height: 128px; padding: 14px; display: flex; flex-direction: column; align-items: stretch; text-align: left;
+  border: 0; color: var(--fg); cursor: pointer; transition: transform .15s;
+}
+.w:active { transform: scale(.98); }
+.w .lbl { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--fg-2); }
+.w .lbl i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+.w .lbl svg { width: 14px; height: 14px; margin-left: auto; opacity: .45; }
+.w .n { margin-top: auto; padding-top: 16px; font-size: 34px; font-weight: 700; line-height: 1; letter-spacing: -.03em; }
+.w .n small { font-family: var(--sans); font-size: 14px; font-weight: 400; color: var(--fg-3); margin-left: 3px; letter-spacing: 0; }
+.w .line { margin-top: 6px; font-size: 12px; color: var(--fg-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.w .line.warn { color: var(--warn); }
+.w .line.ok { color: var(--ok); }
+.w[aria-current="true"] { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 75%, transparent), var(--shadow); }
+
+/* ---------- detail: the full list behind each card (a sheet on phones, a column on computers) ---------- */
+.detail {
+  position: fixed; inset: 0; z-index: 30; overflow-y: auto; overscroll-behavior: contain;
+  padding: 0 calc(env(safe-area-inset-right) + var(--gutter)) calc(env(safe-area-inset-bottom) + var(--ai-h) + 40px + var(--host-inset, 0px)) calc(env(safe-area-inset-left) + var(--gutter));
+  background: var(--sheet);
+  -webkit-backdrop-filter: blur(26px) saturate(140%); backdrop-filter: blur(26px) saturate(140%);
+  transform: translateY(100%); visibility: hidden;
+  transition: transform .34s cubic-bezier(.2, .8, .2, 1), visibility 0s .34s;
+}
+.detail.open { transform: none; visibility: visible; transition: transform .34s cubic-bezier(.2, .8, .2, 1); }
+html.detail-open { overflow: hidden; }
+.detail-in { max-width: 560px; margin: 0 auto; }
+.detail-head {
+  position: sticky; top: 0; z-index: 4; display: flex; align-items: center; gap: 8px;
+  margin: 0 calc(-1 * var(--gutter)); padding: calc(env(safe-area-inset-top) + 10px) var(--gutter) 10px;
+  background: var(--sheet-head);
+}
+.close-btn {
+  flex: none; width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%;
+  background: var(--wash-2); color: var(--fg); cursor: pointer;
+}
+.close-btn svg { width: 18px; height: 18px; }
+.pills { flex: 1; min-width: 0; display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--wash-2); overflow-x: auto; scrollbar-width: none; }
+.pills::-webkit-scrollbar { display: none; }
+.pills button {
+  flex: 1 0 auto; min-height: 36px; padding: 0 10px; border: 0; border-radius: 999px; background: transparent; color: var(--fg-2);
+  font-size: 13.5px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.pills button i { width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+.pills button[aria-selected="true"] { background: var(--solid); color: var(--on-solid); font-weight: 600; }
+.pane:focus { outline: none; }
+.pane-top { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; margin: 16px 2px 12px; }
+.sec-title { font-size: 20px; font-weight: 700; letter-spacing: .02em; }
+.pane-date { font-family: var(--mono); font-size: 12.5px; color: var(--fg-3); }
+.add-btn {
+  margin-left: auto; min-height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--solid); color: var(--on-solid);
+  font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.plan-sub { margin: 18px 2px 6px; font-size: 12.5px; font-weight: 500; letter-spacing: .12em; color: var(--fg-3); }
+
+/* ---------- lesson pieces ---------- */
 .lesson-head { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .seal {
-  flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 7px;
-  background: var(--tone, var(--ink)); color: var(--on-ink);
-  font-family: var(--serif); font-weight: 700; font-size: 18px; line-height: 1;
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .12);
+  flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; font-size: 16px; font-weight: 700; line-height: 1;
+  background: color-mix(in srgb, var(--tone, #888) 24%, transparent); color: color-mix(in srgb, var(--tone, #888) 62%, #fff);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone, #888) 50%, transparent);
 }
-.seal.lg { width: 46px; height: 46px; font-size: 25px; border-radius: 9px; }
+[data-theme="light"] .seal { background: color-mix(in srgb, var(--tone, #888) 16%, #fff); color: color-mix(in srgb, var(--tone, #888) 72%, #000); }
+.seal.lg { width: 42px; height: 42px; font-size: 20px; border-radius: 12px; }
+.seal.mine { --tone: var(--mine); }
 .unit-name { min-width: 0; }
-.unit-name h3 { font-family: var(--serif); font-weight: 700; font-size: 18px; line-height: 1.3; overflow-wrap: anywhere; }
-.now .unit-name h3 { font-size: 22px; }
-.unit-name .sub { font-size: 13px; color: var(--ink-3); line-height: 1.4; }
-.rooms { display: grid; gap: 2px; font-size: 14px; color: var(--ink-2); }
+.unit-name h3 { font-size: 17px; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.now .unit-name h3 { font-size: 19px; }
+.unit-name .sub { font-size: 12.5px; color: var(--fg-3); line-height: 1.4; }
+.rooms { display: grid; gap: 2px; font-size: 14px; color: var(--fg-2); }
 .rooms span { display: flex; align-items: flex-start; gap: 6px; overflow-wrap: anywhere; }
-.rooms svg { flex: none; width: 14px; height: 14px; margin-top: 3px; color: var(--ink-3); }
+.rooms svg { flex: none; width: 14px; height: 14px; margin-top: 3px; color: var(--fg-3); }
 .room-link {
   position: relative; display: flex; align-items: flex-start; gap: 6px; width: fit-content; max-width: 100%; min-height: 32px; padding: 3px 0;
   border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; overflow-wrap: anywhere;
 }
-.room-link i { flex: none; align-self: center; font-style: normal; font-size: 11.5px; color: var(--seal); padding: 0 6px; border-radius: 999px; background: var(--seal-wash); }
-.room-link::after { content: ""; position: absolute; inset: -1px -4px; } /* a little wider, never over the next room */
-.room-link:hover { color: var(--ink); }
-.room-link:hover svg { color: var(--seal); }
-.go-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.room-link i { flex: none; align-self: center; font-style: normal; font-size: 11.5px; color: var(--accent); padding: 0 6px; border-radius: 999px; background: var(--accent-wash); }
+.room-link::after { content: ""; position: absolute; inset: -1px -4px; }
+.room-link:hover { color: var(--fg); }
+.room-link:hover svg { color: var(--accent); }
+.go-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-top: 10px; }
 .go-btn {
-  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 18px 0 14px; border-radius: 999px;
-  border: 1px solid var(--seal); background: var(--seal); color: var(--on-ink); font-size: 15px; font-weight: 600; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 16px 0 12px; border: 0; border-radius: 999px;
+  background: var(--grad); color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; text-shadow: none;
+  box-shadow: 0 8px 18px -10px rgba(122, 92, 255, .8);
 }
-.go-btn svg { width: 17px; height: 17px; }
-.go-btn.quiet { background: transparent; color: var(--seal); border-color: rgba(181, 65, 46, .45); font-weight: 500; font-size: 14px; }
-.go-row .link-btn { margin: 0 -8px 0 auto; }
+.go-btn svg { width: 16px; height: 16px; }
+.go-btn.quiet { background: var(--wash-2); color: var(--fg); font-weight: 500; font-size: 13.5px; box-shadow: none; }
+.link-btn { min-height: 40px; padding: 0 8px; border: 0; border-radius: 10px; background: none; color: var(--fg-2); font-size: 13px; cursor: pointer; }
+.link-btn:hover { color: var(--accent); }
 
-/* ---------- schedule ---------- */
-.sched { margin-top: 26px; min-height: 420px; }
-.sched-top { display: flex; align-items: center; gap: 8px; }
-.sec-title { font-family: var(--serif); font-weight: 700; font-size: 20px; letter-spacing: .08em; margin-right: auto; }
-.back-btn {
-  min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(181, 65, 46, .35);
-  background: var(--seal-wash); color: var(--seal); font-size: 13px; cursor: pointer; white-space: nowrap;
-}
-.back-btn[hidden] { display: none; }
+/* ---------- the day's timetable ---------- */
+.sched-top { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 16px 2px 4px; }
+.sched-top .sec-title { margin-right: auto; }
 .seg { display: inline-flex; padding: 2px; border-radius: 999px; background: var(--wash-2); }
 .seg button {
-  min-width: 48px; min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent;
-  color: var(--ink-2); font-size: 14px; cursor: pointer;
+  min-width: 44px; min-height: 36px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent;
+  color: var(--fg-2); font-size: 13.5px; cursor: pointer;
 }
-.seg button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
-.weeknav { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 4px; margin-top: 12px; }
-.icon-btn {
-  width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px;
-  border: 1px solid var(--line); background: var(--paper-hi); color: var(--ink); cursor: pointer;
+.seg button[aria-pressed="true"] { background: var(--solid); color: var(--on-solid); font-weight: 600; }
+.map-btn {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px 0 10px; border-radius: 999px;
+  border: 1px solid var(--line-2); background: var(--wash); color: var(--fg); font-size: 13px; cursor: pointer;
 }
-.icon-btn:disabled { opacity: .35; cursor: default; }
-.icon-btn svg { width: 18px; height: 18px; }
-.week-label { text-align: center; font-size: 15px; color: var(--ink-2); line-height: 1.3; }
-.week-label b { font-family: var(--serif); font-weight: 700; color: var(--ink); font-size: 16px; margin-right: 2px; }
-
-.days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; margin-top: 12px; }
-.day {
-  position: relative; min-height: 66px; padding: 6px 0 8px; border: 1px solid transparent; border-radius: 14px;
-  background: transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 1px;
-}
-.day .dn { font-size: 12px; color: var(--ink-3); }
-.day .dd { font-family: var(--serif); font-weight: 500; font-size: 19px; line-height: 1.25; }
-.day .dots { display: flex; gap: 3px; height: 6px; margin-top: 3px; }
-.day .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--ink-3); opacity: .7; }
-.day.weekend .dd { color: var(--ink-3); }
-.day.today .dd, .day.today .dn { color: var(--seal); }
-.day.today::after { content: ""; position: absolute; top: 5px; right: 7px; width: 5px; height: 5px; border-radius: 50%; background: var(--seal); }
-.day[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); }
-.day[aria-pressed="true"] .dn, .day[aria-pressed="true"] .dd { color: var(--on-ink); }
-.day[aria-pressed="true"] .dots i { background: var(--on-ink); opacity: .8; }
-.day[aria-pressed="true"].today::after { background: #f0a493; }
-.day:not([aria-pressed="true"]):hover { background: var(--wash); }
-
-.dayhead { display: flex; align-items: baseline; gap: 8px; margin: 18px 2px 10px; font-size: 14px; color: var(--ink-3); }
-.dayhead strong { font-family: var(--serif); font-weight: 700; font-size: 17px; color: var(--ink); }
-.dayhead .tag { color: var(--seal); }
+.map-btn svg { width: 15px; height: 15px; color: var(--accent); }
+.map-btn:hover { border-color: var(--accent); }
+.dayhead { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; margin: 14px 2px 10px; font-size: 13px; color: var(--fg-3); }
+.dayhead strong { font-size: 16px; font-weight: 600; color: var(--fg); }
+.dayhead .tag { color: var(--accent); }
 .list { display: grid; gap: 10px; }
 .card {
-  display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 12px;
-  padding: 14px 14px 14px 12px; border-radius: var(--radius);
-  background: var(--paper-hi); border: 1px solid var(--line); position: relative;
-  scroll-margin: 90px;
+  position: relative; display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 12px;
+  padding: 14px 14px 14px 12px; border-radius: 18px; background: var(--wash); border: 1px solid var(--line);
+  scroll-margin: calc(var(--dh) + 20px);
 }
-.card::before { /* brush stroke in the subject's ink */
-  content: ""; position: absolute; left: -1px; top: 14px; bottom: 14px; width: 3px; border-radius: 3px;
-  background: var(--tone, var(--ink)); opacity: .55;
-}
+.card::before { content: ""; position: absolute; left: -1px; top: 14px; bottom: 14px; width: 3px; border-radius: 3px; background: var(--tone, var(--fg-3)); opacity: .8; }
 .card .t { display: flex; flex-direction: column; align-items: flex-start; }
-.card .t .s { font-family: var(--serif); font-weight: 700; font-size: 18px; line-height: 1.25; }
-.card .t .e { font-family: var(--serif); font-size: 14px; color: var(--ink-3); }
-.card .t .d { margin-top: 4px; font-size: 12px; color: var(--ink-3); }
+.card .t .s { font-family: var(--mono); font-weight: 600; font-size: 16px; line-height: 1.3; }
+.card .t .e { font-family: var(--mono); font-size: 13px; color: var(--fg-3); }
+.card .t .d { margin-top: 4px; font-size: 11.5px; color: var(--fg-3); }
 .card .rooms { margin-top: 8px; }
-.card .staff { margin-top: 6px; font-size: 12.5px; color: var(--ink-3); overflow-wrap: anywhere; }
-.card.live { border-color: rgba(181, 65, 46, .5); background: linear-gradient(180deg, var(--seal-wash), transparent 70%), var(--paper-hi); }
-.card.live::before { background: var(--seal); opacity: 1; }
-.card .live-meta { margin-top: 10px; font-size: 13px; color: var(--seal); }
+.card .staff { margin-top: 6px; font-size: 12.5px; color: var(--fg-3); overflow-wrap: anywhere; }
+.card.live { border-color: color-mix(in srgb, var(--accent) 55%, transparent); background: linear-gradient(180deg, var(--accent-wash), transparent 75%), var(--wash); }
+.card.live::before { background: var(--grad); opacity: 1; }
+.card .live-meta { margin-top: 10px; font-size: 12.5px; color: var(--accent); }
 .card .live-meta .bar { margin-top: 6px; }
 .card.past { background: transparent; border-style: dashed; }
-.card.past::before, .card.past .seal { opacity: .4; }
-.card.past .unit-name h3 { color: var(--ink-2); }
-.card .done-tag { font-size: 12px; color: var(--ink-3); margin-top: 6px; }
+.card.past::before, .card.past .seal { opacity: .45; }
+.card.past .unit-name h3 { color: var(--fg-2); }
+.card .done-tag { margin-top: 6px; font-size: 12px; color: var(--fg-3); }
 .card.flash { animation: flash 1.4s ease-out; }
-@keyframes flash { 0% { box-shadow: 0 0 0 3px rgba(181, 65, 46, .45); } 100% { box-shadow: 0 0 0 3px rgba(181, 65, 46, 0); } }
-.gap {
-  display: flex; align-items: center; gap: 10px; padding: 0 6px; font-size: 12.5px; color: var(--ink-3);
-}
-.gap::before, .gap::after { content: ""; flex: 1; height: 1px; background: repeating-linear-gradient(90deg, var(--line-2) 0 6px, transparent 6px 11px); }
-.empty { padding: 34px 12px 30px; text-align: center; color: var(--ink-3); border-radius: var(--radius); border: 1px dashed var(--line-2); }
-.empty svg { width: 76px; height: 76px; display: block; margin: 0 auto 10px; }
-.empty strong { display: block; font-family: var(--serif); font-weight: 700; font-size: 17px; color: var(--ink-2); margin-bottom: 2px; }
-
-/* week grid */
-.wk { margin-top: 14px; }
-.wk-head, .wk-body { display: grid; grid-template-columns: 30px repeat(var(--cols), minmax(0, 1fr)); }
-.wk-head { position: sticky; top: 0; z-index: 2; background: var(--paper); padding: 4px 0 6px; border-bottom: 1px solid var(--line); }
-.wk-head div { text-align: center; font-size: 12px; color: var(--ink-3); line-height: 1.25; }
-.wk-head div b { display: block; font-family: var(--serif); font-weight: 500; font-size: 15px; color: var(--ink); }
-.wk-head .today, .wk-head .today b { color: var(--seal); }
-.wk-body { position: relative; }
-.wk-axis { position: relative; }
-.wk-axis span { position: absolute; right: 6px; transform: translateY(-50%); font-size: 10.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
-.wk-col { position: relative; border-left: 1px solid var(--line); }
-.wk-col.today { background: linear-gradient(180deg, var(--seal-wash), rgba(181, 65, 46, .02)); }
-.wk-lines { position: absolute; inset: 0 0 0 30px; pointer-events: none; }
-.wk-lines i { position: absolute; left: 0; right: 0; height: 1px; background: var(--line); opacity: .6; }
-.blk {
-  position: absolute; left: 2px; right: 2px; padding: 4px 4px 3px 6px; overflow: hidden; text-align: left;
-  border: 0; border-radius: 8px; cursor: pointer; color: var(--ink);
-  background: var(--tint); box-shadow: inset 3px 0 0 var(--tone);
-  display: flex; flex-direction: column; gap: 1px; font-size: 10.5px; line-height: 1.25;
-}
-.blk b { font-family: var(--serif); font-weight: 700; font-size: 11.5px; line-height: 1.2; overflow-wrap: anywhere;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.blk span { color: var(--ink-2); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.blk.live { box-shadow: inset 3px 0 0 var(--seal), 0 0 0 1.5px var(--seal); }
-.blk.past { opacity: .55; }
-.blk:hover { filter: brightness(.97); }
-.now-line { position: absolute; left: 0; right: 0; height: 0; border-top: 1.5px solid var(--seal); z-index: 1; pointer-events: none; }
-.now-line::before { content: ""; position: absolute; left: -4px; top: -4.75px; width: 8px; height: 8px; border-radius: 50%; background: var(--seal); }
-.wk-note { margin-top: 10px; font-size: 12.5px; color: var(--ink-3); text-align: center; }
-
-/* ---------- units ---------- */
-.units { margin-top: 28px; border-top: 1px solid var(--line); }
-.units summary {
-  list-style: none; display: flex; align-items: center; gap: 8px; min-height: 52px; cursor: pointer;
-  font-family: var(--serif); font-weight: 700; font-size: 18px; letter-spacing: .08em;
-}
-.units summary::-webkit-details-marker { display: none; }
-.units summary .count { font-family: var(--sans); font-weight: 400; font-size: 13px; color: var(--ink-3); letter-spacing: 0; }
-.units summary svg { margin-left: auto; width: 18px; height: 18px; color: var(--ink-3); transition: transform .2s; }
-.units[open] summary svg { transform: rotate(180deg); }
-.unit-list { display: grid; gap: 14px; padding: 4px 0 8px; }
-.unit-row { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; }
-.unit-row h3 { font-family: var(--serif); font-weight: 700; font-size: 16px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
-.unit-row h3 small { font-family: var(--sans); font-weight: 400; font-size: 12px; color: var(--ink-3); letter-spacing: .04em; }
-.unit-row p { font-size: 13px; color: var(--ink-2); line-height: 1.5; overflow-wrap: anywhere; }
-.unit-row p span { color: var(--ink-3); }
-
-.units-hint { margin: 0 0 12px; font-size: 13px; color: var(--ink-3); }
-.check-btn {
-  margin-top: 6px; min-height: 44px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line-2);
-  background: var(--paper-hi); color: var(--ink); font-size: 13px; cursor: pointer;
-}
-.check-btn:hover { border-color: var(--seal); color: var(--seal); }
-.check-btn.primary { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
-.check-btn.primary:hover { color: var(--on-ink); background: #000; }
-.unit-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
-.unit-actions .check-btn { margin-top: 0; }
+@keyframes flash { 0% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 60%, transparent); } 100% { box-shadow: 0 0 0 3px transparent; } }
+.card.mine { --tone: var(--mine); background: linear-gradient(90deg, color-mix(in srgb, var(--mine) 12%, transparent), transparent 60%), var(--wash); }
+.card.mine.past { background: transparent; }
 .verify-btn {
   margin: 6px 0 -6px -8px; min-height: 40px; min-width: 44px; padding: 0 8px; border: 0; border-radius: 10px;
-  background: none; color: var(--seal); font-size: 12.5px; cursor: pointer; text-align: left;
+  background: none; color: var(--accent); font-size: 12.5px; cursor: pointer; text-align: left;
 }
 .verify-btn::after { content: " ›"; }
-.verify-btn:hover { background: var(--seal-wash); }
+.verify-btn:hover { background: var(--accent-wash); }
+.gap { display: flex; align-items: center; gap: 10px; padding: 0 6px; font-size: 12px; color: var(--fg-3); font-family: var(--mono); }
+.gap::before, .gap::after { content: ""; flex: 1; height: 1px; background: repeating-linear-gradient(90deg, var(--line-2) 0 6px, transparent 6px 11px); }
+.empty { padding: 30px 12px 26px; text-align: center; color: var(--fg-3); border-radius: 18px; border: 1px dashed var(--line-2); }
+.empty svg { width: 64px; height: 64px; display: block; margin: 0 auto 10px; color: var(--fg-3); }
+.empty strong { display: block; font-size: 16px; font-weight: 600; color: var(--fg-2); margin-bottom: 2px; }
+.empty.small { padding: 18px 12px; font-size: 13.5px; }
+.day-add {
+  justify-self: start; min-height: 40px; margin-top: 10px; padding: 0 14px; border-radius: 999px; border: 1px dashed var(--line-2);
+  background: none; color: var(--fg-2); font-size: 13px; cursor: pointer;
+}
+.day-add:hover { color: var(--mine); border-color: var(--mine); }
+.list .day-add { margin-top: 0; }
 
-/* ---------- SWS check sheet ---------- */
+/* week grid */
+.wk-nav { display: grid; grid-template-columns: 40px 1fr 40px; align-items: center; margin-top: 10px; }
+.wk-nav .week-label { padding: 0; margin: 0; text-align: center; font-size: 13px; }
+.wk { margin-top: 8px; }
+.wk-head, .wk-body { display: grid; grid-template-columns: 30px repeat(var(--cols), minmax(0, 1fr)); }
+.wk-head { position: sticky; top: var(--dh); z-index: 2; padding: 4px 0 6px; border-bottom: 1px solid var(--line); background: var(--sheet-head); }
+.wk-head div { text-align: center; font-size: 12px; color: var(--fg-3); line-height: 1.25; }
+.wk-head div b { display: block; font-family: var(--mono); font-weight: 500; font-size: 14px; color: var(--fg); }
+.wk-head .today, .wk-head .today b { color: var(--accent); }
+.wk-body { position: relative; }
+.wk-axis { position: relative; }
+.wk-axis span { position: absolute; right: 6px; transform: translateY(-50%); font-family: var(--mono); font-size: 10px; color: var(--fg-3); }
+.wk-col { position: relative; border-left: 1px solid var(--line); }
+.wk-col.today { background: linear-gradient(180deg, var(--accent-wash), transparent); }
+.wk-lines { position: absolute; inset: 0 0 0 30px; pointer-events: none; }
+.wk-lines i { position: absolute; left: 0; right: 0; height: 1px; background: var(--line); opacity: .7; }
+.blk {
+  position: absolute; left: 2px; right: 2px; padding: 4px 4px 3px 6px; overflow: hidden; text-align: left;
+  border: 0; border-radius: 8px; cursor: pointer; color: var(--fg);
+  background: color-mix(in srgb, var(--tone) 22%, transparent); box-shadow: inset 3px 0 0 var(--tone);
+  display: flex; flex-direction: column; gap: 1px; font-size: 10.5px; line-height: 1.25;
+}
+[data-theme="light"] .blk { background: color-mix(in srgb, var(--tone) 14%, #fff); }
+.blk b { font-weight: 600; font-size: 11px; line-height: 1.2; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.blk span { color: var(--fg-2); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.blk.live { box-shadow: inset 3px 0 0 var(--accent), 0 0 0 1.5px var(--accent); }
+.blk.past { opacity: .5; }
+.blk:hover { filter: brightness(1.12); }
+.blk.mine { --tone: var(--mine); }
+.now-line { position: absolute; left: 0; right: 0; height: 0; border-top: 1.5px solid var(--warn); z-index: 1; pointer-events: none; }
+.now-line::before { content: ""; position: absolute; left: -4px; top: -4.75px; width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
+.wk-note { margin-top: 10px; font-size: 12.5px; color: var(--fg-3); text-align: center; }
+
+/* ---------- units ---------- */
+.units { margin-top: 24px; border-top: 1px solid var(--line); }
+.units summary {
+  list-style: none; display: flex; align-items: center; gap: 8px; min-height: 52px; cursor: pointer;
+  font-size: 17px; font-weight: 600; letter-spacing: .04em;
+}
+.units summary::-webkit-details-marker { display: none; }
+.units summary .count { font-weight: 400; font-size: 13px; color: var(--fg-3); letter-spacing: 0; }
+.units summary svg { margin-left: auto; width: 18px; height: 18px; color: var(--fg-3); transition: transform .2s; }
+.units[open] summary svg { transform: rotate(180deg); }
+.unit-list { display: grid; gap: 16px; padding: 4px 0 8px; }
+.unit-row { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; }
+.unit-row h3 { font-size: 16px; font-weight: 600; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+.unit-row h3 small { font-family: var(--mono); font-weight: 400; font-size: 11.5px; color: var(--fg-3); }
+.unit-row p { font-size: 13px; color: var(--fg-2); line-height: 1.5; overflow-wrap: anywhere; }
+.unit-row p span { color: var(--fg-3); }
+.units-hint { margin: 0 0 12px; font-size: 13px; color: var(--fg-3); }
+.check-btn { min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line-2); background: var(--wash); color: var(--fg); font-size: 13px; cursor: pointer; }
+.check-btn:hover { border-color: var(--accent); }
+.check-btn.primary { background: var(--solid); border-color: var(--solid); color: var(--on-solid); }
+.unit-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+
+/* ---------- 每日任务 · 待办 lists ---------- */
+.plan-card { padding: 4px 14px 10px; border-radius: 20px; background: var(--wash); border: 1px solid var(--line); }
+.group-label { margin: 10px 0 0; font-size: 12px; color: var(--fg-3); letter-spacing: .06em; }
+.checks { list-style: none; margin: 0; padding: 0; }
+.check { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; }
+.check + .check { border-top: 1px dashed var(--line); }
+.check .box {
+  flex: none; width: 44px; height: 44px; margin: -6px -8px -6px -10px; padding: 0; display: grid; place-items: center;
+  border: 0; background: none; cursor: pointer; color: transparent;
+}
+.check .box svg { width: 24px; height: 24px; padding: 4px; border-radius: 8px; border: 1.5px solid var(--line-2); transition: background .15s, border-color .15s; }
+.check .box:hover svg { border-color: var(--fg-2); }
+.check.done .box { color: #fff; }
+.check.done .box svg { background: var(--grad); border-color: transparent; }
+.check .txt {
+  flex: 1; min-width: 0; min-height: 32px; padding: 5px 0 3px; border: 0; background: none; text-align: left; cursor: pointer;
+  font-size: 15px; line-height: 1.45; overflow-wrap: anywhere; color: var(--fg);
+}
+.check .txt b { font-weight: 500; }
+.check .txt .star { margin-left: 6px; color: var(--star); font-size: 13px; }
+.check .txt small { display: block; font-size: 12px; color: var(--fg-3); }
+.check .txt small.late { color: var(--warn); }
+.check.done .txt b { color: var(--fg-3); text-decoration: line-through; text-decoration-color: var(--line-2); }
+.plan-empty { padding: 10px 0 6px; font-size: 13.5px; color: var(--fg-3); }
+.inline-add { min-height: 32px; padding: 0 6px; border: 0; background: none; color: var(--accent); font-size: 13.5px; cursor: pointer; border-radius: 8px; }
+.inline-add:hover { background: var(--accent-wash); }
+.up-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.up {
+  width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 12px; align-items: baseline;
+  padding: 10px 12px; border: 0; border-radius: 14px; background: none; color: var(--fg); text-align: left; cursor: pointer;
+}
+.up:hover { background: var(--wash); }
+.up .num { font-size: 12.5px; color: var(--fg-3); white-space: nowrap; }
+.up b { font-weight: 500; overflow-wrap: anywhere; }
+.up small { grid-column: 2; font-size: 12px; color: var(--fg-3); }
+
+/* ---------- footer ---------- */
+.foot { margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--fg-3); line-height: 1.7; }
+.foot .note { color: var(--fg-2); }
+.foot .note:empty { display: none; }
+.foot-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; }
+.foot a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; }
+.foot a span { border-bottom: 1px solid var(--line-2); }
+.foot #fresh span { white-space: nowrap; }
+.foot a:hover { color: var(--accent); }
+.egg { width: 44px; height: 44px; margin-right: -12px; display: grid; place-items: center; border: 0; background: none; color: var(--fg); opacity: .32; cursor: pointer; border-radius: 10px; }
+.egg:hover, .egg:focus-visible { opacity: .7; }
+.egg svg { width: 13px; height: 13px; }
+
+/* ---------- bottom bar: ChatGPT, and the planner's own commands ---------- */
+.ai {
+  position: fixed; z-index: 35; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 10px + var(--host-inset, 0px));
+  transform: translateX(-50%); width: min(560px, calc(100% - 2 * var(--gutter)));
+  display: flex; align-items: center; gap: 2px; padding: 6px; border-radius: 28px;
+  background: rgb(var(--glass) / calc(var(--ga) * var(--gk) + .1));
+}
+.ai input {
+  flex: 1; min-width: 0; height: 44px; padding: 0 6px; border: 0; background: transparent; color: var(--fg);
+  font: inherit; font-size: 16px; outline: none;
+}
+.ai input::placeholder { color: var(--fg-3); }
+.ai-btn {
+  flex: none; width: 44px; height: 44px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%;
+  background: transparent; color: var(--fg-2); cursor: pointer;
+}
+.ai-btn svg { width: 21px; height: 21px; }
+.ai-btn:hover { background: var(--wash-2); }
+.ai-btn.on { color: var(--warn); }
+.ai-btn.on svg { animation: pulse-op 1.2s ease-in-out infinite; }
+@keyframes pulse-op { 50% { opacity: .35; } }
+.ai-send { background: var(--grad); color: #fff; box-shadow: 0 6px 16px -8px rgba(122, 92, 255, .9); }
+.ai-send:hover { background: var(--grad); filter: brightness(1.1); }
+
+/* Compact the planner as the native ChatGPT sheet grows. */
+html[data-chatgpt-panel="half"], html[data-chatgpt-panel="full"] { overflow: hidden; }
+html[data-chatgpt-panel="half"] .app, html[data-chatgpt-panel="full"] .app { display: block; }
+html[data-chatgpt-panel="half"] .home, html[data-chatgpt-panel="full"] .home { position: static; }
+html[data-chatgpt-panel="half"] .detail, html[data-chatgpt-panel="full"] .detail { display: none; }
+html[data-chatgpt-panel="half"] .app {
+  box-sizing: border-box; width: 100%; max-width: none; height: 34dvh; margin: 0; overflow: hidden;
+  padding: calc(env(safe-area-inset-top) + 4px) max(12px, env(safe-area-inset-right)) 3px max(12px, env(safe-area-inset-left));
+}
+html[data-chatgpt-panel="half"] .mast { align-items: center; padding: 2px 2px 4px; }
+html[data-chatgpt-panel="half"] .path, html[data-chatgpt-panel="half"] .mark,
+html[data-chatgpt-panel="half"] .strip-head { display: none; }
+html[data-chatgpt-panel="half"] .big { margin: 0; font-size: 24px; line-height: 1.15; }
+html[data-chatgpt-panel="half"] .big small { font-size: 12px; }
+html[data-chatgpt-panel="half"] .strip { margin: 0; padding: 4px 8px; border-radius: 17px; }
+html[data-chatgpt-panel="half"] .day { min-height: 48px; padding: 2px 0 4px; border-radius: 14px; }
+html[data-chatgpt-panel="half"] .day .dn { font-size: 10px; }
+html[data-chatgpt-panel="half"] .day .dd { font-size: 14px; }
+html[data-chatgpt-panel="half"] .now:not([hidden]) { margin: 4px 0 0; padding: 7px 10px; border-radius: 15px; }
+html[data-chatgpt-panel="half"] .now-label, html[data-chatgpt-panel="half"] .now .rooms,
+html[data-chatgpt-panel="half"] .now .bar, html[data-chatgpt-panel="half"] .now .go-row { display: none; }
+html[data-chatgpt-panel="half"] .now-row { gap: 7px; margin: 0; }
+html[data-chatgpt-panel="half"] .now .seal { width: 25px; height: 25px; border-radius: 8px; font-size: 12px; }
+html[data-chatgpt-panel="half"] .now .unit-name h3 { overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+html[data-chatgpt-panel="half"] .now .unit-name .sub { overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+html[data-chatgpt-panel="half"] .now-left { font-size: 12px; }
+html[data-chatgpt-panel="half"] .cards { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; margin-top: 5px; }
+html[data-chatgpt-panel="half"] .w { min-width: 0; min-height: 38px; padding: 4px 5px; flex-direction: row; align-items: center; justify-content: center; gap: 4px; border-radius: 999px; }
+html[data-chatgpt-panel="half"] .w .lbl { gap: 4px; font-size: 10px; white-space: nowrap; }
+html[data-chatgpt-panel="half"] .w .lbl i { width: 6px; height: 6px; }
+html[data-chatgpt-panel="half"] .w .lbl svg, html[data-chatgpt-panel="half"] .w .line { display: none; }
+html[data-chatgpt-panel="half"] .w .n { margin: 0; padding: 0; font-size: 13px; white-space: nowrap; }
+html[data-chatgpt-panel="half"] .w .n small { font-size: 10px; }
+html[data-chatgpt-panel="half"] .ai { display: none; }
+html[data-chatgpt-panel="full"] .app {
+  box-sizing: border-box; width: 100%; max-width: none; height: 10dvh; min-height: 72px; margin: 0; overflow: hidden;
+  padding: calc(env(safe-area-inset-top) + 5px) 12px 0;
+}
+html[data-chatgpt-panel="full"] .mast, html[data-chatgpt-panel="full"] .strip,
+html[data-chatgpt-panel="full"] .cards, html[data-chatgpt-panel="full"] .ai { display: none; }
+html[data-chatgpt-panel="full"] .now { box-sizing: border-box; display: flex; height: 100%; margin: 0; padding: 6px 13px; align-items: center; border-radius: 999px; }
+html[data-chatgpt-panel="full"] .now-label, html[data-chatgpt-panel="full"] .now .rooms,
+html[data-chatgpt-panel="full"] .now .bar, html[data-chatgpt-panel="full"] .now .go-row { display: none; }
+html[data-chatgpt-panel="full"] .panel-now-line { display: flex; width: 100%; min-width: 0; align-items: center; gap: 8px; font-size: 13px; }
+html[data-chatgpt-panel="full"] .panel-now-line i { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+html[data-chatgpt-panel="full"] .panel-now-line b { overflow: hidden; font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
+html[data-chatgpt-panel="full"] .panel-now-line span { overflow: hidden; color: var(--fg-2); text-overflow: ellipsis; white-space: nowrap; }
+html[data-chatgpt-panel="full"] .panel-now-line .panel-next { margin-left: auto; }
+
+.confirm {
+  position: fixed; z-index: 40; left: 50%; bottom: calc(env(safe-area-inset-bottom) + var(--ai-h) + 22px + var(--host-inset, 0px));
+  width: min(520px, calc(100% - 2 * var(--gutter))); padding: 16px 16px 14px; border-radius: 24px;
+  background: var(--sheet); color: var(--fg); border: 1px solid var(--line);
+  -webkit-backdrop-filter: blur(26px) saturate(140%); backdrop-filter: blur(26px) saturate(140%);
+  box-shadow: 0 24px 50px -20px rgba(0, 0, 0, .6);
+  transform: translate(-50%, 14px); opacity: 0; transition: transform .22s, opacity .22s;
+}
+.confirm.show { transform: translate(-50%, 0); opacity: 1; }
+.confirm-k { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--fg-3); }
+.confirm-k i { width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--accent)); }
+.confirm h3 { margin-top: 6px; font-size: 19px; font-weight: 700; overflow-wrap: anywhere; }
+.confirm-d { margin-top: 2px; font-size: 13px; color: var(--fg-2); }
+.confirm-actions { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+.confirm-actions .ok { margin-left: auto; border: 0; background: var(--grad); color: #fff; font-weight: 600; }
+.confirm-actions .ok.danger { background: var(--warn); color: #fff; }
+
+/* ---------- sheets (dialogs) ---------- */
 html.lock { overflow: hidden; }
 dialog.sheet {
-  width: 100%; max-width: 560px; max-height: min(90vh, 900px); margin: auto auto 0; padding: 0; border: 0;
-  border-radius: 22px 22px 0 0; background: var(--paper-hi); color: var(--ink); overflow: auto; overscroll-behavior: contain;
-  box-shadow: 0 -20px 60px -20px rgba(29, 28, 26, .4);
+  width: 100%; max-width: 560px; max-height: min(90vh, 900px); margin: auto auto 0; padding: 0; border: 1px solid var(--line);
+  border-radius: 24px 24px 0 0; background: var(--sheet); color: var(--fg); overflow: auto; overscroll-behavior: contain;
+  -webkit-backdrop-filter: blur(26px) saturate(140%); backdrop-filter: blur(26px) saturate(140%);
+  box-shadow: 0 -20px 60px -20px rgba(0, 0, 0, .55);
 }
-dialog.sheet::backdrop { background: rgba(29, 28, 26, .4); }
+dialog::backdrop { background: rgba(4, 5, 10, .5); }
+[data-theme="light"] dialog::backdrop { background: rgba(20, 24, 40, .28); }
 .sheet-head {
   position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 12px;
-  padding: 14px 16px 12px; background: var(--paper-hi); border-bottom: 1px solid var(--line);
+  padding: 14px 16px 12px; background: var(--sheet-head); border-bottom: 1px solid var(--line);
 }
 .sheet-title { min-width: 0; margin-right: auto; }
-.sheet-title h2 { font-family: var(--serif); font-weight: 700; font-size: 18px; line-height: 1.3; }
-.sheet-title p { font-size: 12.5px; color: var(--ink-3); overflow-wrap: anywhere; }
+.sheet-title h2 { font-size: 18px; font-weight: 700; line-height: 1.3; }
+.sheet-title p { font-size: 12.5px; color: var(--fg-3); overflow-wrap: anywhere; }
 .sheet-body { padding: 16px 16px calc(env(safe-area-inset-bottom) + 22px + var(--host-inset, 0px)); }
 .steps { margin: 0; padding-left: 22px; display: grid; gap: 12px; font-size: 14px; line-height: 1.6; }
 .steps b { font-weight: 600; }
 .step-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
 .mini-btn {
-  display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 14px; border-radius: 999px;
-  border: 1px solid var(--line-2); background: var(--paper); color: var(--ink); font-size: 13.5px; cursor: pointer; text-decoration: none; white-space: nowrap;
+  display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 14px; border-radius: 999px;
+  border: 1px solid var(--line-2); background: var(--wash); color: var(--fg); font-size: 13.5px; cursor: pointer; text-decoration: none; white-space: nowrap;
 }
-.mini-btn.primary { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
-.code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; padding: 6px 10px; border-radius: 8px; background: var(--wash-2); }
-.rule { margin: 18px 0 12px; padding: 10px 12px; border-radius: 12px; background: var(--seal-wash); color: var(--ink-2); font-size: 13.5px; line-height: 1.6; }
-.rule b { color: var(--seal); }
+.mini-btn.primary { background: var(--solid); border-color: var(--solid); color: var(--on-solid); }
+.mini-btn.danger { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
+.mini-btn.quiet { border-color: transparent; background: none; color: var(--fg-3); }
+.mini-btn:disabled { opacity: .5; cursor: default; }
+.code { font-family: var(--mono); font-size: 14px; padding: 6px 10px; border-radius: 8px; background: var(--wash-2); }
+.rule { margin: 18px 0 12px; padding: 10px 12px; border-radius: 12px; background: var(--accent-wash); color: var(--fg-2); font-size: 13.5px; line-height: 1.6; }
+.rule b { color: var(--accent); }
 .sws-rows { display: grid; gap: 10px; }
-.sws-row { padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--paper); }
-.sws-top { display: flex; align-items: baseline; gap: 8px; font-family: var(--serif); font-weight: 700; font-size: 15px; }
-.sws-top span { margin-left: auto; font-family: var(--sans); font-weight: 400; font-size: 12.5px; color: var(--ink-3); }
+.sws-row { padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--wash); }
+.sws-top { display: flex; align-items: baseline; gap: 8px; font-weight: 600; font-size: 15px; }
+.sws-top span { margin-left: auto; font-weight: 400; font-size: 12.5px; color: var(--fg-3); }
 .sws-row dl { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 3px 8px; margin: 6px 0 0; font-size: 13px; line-height: 1.45; }
-.sws-row dt { color: var(--ink-3); }
+.sws-row dt { color: var(--fg-3); }
 .sws-row dd { margin: 0; overflow-wrap: anywhere; }
-.sws-row dd.key { font-weight: 700; color: var(--seal); }
-.sws-row dd.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; color: var(--ink-2); }
-.sheet-note { margin-top: 14px; font-size: 12.5px; color: var(--ink-3); line-height: 1.6; }
-.step-actions.lead { margin: 0 0 16px; padding-bottom: 14px; border-bottom: 1px dashed var(--line-2); font-size: 13px; color: var(--ink-3); }
+.sws-row dd.key { font-weight: 700; color: var(--accent); }
+.sws-row dd.mono { font-family: var(--mono); font-size: 12px; color: var(--fg-2); }
+.sheet-note { margin-top: 14px; font-size: 12.5px; color: var(--fg-3); line-height: 1.6; }
+.step-actions.lead { margin: 0 0 16px; padding-bottom: 14px; border-bottom: 1px dashed var(--line-2); font-size: 13px; color: var(--fg-3); }
 
-/* ---------- 核准查看 (SWS screenshot viewer) ---------- */
+/* 核准查看 (SWS screenshot viewer) */
 dialog.viewer {
   width: 100%; max-width: 100%; height: 100%; max-height: 100%; margin: 0; padding: 0; border: 0;
-  background: var(--paper-hi); color: var(--ink); flex-direction: column; overflow: hidden;
+  background: var(--bg); color: var(--fg); flex-direction: column; overflow: hidden;
 }
 dialog.viewer[open] { display: flex; }
-dialog.viewer::backdrop { background: rgba(29, 28, 26, .5); }
 dialog.viewer .sheet-head { position: static; padding-top: calc(env(safe-area-inset-top) + 12px); }
 .shot-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .shot-tools { display: flex; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
@@ -377,47 +687,75 @@ dialog.viewer .sheet-head { position: static; padding-top: calc(env(safe-area-in
 .shot-frame { position: relative; }
 .shot-frame img { display: block; width: 100%; height: auto; }
 .shot-mark { position: absolute; border: 2px solid #e0a800; background: rgba(255, 214, 0, .2); border-radius: 3px; pointer-events: none; }
-.shot-mark.focus { border-color: var(--seal); background: rgba(181, 65, 46, .14); box-shadow: 0 0 0 3px rgba(181, 65, 46, .22); }
+.shot-mark.focus { border-color: #7a5cff; background: rgba(122, 92, 255, .14); box-shadow: 0 0 0 3px rgba(122, 92, 255, .25); }
 .hide-marks .shot-mark { display: none; }
-.shot-note { margin: 0; padding: 10px 16px calc(env(safe-area-inset-bottom) + 12px + var(--host-inset, 0px)); font-size: 12.5px; color: var(--ink-3); line-height: 1.6; border-top: 1px solid var(--line); }
-.shot-wait { padding: 30px 20px; text-align: center; color: var(--ink-2); font-size: 14px; }
+.shot-note { margin: 0; padding: 10px 16px calc(env(safe-area-inset-bottom) + 12px + var(--host-inset, 0px)); font-size: 12.5px; color: var(--fg-3); line-height: 1.6; border-top: 1px solid var(--line); }
+.shot-wait { padding: 30px 20px; text-align: center; color: var(--fg-2); font-size: 14px; }
 .shot-wait p { margin-bottom: 14px; }
-@media (min-width: 900px) {
-  dialog.viewer { width: min(1240px, 94vw); height: 92vh; margin: auto; border-radius: 22px; box-shadow: 0 30px 80px -30px rgba(0, 0, 0, .5); }
+
+/* the editor and settings */
+.plan-form { display: grid; gap: 14px; }
+.kind-seg { display: grid; grid-template-columns: repeat(3, 1fr); }
+.kind-seg button { min-width: 0; padding: 0 6px; }
+.field { display: grid; gap: 5px; font-size: 13px; color: var(--fg-3); }
+.field input:not([type="checkbox"]) {
+  width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid var(--line-2); border-radius: 12px;
+  background: var(--field); color: var(--fg); font: inherit; font-size: 16px;
 }
-@media (min-width: 640px) {
-  dialog.sheet { margin: auto; border-radius: 22px; }
+.field input:focus { border-color: var(--accent); outline: none; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.check-field { display: flex; align-items: center; gap: 8px; align-self: end; min-height: 44px; font-size: 15px; color: var(--fg); cursor: pointer; }
+.check-field input { width: 20px; height: 20px; accent-color: var(--accent-2); }
+.day-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.day-chips button { min-width: 44px; min-height: 40px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--wash); color: var(--fg-2); font-size: 14px; cursor: pointer; }
+.day-chips button[aria-pressed="true"] { background: var(--solid); border-color: var(--solid); color: var(--on-solid); }
+.field-hint { font-size: 12.5px; color: var(--fg-3); line-height: 1.6; }
+.field-hint code { font-family: var(--mono); font-size: 12px; padding: 1px 4px; border-radius: 4px; background: var(--wash-2); }
+.form-error { font-size: 13px; color: var(--warn); }
+.form-error:empty { display: none; }
+.form-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.form-actions.start { justify-content: flex-start; }
+.form-actions .danger { margin-right: auto; }
+.file-btn { cursor: pointer; }
+.sync-box { display: grid; gap: 10px; margin-bottom: 18px; padding: 14px; border-radius: 16px; border: 1px solid var(--line); background: var(--wash); }
+.sync-box h3 { font-size: 16px; font-weight: 700; }
+.sync-box form, .sync-box > div { display: grid; gap: 10px; }
+.sync-box #google { justify-self: start; }
+.account { font-weight: 600; overflow-wrap: anywhere; }
+#plan-settings .plan-sub { margin: 20px 0 8px; }
+#plan-settings .form-actions { margin-top: 10px; }
+.look-label { display: flex; align-items: baseline; margin: 14px 0 8px; font-size: 13px; color: var(--fg-2); }
+.look-label span { margin-left: auto; font-size: 12px; color: var(--fg-3); }
+.look-seg { display: flex; }
+.look-seg button { flex: 1; }
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 6px; }
+.sw {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 0 4px; border: 0; border-radius: 14px;
+  background: none; color: var(--fg-2); font-size: 11.5px; cursor: pointer;
+}
+.sw i {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: linear-gradient(rgb(var(--glass) / calc(var(--ga) * 2.2)), rgb(var(--glass) / calc(var(--ga) * 2.2))), linear-gradient(135deg, #1a2440, #3b2a6b);
+  box-shadow: inset 0 0 0 1.5px var(--line-2), 0 4px 10px -4px rgba(0, 0, 0, .4);
+}
+[data-theme="light"] .sw i { background: linear-gradient(rgb(var(--glass) / var(--ga)), rgb(var(--glass) / var(--ga))), linear-gradient(135deg, #9fb9ee, #c4b2f2); }
+.sw[aria-checked="true"] { color: var(--fg); font-weight: 600; }
+.sw[aria-checked="true"] i { box-shadow: inset 0 0 0 2px var(--fg), 0 0 0 3px var(--accent-2); }
+input[type="range"] { width: 100%; accent-color: var(--accent-2); }
+.backup-text {
+  display: block; width: 100%; margin-top: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line-2);
+  background: var(--field); color: var(--fg); font-family: var(--mono); font-size: 11.5px; resize: vertical;
+}
+.gpt-rule {
+  margin: 8px 0 0; padding: 10px 12px; max-height: 190px; overflow: auto; border-radius: 12px; background: var(--wash-2);
+  font-family: var(--mono); font-size: 11.5px; line-height: 1.6; color: var(--fg-2); white-space: pre-wrap; overflow-wrap: anywhere;
 }
 
-/* ---------- footer ---------- */
-.foot { margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--ink-3); line-height: 1.7; }
-.foot p + p { margin-top: 2px; }
-.foot .note { color: var(--ink-2); }
-.foot .note:empty { display: none; }
-.foot-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; }
-.foot a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; }
-.foot a span { border-bottom: 1px solid var(--line-2); }
-.foot #fresh span { white-space: nowrap; }
-.foot a:hover { color: var(--seal); }
-.foot a:hover span { border-color: currentColor; }
-.egg {
-  width: 44px; height: 44px; margin-right: -12px; display: grid; place-items: center; border: 0; background: none;
-  color: var(--ink); opacity: .32; cursor: pointer; border-radius: 10px;
-}
-.egg:hover, .egg:focus-visible { opacity: .7; }
-.egg svg { width: 13px; height: 13px; }
-
-/* ---------- error / toast ---------- */
-.problem { text-align: center; padding: 14px 6px 4px; }
-.problem p { color: var(--ink-2); margin: 6px 0 14px; font-size: 14px; }
-.btn {
-  min-height: 44px; padding: 0 20px; border-radius: 999px; border: 1px solid var(--ink); background: var(--ink);
-  color: var(--on-ink); cursor: pointer; font-size: 15px;
-}
+/* ---------- toast ---------- */
 .toast {
-  position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 18px + var(--host-inset, 0px)); z-index: 50;
-  transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
-  padding: 10px 16px; border-radius: 999px; background: var(--ink); color: var(--on-ink); font-size: 14px;
+  position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + var(--ai-h) + 26px + var(--host-inset, 0px)); z-index: 50;
+  transform: translate(-50%, 20px); opacity: 0; pointer-events: none; max-width: calc(100% - 32px);
+  padding: 10px 16px; border-radius: 999px; background: var(--solid); color: var(--on-solid); font-size: 14px;
   box-shadow: 0 10px 30px -12px rgba(0, 0, 0, .5); transition: opacity .25s, transform .25s;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
@@ -426,32 +764,42 @@ dialog.viewer .sheet-head { position: static; padding-top: calc(env(safe-area-in
 /* ---------- wider screens ---------- */
 @media (min-width: 600px) {
   :root { --gutter: 24px; --hour: 60px; }
-  .title { font-size: 52px; }
+}
+@media (min-width: 640px) {
+  dialog.sheet { margin: auto; border-radius: 24px; }
 }
 @media (min-width: 900px) {
+  dialog.viewer { width: min(1240px, 94vw); height: 92vh; margin: auto; border-radius: 24px; box-shadow: 0 30px 80px -30px rgba(0, 0, 0, .6); }
+}
+@media (min-width: 960px) {
+  :root { --hour: 64px; --dh: 0px; }
   .app {
-    max-width: 1140px;
-    display: grid; grid-template-columns: 360px minmax(0, 1fr); grid-template-rows: auto auto auto 1fr;
-    column-gap: 48px; padding-top: calc(env(safe-area-inset-top) + 24px);
+    max-width: 1240px; display: grid; grid-template-columns: 400px minmax(0, 1fr); column-gap: 28px; align-items: start;
+    padding-bottom: calc(var(--ai-h) + 30px);
   }
-  .mast { grid-column: 1; grid-row: 1; }
-  .now { grid-column: 1; grid-row: 2; }
-  .units { grid-column: 1; grid-row: 3; }
-  .foot { grid-column: 1; grid-row: 4; align-self: start; }
-  .sched { grid-column: 2; grid-row: 1 / span 4; margin-top: 30px; }
-  .mist { right: -40px; width: 460px; }
-  .wk-head { top: 0; }
-  :root { --hour: 64px; }
+  .home { position: sticky; top: 10px; }
+  .detail {
+    position: sticky; top: 16px; inset: auto; z-index: auto; margin-top: 16px;
+    height: calc(100vh - 32px - var(--ai-h) - 16px); padding: 0 22px 24px; border-radius: 28px;
+    transform: none; visibility: visible; transition: none;
+    background: rgb(var(--glass) / calc(var(--ga) * var(--gk) * .8));
+    -webkit-backdrop-filter: blur(var(--blur)) saturate(var(--sat)); backdrop-filter: blur(var(--blur)) saturate(var(--sat));
+    box-shadow: inset 1px 1px 0 rgba(255, 255, 255, .16), var(--shadow);
+  }
+  .detail-in { max-width: none; }
+  .detail-head { position: static; margin: 0; padding: 18px 0 2px; background: none; }
+  .wk-head { background: color-mix(in srgb, var(--bg) 88%, transparent); }
+  .close-btn { display: none; }
+  .pills { flex: 0 1 auto; }
+  .ai { width: min(760px, calc(100% - 48px)); }
 }
 @media (max-width: 345px) {
   :root { --gutter: 12px; }
-  .title { font-size: 40px; }
-  .day .dd { font-size: 17px; }
+  .big { font-size: 32px; }
   .wk-head, .wk-body { grid-template-columns: 24px repeat(var(--cols), minmax(0, 1fr)); }
   .wk-lines { left: 24px; }
   .blk { padding-left: 5px; }
   .blk b { font-size: 10.5px; }
-  .seg button { min-width: 44px; padding: 0 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
@@ -459,101 +807,259 @@ dialog.viewer .sheet-head { position: static; padding-top: calc(env(safe-area-in
 </style>
 </head>
 <body>
+<div class="bg" aria-hidden="true"><i></i><i></i><i></i></div>
 <div class="app">
-  <header class="mast">
-    <svg class="mist" viewBox="0 0 460 150" preserveAspectRatio="xMaxYMin slice" aria-hidden="true" focusable="false">
-      <defs>
-        <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#1d1c1a" stop-opacity="1"/>
-          <stop offset="1" stop-color="#1d1c1a" stop-opacity="0"/>
-        </linearGradient>
-        <filter id="soft-far" x="-10%" y="-20%" width="120%" height="140%"><feGaussianBlur stdDeviation="3.2"/></filter>
-        <filter id="soft-near" x="-10%" y="-20%" width="120%" height="140%"><feGaussianBlur stdDeviation="1.1"/></filter>
-      </defs>
-      <circle cx="432" cy="24" r="12" fill="#b5412e" opacity=".2"/>
-      <path d="M90 128C130 104 160 66 200 82S258 52 300 72 360 30 404 62 446 68 460 64V150H90Z" fill="url(#fade)" opacity=".075" filter="url(#soft-far)"/>
-      <path d="M190 140C228 112 254 98 292 112S344 74 380 100 430 98 460 94V150H190Z" fill="url(#fade)" opacity=".11" filter="url(#soft-near)"/>
-      <path d="M300 150C324 130 350 122 376 132S424 118 460 124V150Z" fill="url(#fade)" opacity=".15"/>
-    </svg>
-    <p class="kicker">CURTIN MALAYSIA · <span id="semester">Semester Two</span></p>
-    <div class="title-row">
-      <h1 class="title" id="class-title">2E3</h1>
-      <span class="stamp" aria-hidden="true"><span>课</span><span>表</span></span>
-    </div>
-    <div class="today-row">
-      <span class="today-date" id="today"></span>
-      <span class="chip" id="week-chip"></span>
-      <button class="map-btn" id="map-btn" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4 3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/></svg>
-        校园地图
+  <div class="home" id="home">
+    <header class="mast">
+      <div class="mast-main">
+        <p class="path num" id="path"><b>~/today</b></p>
+        <h1 class="big" id="big">今天</h1>
+      </div>
+      <button class="mark" id="plan-gear" type="button" aria-label="设置 · 同步">
+        <span class="mark-row" aria-hidden="true">
+          <span class="pr"><span class="halo">&gt;_</span><span class="fill">&gt;_</span></span>
+          <svg class="spark" viewBox="-60 -60 120 120" focusable="false"><defs><linearGradient id="spark-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ee9a7c"/><stop offset="1" stop-color="#d97757"/></linearGradient></defs><g id="spark-rays" fill="url(#spark-g)"><rect x="-4.6" y="-52" width="9.2" height="52" rx="4.6"/><rect x="-4.6" y="-40" width="9.2" height="40" rx="4.6" transform="rotate(37)"/><rect x="-4.6" y="-48" width="9.2" height="48" rx="4.6" transform="rotate(60)"/><rect x="-4.6" y="-36" width="9.2" height="36" rx="4.6" transform="rotate(97)"/><rect x="-4.6" y="-54" width="9.2" height="54" rx="4.6" transform="rotate(120)"/><rect x="-4.6" y="-42" width="9.2" height="42" rx="4.6" transform="rotate(157)"/><rect x="-4.6" y="-50" width="9.2" height="50" rx="4.6" transform="rotate(180)"/><rect x="-4.6" y="-38" width="9.2" height="38" rx="4.6" transform="rotate(217)"/><rect x="-4.6" y="-53" width="9.2" height="53" rx="4.6" transform="rotate(240)"/><rect x="-4.6" y="-41" width="9.2" height="41" rx="4.6" transform="rotate(277)"/><rect x="-4.6" y="-47" width="9.2" height="47" rx="4.6" transform="rotate(300)"/><rect x="-4.6" y="-37" width="9.2" height="37" rx="4.6" transform="rotate(337)"/></g></svg>
+        </span>
+        <span class="nm" aria-hidden="true"><b>Codex</b> × <b>Claude</b></span>
       </button>
-    </div>
-  </header>
+    </header>
 
-  <section class="now" id="now" aria-label="此刻"></section>
+    <section class="g strip" id="strip" aria-label="这一周">
+      <div class="strip-head">
+        <span class="week-label num" id="week-label" aria-live="polite"></span>
+        <button class="back-btn" id="back" type="button" hidden>回到今天</button>
+        <button class="nav-btn" id="prev" type="button" aria-label="上一周">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
+        <button class="nav-btn" id="next" type="button" aria-label="下一周">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+      <div class="days" id="days" aria-label="选择日期"></div>
+    </section>
 
-  <section class="sched" id="sched" aria-label="课表">
-    <div class="sched-top">
-      <h2 class="sec-title">课表</h2>
-      <button class="back-btn" id="back" type="button" hidden>回到本周</button>
-      <div class="seg" role="group" aria-label="显示方式">
-        <button type="button" id="view-day" aria-pressed="true">日</button>
-        <button type="button" id="view-week" aria-pressed="false">周</button>
+    <section class="g now" id="now" aria-label="此刻" hidden></section>
+
+    <section class="cards" id="cards" aria-label="这一天"></section>
+  </div>
+
+  <aside class="detail" id="detail" aria-label="详细">
+    <div class="detail-in">
+      <div class="detail-head">
+        <button class="close-btn" id="detail-close" type="button" aria-label="返回">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="pills" id="pills" role="tablist" aria-label="看哪一类">
+          <button type="button" role="tab" data-pane="class" style="--c: var(--accent)"><i aria-hidden="true"></i>课程</button>
+          <button type="button" role="tab" data-pane="event" style="--c: var(--mine)"><i aria-hidden="true"></i>行程</button>
+          <button type="button" role="tab" data-pane="todo" style="--c: var(--todo)"><i aria-hidden="true"></i>待办</button>
+          <button type="button" role="tab" data-pane="habit" style="--c: var(--accent-2)"><i aria-hidden="true"></i>每日任务</button>
+        </div>
+      </div>
+
+      <div class="pane" id="pane-class" role="tabpanel" tabindex="-1">
+        <section class="sched" id="sched" aria-label="课表">
+          <div class="sched-top">
+            <h2 class="sec-title">课表</h2>
+            <button class="map-btn" id="map-btn" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4 3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/></svg>
+              校园地图
+            </button>
+            <div class="seg" role="group" aria-label="显示方式">
+              <button type="button" id="view-day" aria-pressed="true">日</button>
+              <button type="button" id="view-week" aria-pressed="false">周</button>
+            </div>
+          </div>
+          <div id="day-view"></div>
+          <div id="week-view" hidden></div>
+        </section>
+
+        <details class="units" id="units">
+          <summary>科目 <span class="count" id="unit-count"></span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </summary>
+          <p class="units-hint">点「核准查看」看 SWS 官网这一科 List 页面的原样截图（每天自动更新），你课表用到的行会框出来。</p>
+          <div class="unit-list" id="unit-list"></div>
+        </details>
+
+        <footer class="foot">
+          <p id="fresh">课表来自 Curtin SWS</p>
+          <p class="note" id="net-note"></p>
+          <p id="sync-note"></p>
+          <div class="foot-row">
+            <a href="http://sws.curtin.edu.my" target="_blank" rel="noopener"><span>打开 Curtin SWS 官方课表</span></a>
+            <button class="egg" id="egg" type="button" aria-label="小游戏" title="小游戏">
+              <svg viewBox="0 0 13 13" fill="currentColor" aria-hidden="true"><rect x="0" y="0" width="4" height="4" rx=".6"/><rect x="4.5" y="0" width="4" height="4" rx=".6"/><rect x="9" y="0" width="4" height="4" rx=".6"/><rect x="4.5" y="4.5" width="4" height="4" rx=".6"/></svg>
+            </button>
+          </div>
+        </footer>
+      </div>
+
+      <div class="pane" id="pane-event" role="tabpanel" tabindex="-1" hidden>
+        <div class="pane-top">
+          <h2 class="sec-title">行程</h2>
+          <span class="pane-date" id="event-date"></span>
+          <button class="add-btn" type="button" data-new="events">＋ 新建</button>
+        </div>
+        <div id="event-list"></div>
+      </div>
+
+      <div class="pane" id="pane-todo" role="tabpanel" tabindex="-1" hidden>
+        <div class="pane-top">
+          <h2 class="sec-title">待办</h2>
+          <span class="pane-date" id="todo-date"></span>
+          <button class="add-btn" type="button" data-new="todos">＋ 新建</button>
+        </div>
+        <div class="plan-card" id="plan-todos"></div>
+      </div>
+
+      <div class="pane" id="pane-habit" role="tabpanel" tabindex="-1" hidden>
+        <div class="pane-top">
+          <h2 class="sec-title">每日任务</h2>
+          <span class="pane-date" id="habit-date"></span>
+          <button class="add-btn" type="button" data-new="habits">＋ 新建</button>
+        </div>
+        <div class="plan-card" id="plan-habits"></div>
       </div>
     </div>
-    <div class="weeknav">
-      <button class="icon-btn" id="prev" type="button" aria-label="上一周">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
-      </button>
-      <div class="week-label" id="week-label" aria-live="polite"></div>
-      <button class="icon-btn" id="next" type="button" aria-label="下一周">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
-      </button>
-    </div>
-    <div class="days" id="days" aria-label="选择日期"></div>
-    <div id="day-view"></div>
-    <div id="week-view" hidden></div>
-  </section>
-
-  <details class="units" id="units">
-    <summary>科目 <span class="count" id="unit-count"></span>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-    </summary>
-    <p class="units-hint">点「核准查看」看 SWS 官网这一科 List 页面的原样截图（每天自动更新），你课表用到的行会框出来。</p>
-    <div class="unit-list" id="unit-list"></div>
-  </details>
-
-  <footer class="foot">
-    <p id="fresh">课表来自 Curtin SWS</p>
-    <p class="note" id="net-note"></p>
-    <div class="foot-row">
-      <a href="http://sws.curtin.edu.my" target="_blank" rel="noopener"><span>打开 Curtin SWS 官方课表</span></a>
-      <button class="egg" id="egg" type="button" aria-label="小游戏" title="小游戏">
-        <svg viewBox="0 0 13 13" fill="currentColor" aria-hidden="true"><rect x="0" y="0" width="4" height="4" rx=".6"/><rect x="4.5" y="0" width="4" height="4" rx=".6"/><rect x="9" y="0" width="4" height="4" rx=".6"/><rect x="4.5" y="4.5" width="4" height="4" rx=".6"/></svg>
-      </button>
-    </div>
-  </footer>
+  </aside>
 </div>
+
+<form class="g ai" id="ai" autocomplete="off">
+  <button class="ai-btn" id="ai-plus" type="button" aria-label="新建待办、行程或每日任务">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+  <input id="ai-input" name="q" type="text" enterkeyhint="send" maxlength="2000" placeholder="问 ChatGPT，或加日程" aria-label="问 ChatGPT，或输入要加的日程">
+  <button class="ai-btn" id="ai-mic" type="button" aria-label="语音输入" hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+  </button>
+  <button class="ai-btn ai-send" id="ai-send" type="submit" aria-label="发送">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+  </button>
+</form>
+
+<div class="confirm" id="confirm" role="dialog" aria-labelledby="confirm-title" aria-describedby="confirm-d" hidden>
+  <p class="confirm-k"><i aria-hidden="true"></i><span id="confirm-k"></span></p>
+  <h3 id="confirm-title"></h3>
+  <p class="confirm-d num" id="confirm-d"></p>
+  <div class="confirm-actions">
+    <button class="mini-btn" id="confirm-cancel" type="button">取消</button>
+    <button class="mini-btn" id="confirm-edit" type="button">编辑</button>
+    <button class="mini-btn ok" id="confirm-ok" type="button">确认添加</button>
+  </div>
+</div>
+
 <dialog class="sheet" id="check" aria-labelledby="check-title"></dialog>
 <dialog class="viewer" id="shot" aria-labelledby="shot-title"></dialog>
+<dialog class="sheet" id="plan-editor" aria-labelledby="plan-editor-title">
+  <form id="plan-form" novalidate>
+    <div class="sheet-head">
+      <div class="sheet-title"><h2 id="plan-editor-title">新建</h2></div>
+      <button class="mini-btn" type="button" data-close>关闭</button>
+    </div>
+    <div class="sheet-body plan-form">
+      <div class="seg kind-seg" id="plan-kind" role="group" aria-label="类型">
+        <button type="button" data-kind="todos">待办</button>
+        <button type="button" data-kind="events">行程</button>
+        <button type="button" data-kind="habits">每日任务</button>
+      </div>
+      <label class="field">名称<input name="title" required autocomplete="off" maxlength="200" placeholder="要做什么？"></label>
+      <div class="field-row" data-for="events todos">
+        <label class="field">日期<input type="date" name="date"></label>
+        <label class="field check-field" data-for="todos"><input type="checkbox" name="star"> ★ 重要</label>
+        <label class="field" data-for="events">地点<input name="place" autocomplete="off" maxlength="200" placeholder="可不填，比如 SK3 102"></label>
+      </div>
+      <div class="field-row" data-for="events">
+        <label class="field">开始<input type="time" name="start"></label>
+        <label class="field">结束<input type="time" name="end"></label>
+      </div>
+      <div class="field" data-for="habits">重复
+        <div class="day-chips" id="plan-days" role="group" aria-label="每周哪几天"></div>
+      </div>
+      <p class="field-hint" data-for="todos">不填日期 = 随时做，会一直留在「今天」里直到完成。</p>
+      <p class="field-hint" data-for="events">行程会和课一起显示在课表里。</p>
+      <p class="form-error" id="plan-form-error" role="alert"></p>
+      <div class="form-actions">
+        <button type="button" class="mini-btn danger" id="plan-delete">删除</button>
+        <button type="submit" class="mini-btn primary">保存</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+<dialog class="sheet" id="plan-settings" aria-labelledby="plan-settings-title">
+  <div class="sheet-head">
+    <div class="sheet-title"><h2 id="plan-settings-title">设置</h2><p>同步 · 外观 · ChatGPT · 备份</p></div>
+    <button class="mini-btn" type="button" data-close>关闭</button>
+  </div>
+  <div class="sheet-body">
+    <section class="sync-box">
+      <h3>云同步</h3>
+      <p class="field-hint" id="sync-unconfigured" hidden>云同步还没设置：先在 Firebase 建一个免费项目，把设置填进 <code>assets/firebase-config.js</code>（步骤见 <code>SYNC-SETUP.md</code>）。在那之前，资料只存在这台设备上。</p>
+      <form id="login-form" hidden>
+        <p class="field-hint">登录同一个账号，手机和电脑的资料就会自动同步。</p>
+        <label class="field">邮箱<input type="email" name="email" autocomplete="username" required></label>
+        <label class="field">密码<input type="password" name="password" autocomplete="current-password" minlength="6" required></label>
+        <p class="form-error" id="login-error" role="alert"></p>
+        <div class="form-actions start">
+          <button type="submit" class="mini-btn primary" data-auth="signin">登录</button>
+          <button type="submit" class="mini-btn" data-auth="signup">注册新账号</button>
+          <button type="button" class="mini-btn quiet" id="forgot">忘记密码</button>
+        </div>
+        <button type="button" class="mini-btn" id="google">用 Google 账号登录</button>
+      </form>
+      <div id="sync-account" hidden>
+        <p class="account" id="account-email"></p>
+        <p class="field-hint" id="sync-detail"></p>
+        <div class="form-actions start">
+          <button type="button" class="mini-btn" id="sync-now">立即同步</button>
+          <button type="button" class="mini-btn danger" id="sign-out">退出登录</button>
+        </div>
+      </div>
+    </section>
+    <h3 class="plan-sub">外观</h3>
+    <div class="seg look-seg" id="look-theme" role="group" aria-label="主题">
+      <button type="button" data-theme-set="dark">深色</button>
+      <button type="button" data-theme-set="light">浅色</button>
+      <button type="button" data-theme-set="auto">跟随系统</button>
+    </div>
+    <p class="look-label">玻璃颜色</p>
+    <div class="swatches" id="look-glass" role="radiogroup" aria-label="玻璃颜色"></div>
+    <label class="look-label" for="look-clarity">透明度<span>磨砂 ← → 通透</span></label>
+    <input type="range" id="look-clarity" min="0" max="100" step="5" value="50">
+    <h3 class="plan-sub">ChatGPT</h3>
+    <p class="field-hint" id="gpt-login-hint">打开 ChatGPT，用你原来的网页版账号登录。浏览器会保留登录状态，已登录时可以直接聊天。</p>
+    <div class="form-actions start"><button type="button" class="mini-btn" id="gpt-open">登录 / 打开 ChatGPT</button></div>
+    <p class="field-hint">底部输入栏：像「明天三点健身」「周五交报告」「每天背单词」这样的话，这里会自己听懂，先问你再加；其他问题会打开 ChatGPT，用上面的同一个账号。</p>
+    <p class="field-hint">想让 ChatGPT 的回答也能一点就加进来：把下面这段贴到 ChatGPT 的「设置 → 个性化 → 自定义指令」。</p>
+    <pre class="gpt-rule" id="gpt-rule"></pre>
+    <div class="form-actions start"><button type="button" class="mini-btn" id="gpt-copy">复制这段</button></div>
+    <h3 class="plan-sub">备份</h3>
+    <p class="field-hint">把每日任务、行程和待办存成一个文件，或从文件恢复。</p>
+    <div class="form-actions start">
+      <button type="button" class="mini-btn" id="plan-export">导出备份</button>
+      <label class="mini-btn file-btn">导入备份<input type="file" id="plan-import" accept="application/json,.json,text/plain" class="sr"></label>
+    </div>
+  </div>
+</dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <noscript><p style="text-align:center;padding:20px">这个课表需要开启 JavaScript。</p></noscript>
-
 <script type="application/json" id="embedded-timetable">{"schema":1,"class":"2E3","title":"2E3","semester":"Semester Two","timezone":"Asia/Kuching","source":"http://sws.curtin.edu.my","weeks":[{"week":39,"start":"2026-09-21"},{"week":40,"start":"2026-09-28"},{"week":41,"start":"2026-10-05"},{"week":42,"start":"2026-10-12"},{"week":43,"start":"2026-10-19"},{"week":44,"start":"2026-10-26"},{"week":45,"start":"2026-11-02"},{"week":46,"start":"2026-11-09"},{"week":47,"start":"2026-11-16"},{"week":48,"start":"2026-11-23"},{"week":49,"start":"2026-11-30"},{"week":50,"start":"2026-12-07"},{"week":51,"start":"2026-12-14"},{"week":52,"start":"2026-12-21"}],"units":{"CMFP0042":{"code":"CMFP0042","name":"Mathematics 2","short":"Maths 2","group":"K"},"CMFP0051":{"code":"CMFP0051","name":"Physics 2","short":"Physics 2","group":"2E3"},"CMFP0061":{"code":"CMFP0061","name":"Programming","short":"Programming","group":"2E3"},"FP-070":{"code":"FP-070","name":"Academic English 060","short":"Academic English","group":"*"},"CMFP0021":{"code":"CMFP0021","name":"Effective Communication Skills","short":"ECS","group":"2E3"}},"events":[{"id":"CMFP0042/CSM/1/3/LEC/2","unit":"CMFP0042","type":"Lecture","day":0,"firstDate":"2026-10-05","start":480,"end":600,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["Auditorium"],"staff":["Jameson Malang"],"group":"K-Q;V-W"},{"id":"CMFP0051/CSM/1/3/LEC/1","unit":"CMFP0051","type":"Lecture","day":0,"firstDate":"2026-10-05","start":600,"end":720,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["SK3 102 Lecture 1"],"staff":["Lukman Mohd Najib"],"group":"3E1-3; 2E1-7"},{"id":"CMFP0061/CSM/1/3/LEC/1","unit":"CMFP0061","type":"Lecture","day":0,"firstDate":"2026-10-05","start":780,"end":900,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["Auditorium"],"staff":["Kamaroizan Mohamad"],"group":"2E1-7; 2F1-3; 3E4"},{"id":"FP-070/CSM/1/3/SEM/01/2","unit":"FP-070","type":"Seminar","day":0,"firstDate":"2026-10-05","start":1020,"end":1200,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["SK3 104 Lecture 3"],"staff":["Grace Abigail","Harith Firajudeen Bin Jeferie"],"group":"Group 1 & 2"},{"id":"CMFP0021/CSM/1/3/SEM/03/1","unit":"CMFP0021","type":"Seminar","day":1,"firstDate":"2026-10-06","start":480,"end":570,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["LTCL 9 (HL2-109)"],"staff":["Chai Kang Ming"],"group":"2E3"},{"id":"CMFP0051/CSM/1/3/WS/06","unit":"CMFP0051","type":"Workshop","day":1,"firstDate":"2026-10-06","start":840,"end":1020,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["SK2 101 (ME 101) Physic Lab","SK3 206 Collaborative Room 2"],"staff":["John Wong Sze Yong"],"group":"2E3"},{"id":"CMFP0042/CSM/1/3/C/1","unit":"CMFP0042","type":"Clinic","day":1,"firstDate":"2026-10-06","start":1020,"end":1110,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["SK3 205 Collaborative Room 1"],"staff":["Fong Ai Ling","Puteri Nurul Fatihah Binti Mohamad Azli","Jameson Malang","Bejay Anak Ugon"],"group":"A-F; K-Q; V-W"},{"id":"CMFP0061/CSM/1/3/LAB/03","unit":"CMFP0061","type":"Lab","day":2,"firstDate":"2026-10-07","start":660,"end":840,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["PA3 106 (Computer Lab)"],"staff":[],"group":"2E3"},{"id":"CMFP0051/CSM/1/3/C/1","unit":"CMFP0051","type":"Clinic","day":3,"firstDate":"2026-10-08","start":660,"end":780,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["Auditorium"],"staff":["Lukman Mohd Najib"],"group":"3E1-3; 2E1-7"},{"id":"CMFP0042/CSM/1/3/TUT/06/1","unit":"CMFP0042","type":"Tutorial","day":3,"firstDate":"2026-10-08","start":930,"end":1020,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["PA3 209"],"staff":["Shubashini Krishnan"],"group":"K"},{"id":"CMFP0021/CSM/1/3/SEM/03/2","unit":"CMFP0021","type":"Seminar","day":3,"firstDate":"2026-10-08","start":1020,"end":1110,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["PA3 203"],"staff":["Chai Kang Ming"],"group":"2E3"},{"id":"CMFP0042/CSM/1/3/TUT/06/2","unit":"CMFP0042","type":"Tutorial","day":4,"firstDate":"2026-10-09","start":600,"end":690,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["PA3 210"],"staff":["Shubashini Krishnan"],"group":"K"},{"id":"FP-070/CSM/1/3/SEM/01/1","unit":"FP-070","type":"Seminar","day":4,"firstDate":"2026-10-09","start":960,"end":1140,"weeks":[41,42,43,44,45,46,47,48,49,50,51,52],"rooms":["LTBS LT II (HL2-111)"],"staff":["Grace Abigail","Harith Firajudeen Bin Jeferie"],"group":"Group 1 & 2"}],"updatedAt":"2026-10-06T16:51:41.906Z"}</script>
 <script type="module">
 import * as core from "./assets/timetable-core.js?v=484ad6369e";
 import { buildingForRoom, roomLabel } from "./assets/campus-geo.js?v=23f31ff695";
+import { createPlanner } from "./assets/planner-ui.js?v=a5d9eb3bbd";
+import { parseCommand, parseAddLink, describe } from "./assets/planner-parse.js?v=4523820e4f";
 
 const CLASS = "2E3";
 const VIEW_KEY = `tt:${CLASS}:view`;
 const SUBJECTS = {
-  CMFP0042: { glyph: "数", tone: "#2f3e52" },
-  CMFP0051: { glyph: "理", tone: "#2c4a46" },
-  CMFP0061: { glyph: "码", tone: "#3d4a2e", abbr: "Prog." },
-  "FP-070": { glyph: "英", tone: "#5c432f", abbr: "Acad. Eng." },
-  CMFP0021: { glyph: "言", tone: "#4e3a4b" },
+  CMFP0042: { glyph: "数", tone: "#5aa7ff" },
+  CMFP0051: { glyph: "理", tone: "#3fd0b6" },
+  CMFP0061: { glyph: "码", tone: "#9bd35a", abbr: "Prog." },
+  "FP-070": { glyph: "英", tone: "#ffad5c", abbr: "Acad. Eng." },
+  CMFP0021: { glyph: "言", tone: "#e08bff" },
 };
-const FALLBACK_TONES = ["#3b3a37", "#4a3f35", "#33433f", "#463c4c", "#3c4552"];
+const FALLBACK_TONES = ["#8fa0ff", "#ff8fb1", "#7fd8ff", "#d9c27a", "#a3e0a0"];
 
 const $ = (id) => document.getElementById(id);
 const store = {
@@ -561,6 +1067,23 @@ const store = {
   set(key, value) { try { localStorage.setItem(key, value); } catch { /* private mode */ } },
 };
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+// inside the Android app (Capacitor puts window.Capacitor on the page before any script runs)
+const inApp = !!window.Capacitor?.isNativePlatform?.();
+let panelMode = "closed";
+/** Android embeds ChatGPT in its own WebView; the website uses a new tab. */
+async function openChatGPT(text = "") {
+  if (inApp) {
+    try {
+      await window.Capacitor.nativePromise("ChatGPTPanel", "open", { prompt: text, theme: document.documentElement.dataset.theme });
+    } catch {
+      toast("打开 ChatGPT 面板失败，请关闭后重试。");
+      return false;
+    }
+  } else {
+    window.open(text ? `${CHATGPT}?q=${encodeURIComponent(text)}` : CHATGPT, "_blank", "noopener");
+  }
+  return true;
+}
 
 // ?now=2026-10-05T08:30 pretends it is that Malaysia time (for testing)
 const override = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})$/.exec(new URLSearchParams(location.search).get("now") || "");
@@ -590,7 +1113,8 @@ function svg(markup) { // static, trusted icon markup only
   return template.content.firstElementChild;
 }
 const pinIcon = () => svg('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg>');
-const ensoIcon = () => svg('<svg viewBox="0 0 80 80" aria-hidden="true"><path d="M62 22c-7-9-21-12-32-6C17 23 12 39 18 52c6 13 23 19 36 13 11-5 17-17 14-29" fill="none" stroke="#1d1c1a" stroke-opacity=".55" stroke-width="5.5" stroke-linecap="round"/><path d="M66 30c1 4 1 8 0 12" fill="none" stroke="#1d1c1a" stroke-opacity=".25" stroke-width="3" stroke-linecap="round"/></svg>');
+const ensoIcon = () => svg('<svg viewBox="0 0 80 80" aria-hidden="true"><path d="M62 22c-7-9-21-12-32-6C17 23 12 39 18 52c6 13 23 19 36 13 11-5 17-17 14-29" fill="none" stroke="currentColor" stroke-opacity=".7" stroke-width="5.5" stroke-linecap="round"/><path d="M66 30c1 4 1 8 0 12" fill="none" stroke="currentColor" stroke-opacity=".35" stroke-width="3" stroke-linecap="round"/></svg>');
+const chevron = () => svg('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>');
 
 // ---------- state ----------
 let data = null;
@@ -601,6 +1125,7 @@ let day = 0;
 let follow = true; // keep following "today" until the user navigates
 let lastRefresh = Date.now();
 let refresh = () => Promise.resolve();
+let planner = null; // 每日任务 · 待办 · my own events (assets/planner-ui.js)
 
 const unitOf = (code) => data?.units?.[code] || { code, name: code, short: code, group: "" };
 const typeZh = (type) => core.TYPE_LABELS_ZH[type] || type;
@@ -611,10 +1136,6 @@ const subjectOf = (code) => {
   const short = unitOf(code).short || code;
   return { glyph: short.trim().charAt(0).toUpperCase() || "课", tone: FALLBACK_TONES[index % FALLBACK_TONES.length] };
 };
-function tint(hex, alpha) {
-  const n = parseInt(hex.slice(1), 16);
-  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
-}
 /** Name for narrow week-grid columns: "Programming" -> "Prog." so words are never cut in half. */
 function gridName(code, roomy) {
   const unit = unitOf(code);
@@ -673,92 +1194,183 @@ function stampText(isoString, now) {
   return `${when} ${core.fmtTime(t.minutes)}`;
 }
 
-// ---------- header ----------
+// ---------- header: ~/today · 2026-10-12 · W42, then 今天 周一 ----------
+/** The date the page shows: the day picked in the week strip (today while following today). */
+function selectedIso(now) {
+  if (!data || week == null) return now.iso;
+  return core.dateInWeek(data, week, day) || now.iso;
+}
+function relName(iso, now) {
+  const diff = core.daysBetween(now.iso, iso);
+  return diff === 0 ? "今天" : diff === 1 ? "明天" : diff === 2 ? "后天" : diff === -1 ? "昨天" : "";
+}
+const dateZh = (iso) => `${core.formatDateZh(iso)} ${core.DAY_NAMES_ZH[core.dayIndexOf(iso)]}`;
+/** "明天 · 10月13日 周二" */
+const paneDate = (iso, now) => [relName(iso, now), dateZh(iso)].filter(Boolean).join(" · ");
+
 function renderHeader(now) {
-  $("today").textContent = `${core.formatDateZh(now.iso)} ${core.DAY_NAMES_ZH[now.day]}`;
-  $("class-title").textContent = data?.title || CLASS;
-  if (data?.semester) $("semester").textContent = data.semester;
-  let chip = "";
-  if (data) {
-    const range = core.classDateRange(data);
-    const current = core.weekOf(data, now.iso);
-    if (range && core.daysBetween(now.iso, range.first) > 0) chip = "开学前";
-    else if (range && core.daysBetween(range.last, now.iso) > 0) chip = "学期结束";
-    else if (current) chip = `第 ${current.week} 周`;
-  }
-  $("week-chip").textContent = chip;
+  const iso = selectedIso(now);
+  const diff = core.daysBetween(now.iso, iso);
+  const dir = { 0: "today", 1: "tomorrow", [-1]: "yesterday" }[diff] || "day";
+  const wk = data ? core.weekOf(data, iso) : null;
+  $("path").replaceChildren(h("b", null, `~/${dir}`), ` · ${iso}${wk ? ` · W${wk.week}` : ""}`);
+  $("big").replaceChildren(relName(iso, now) || core.formatDateZh(iso), h("small", null, core.DAY_NAMES_ZH[core.dayIndexOf(iso)]));
 }
 
-// ---------- now card ----------
-function jumpTo(iso) {
-  const w = core.weekOf(data, iso);
-  if (!w) return;
-  week = w.week;
-  day = core.dayIndexOf(iso);
-  setView("day", false);
-  syncFollow();
-  renderSchedule(getNow());
-  $("sched").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
-}
-
-function nextBlock(next, now, caption) {
-  if (!next) return [];
-  const e = next.event;
-  return [
-    h("p", { class: "now-caption" }, caption),
-    h("p", { class: "now-big num" }, `${relDay(next.iso, now.iso)} ${core.fmtTime(e.start)}`),
-    lessonHead(e, "lg"),
-    roomsBlock(e),
-    h("div", { class: "go-row" },
-      goButton(e, next.iso === now.iso),
-      next.iso !== now.iso ? h("button", { class: "link-btn", type: "button", onclick: () => jumpTo(next.iso) }, "看那天的课 →") : null),
-  ];
-}
-
+// ---------- 此刻: on today's page while a class is on, or about to start ----------
+const SOON = 30; // minutes before a class when the card shows up
 function renderNow(now) {
   const card = $("now");
-  const s = core.currentStatus(data, now);
-  card.dataset.kind = s.kind;
-  const label = (text, when, live = false) =>
-    h("div", { class: "now-label" }, h("i", { class: live ? "pulse" : "calm-dot", "aria-hidden": "true" }), h("span", null, text), when ? h("span", { class: "when num" }, when) : null);
-  let content;
-  if (s.kind === "live") {
-    const e = s.event;
-    const after = s.after;
-    content = [
-      label("上课中", fmtRange(e), true),
-      lessonHead(e, "lg"),
-      roomsBlock(e),
-      h("div", { class: "go-row" }, goButton(e, true)),
-      h("p", { class: "now-big num" }, h("small", null, "还剩"), core.fmtCountdownZh(s.remaining)),
-      progressBar(s.progress),
-      after
-        ? h("p", { class: "now-after" }, "接下来", h("b", null, core.fmtTime(after.start)), `${unitOf(after.unit).short} · ${typeZh(after.type)} · ${roomsOf(after).join(" / ")}`)
-        : h("p", { class: "now-after" }, "这是今天最后一节课"),
-    ];
-  } else if (s.kind === "next") {
-    const e = s.event;
-    content = [
-      label("下一节", fmtRange(e)),
-      lessonHead(e, "lg"),
-      roomsBlock(e),
-      h("div", { class: "go-row" }, goButton(e, true)),
-      h("p", { class: "now-big num" }, h("small", null, "还有"), core.fmtCountdownZh(s.minutesUntil)),
-      h("p", { class: "now-after" }, `今天还有 ${s.today.filter((x) => x.start > now.minutes).length} 节课`),
-    ];
-  } else if (s.kind === "done") {
-    content = [label("今天的课上完了"), ...nextBlock(s.next, now, "下一节")];
-  } else if (s.kind === "free") {
-    content = [label("今天没课"), ...nextBlock(s.next, now, "下一节")];
-  } else if (s.kind === "before") {
-    content = [label("还没开学"), ...nextBlock(s.next, now, "第一节课")];
-  } else {
-    content = [
-      label("学期结束"),
-      h("div", { class: "now-quiet" }, ensoIcon(), h("div", null, h("p", { class: "now-title" }, "本学期课程已结束"), h("p", null, "假期愉快，下学期见。"))),
-    ];
+  if (panelMode === "full") {
+    const iso = selectedIso(now);
+    const classes = data ? core.eventsOn(data, iso) : [];
+    const current = iso === now.iso ? classes.find((event) => now.minutes >= event.start && now.minutes < event.end) : null;
+    const next = current ? classes.find((event) => event.start >= current.end)
+      : iso === now.iso ? classes.find((event) => event.start > now.minutes) : classes[0];
+    const event = current || next;
+    card.hidden = false;
+    card.replaceChildren(h("div", { class: "panel-now-line" },
+      h("i", { class: current ? "pulse" : "", "aria-hidden": "true" }),
+      h("b", null, event ? unitOf(event.unit).short : "课表"),
+      h("span", null, current ? `剩 ${core.fmtTime(Math.ceil(current.end - now.minutes))}` : next ? `下一节 ${core.fmtTime(next.start)}` : data ? "今天没课" : "课表载入中"),
+      current && next ? h("span", { class: "panel-next" }, `下一个 ${core.fmtTime(next.start)} ${unitOf(next.unit).short}`) : null));
+    return;
   }
-  card.replaceChildren(...content.flat());
+  const s = data ? core.currentStatus(data, now) : null;
+  const show = !!s && selectedIso(now) === now.iso && (s.kind === "live" || (s.kind === "next" && s.minutesUntil <= SOON));
+  card.hidden = !show;
+  if (!show) {
+    card.replaceChildren();
+    return;
+  }
+  const e = s.event;
+  const live = s.kind === "live";
+  const left = Math.max(0, Math.ceil(live ? s.remaining : s.minutesUntil));
+  card.dataset.kind = s.kind;
+  const after = live
+    ? s.after ? ["接下来", h("b", null, core.fmtTime(s.after.start)), unitOf(s.after.unit).short] : ["这是今天最后一节课"]
+    : [`今天还有 ${s.today.filter((x) => x.start > now.minutes).length} 节课`];
+  card.replaceChildren(...[
+    h("div", { class: "now-label" },
+      h("i", { class: live ? "pulse" : "calm-dot", "aria-hidden": "true" }),
+      h("span", null, live ? "此刻 · 上课中" : "马上上课"),
+      h("span", { class: "when" }, fmtRange(e))),
+    h("div", { class: "now-row" },
+      lessonHead(e, "lg"),
+      h("p", { class: "now-left num", "aria-label": live ? `还剩 ${core.fmtCountdownZh(left)}` : `${core.fmtCountdownZh(left)}后上课` },
+        core.fmtTime(left), h("small", null, live ? "剩" : "后上课"))),
+    roomsBlock(e),
+    live ? progressBar(s.progress) : null,
+    h("div", { class: "go-row" }, goButton(e, true), h("p", { class: "now-after" }, after)),
+  ].filter(Boolean));
+}
+
+// ---------- the four cards: 课程 · 行程 · 待办 · 每日任务 ----------
+const CARDS = [
+  { pane: "class", label: "课程", color: "var(--accent)" },
+  { pane: "event", label: "行程", color: "var(--mine)" },
+  { pane: "todo", label: "待办", color: "var(--todo)" },
+  { pane: "habit", label: "每日任务", color: "var(--accent-2)" },
+];
+function classLine(iso, now, classes) {
+  if (!data) return "课表载入中…";
+  if (iso === now.iso) {
+    const s = core.currentStatus(data, now);
+    if (s.kind === "live") return `上课中 · ${unitOf(s.event.unit).short}`;
+    if (s.kind === "next") return `下一节 ${core.fmtTime(s.event.start)} ${unitOf(s.event.unit).short}`;
+    if (s.kind === "done") return "今天的课上完了";
+    if (s.kind === "before") return "还没开学";
+    if (s.kind === "ended") return "本学期课程已结束";
+    return "今天没课";
+  }
+  return classes.length ? `第一节 ${core.fmtTime(classes[0].start)} ${unitOf(classes[0].unit).short}` : "这天没课";
+}
+function renderCards(now) {
+  const iso = selectedIso(now);
+  const isToday = iso === now.iso;
+  const classes = data ? core.eventsOn(data, iso) : [];
+  const sum = planner ? planner.summary(iso) : { events: [], todos: { overdue: [], due: [], anytime: [] }, habits: [] };
+  const shown = [...sum.todos.overdue, ...sum.todos.due, ...sum.todos.anytime];
+  const open = shown.filter((t) => !t.done).sort((a, b) => Number(!!b.star) - Number(!!a.star));
+  const nextMine = isToday ? sum.events.find((e) => e.end > now.minutes) : sum.events[0];
+  const nextHabit = sum.habits.find((x) => !x.done);
+  const late = sum.todos.overdue.length;
+  const cards = {
+    class: { n: classes.length, unit: "节", line: classLine(iso, now, classes) },
+    event: { n: sum.events.length, unit: "项", line: nextMine ? `${core.fmtTime(nextMine.start)} ${nextMine.title}` : sum.events.length ? "今天的行程都过了" : "没有行程" },
+    todo: {
+      n: open.length, unit: "项", warn: late > 0, ok: !open.length && shown.length > 0,
+      line: late ? `${late} 项已过期` : open.length ? open[0].title : shown.length ? "全部完成 ✓" : "没有待办",
+    },
+    habit: {
+      n: sum.habits.filter((x) => x.done).length, unit: `/${sum.habits.length}`, ok: sum.habits.length > 0 && !nextHabit,
+      line: !sum.habits.length ? "还没有每日任务" : nextHabit ? `${nextHabit.title}${nextHabit.streak > 1 ? ` · 连续 ${nextHabit.streak} 天` : ""}` : "全部完成 ✓",
+    },
+  };
+  const keep = document.activeElement?.closest?.("#cards") ? document.activeElement.dataset.pane : null;
+  $("cards").replaceChildren(...CARDS.map(({ pane: p, label, color }) => {
+    const c = cards[p];
+    return h("button", {
+      class: "g w", type: "button", dataset: { pane: p }, vars: { "--c": color },
+      "aria-current": wide.matches && p === pane ? "true" : null,
+      "aria-label": `${label}：${c.n}${c.unit}，${c.line}`, onclick: () => openDetail(p),
+    },
+      h("span", { class: "lbl" }, h("i", { "aria-hidden": "true" }), label, chevron()),
+      h("span", { class: "n num" }, String(c.n), h("small", null, c.unit)),
+      h("span", { class: `line${c.warn ? " warn" : c.ok ? " ok" : ""}` }, c.line));
+  }));
+  if (keep) $("cards").querySelector(`[data-pane="${keep}"]`)?.focus({ preventScroll: true });
+}
+
+// ---------- detail: the full list behind each card (a sheet on phones, the right column on computers) ----------
+const wide = matchMedia("(min-width: 960px)");
+const PANES = ["class", "event", "todo", "habit"];
+let pane = "class";
+const detailOpen = () => $("detail").classList.contains("open");
+function showPane(next) {
+  pane = PANES.includes(next) ? next : "class";
+  for (const p of PANES) $(`pane-${p}`).hidden = p !== pane;
+  for (const b of $("pills").children) b.setAttribute("aria-selected", String(b.dataset.pane === pane));
+  for (const b of $("cards").children) {
+    if (wide.matches && b.dataset.pane === pane) b.setAttribute("aria-current", "true");
+    else b.removeAttribute("aria-current");
+  }
+  if (pane === "class" && data && view === "week") renderSchedule(getNow()); // the week grid measures its width
+}
+function openDetail(next) {
+  showPane(next);
+  const box = $("detail");
+  box.scrollTop = 0;
+  if (wide.matches) return;
+  if (!detailOpen()) {
+    box.classList.add("open");
+    document.documentElement.classList.add("detail-open");
+    try { history.pushState({ ...(history.state || {}), detail: true }, ""); } catch { /* ignore */ }
+  }
+  $("detail-close").focus({ preventScroll: true });
+}
+function closeDetail(fromHistory = false) {
+  if (!detailOpen()) return;
+  $("detail").classList.remove("open");
+  document.documentElement.classList.remove("detail-open");
+  if (!fromHistory && history.state?.detail) history.back();
+  $("cards").querySelector(`[data-pane="${pane}"]`)?.focus({ preventScroll: true });
+}
+function renderPanes(now) {
+  const iso = selectedIso(now);
+  const label = paneDate(iso, now);
+  for (const id of ["event-date", "todo-date", "habit-date"]) $(id).textContent = label;
+  const mine = mineOn(iso);
+  const later = planner ? planner.upcoming(iso, 8) : [];
+  const when = (m) => `${relName(m.date, now) || `${Number(m.date.slice(5, 7))}/${Number(m.date.slice(8))} ${core.DAY_NAMES_ZH[core.dayIndexOf(m.date)]}`} ${core.fmtTime(m.start)}`;
+  $("event-list").replaceChildren(...[
+    mine.length ? h("div", { class: "list" }, mine.map((m) => mineCard(m, now, iso === now.iso))) : h("p", { class: "empty small" }, "这天没有行程。"),
+    addMineButton(iso),
+    later.length ? h("h3", { class: "plan-sub" }, "之后") : null,
+    later.length ? h("ul", { class: "up-list" }, later.map((m) => h("li", null,
+      h("button", { class: "up", type: "button", "aria-label": `编辑行程：${m.title}`, onclick: () => planner.openEditor("events", m.id) },
+        h("span", { class: "num" }, when(m)), h("b", null, m.title), m.place ? h("small", null, m.place) : null)))) : null,
+  ].filter(Boolean));
 }
 
 // ---------- schedule ----------
@@ -800,28 +1412,70 @@ function renderSchedule(now) {
   const index = weeks.indexOf(week);
   $("prev").disabled = index <= 0;
   $("next").disabled = index < 0 || index >= weeks.length - 1;
-  $("week-label").replaceChildren(h("b", null, `第 ${week} 周`), ` · ${weekRangeText(week)}`);
-  $("back").hidden = week === core.defaultWeek(data, now);
+  $("week-label").replaceChildren(h("b", null, `W${week}`), ` · ${weekRangeText(week)}`);
+  $("back").hidden = follow;
 
   const perDay = core.eventsInWeek(data, week);
   [...$("days").children].forEach((button, i) => {
     const iso = core.dateInWeek(data, week, i);
     const count = perDay[i].length;
+    const mine = mineOn(iso).length;
+    const classDots = Math.min(count, mine ? 3 : 4);
     button.querySelector(".dd").textContent = iso ? String(Number(iso.slice(8))) : "";
-    button.querySelector(".dots").replaceChildren(...Array.from({ length: Math.min(count, 4) }, () => h("i")));
+    button.querySelector(".dots").replaceChildren(
+      ...Array.from({ length: classDots }, () => h("i")),
+      ...Array.from({ length: Math.min(mine, 4 - classDots) }, () => h("i", { class: "mine" })));
     button.classList.toggle("today", iso === now.iso);
     button.setAttribute("aria-pressed", String(i === day));
-    button.setAttribute("aria-label", `${core.DAY_NAMES_ZH[i]} ${iso ? core.formatDateZh(iso) : ""}，${count ? `${count} 节课` : "没课"}${iso === now.iso ? "，今天" : ""}`);
+    button.setAttribute("aria-label", `${core.DAY_NAMES_ZH[i]} ${iso ? core.formatDateZh(iso) : ""}，${count ? `${count} 节课` : "没课"}${mine ? `，${mine} 项行程` : ""}${iso === now.iso ? "，今天" : ""}`);
   });
 
   const keep = document.activeElement?.dataset?.key;
-  $("days").hidden = view !== "day";
   $("day-view").hidden = view !== "day";
   $("week-view").hidden = view !== "week";
   if (view === "day") renderDayView(now, perDay[day]);
   else renderWeekView(now, perDay);
   if (keep) document.querySelector(`[data-key="${CSS.escape(keep)}"]`)?.focus({ preventScroll: true });
+  planner?.showDate(selectedIso(now));
+  renderHeader(now);
+  renderNow(now);
+  renderCards(now);
+  renderPanes(now);
 }
+function shiftWeek(delta) {
+  if (!data) return;
+  const weeks = core.teachingWeeks(data);
+  const i = weeks.indexOf(week) + delta;
+  if (i < 0 || i >= weeks.length) return;
+  week = weeks[i];
+  syncFollow();
+  renderSchedule(getNow());
+}
+
+// ---------- my own events (行程) in the timetable ----------
+const mineOn = (iso) => (iso && planner ? planner.eventsOn(iso) : []);
+function mineCard(m, now, isToday) {
+  const live = isToday && now.minutes >= m.start && now.minutes < m.end;
+  const past = isToday && now.minutes >= m.end;
+  return h("article", {
+    class: `card mine${live ? " live" : ""}${past ? " past" : ""}`, dataset: { id: `mine-${m.id}` },
+    "aria-label": `${fmtRange(m)} 我的行程 ${m.title}${live ? "，进行中" : past ? "，已结束" : ""}`,
+  },
+    h("div", { class: "t" },
+      h("span", { class: "s num" }, core.fmtTime(m.start)),
+      h("span", { class: "e num" }, core.fmtTime(m.end)),
+      h("span", { class: "d" }, core.fmtDurationZh(m.end - m.start)),
+      h("button", { class: "verify-btn", type: "button", "aria-label": `编辑行程：${m.title}`, onclick: () => planner.openEditor("events", m.id) }, "编辑")),
+    h("div", null,
+      h("div", { class: "lesson-head" },
+        h("span", { class: "seal mine", "aria-hidden": "true" }, "行"),
+        h("div", { class: "unit-name" }, h("h3", null, m.title), h("div", { class: "sub" }, "我的行程"))),
+      m.place ? roomsBlock({ rooms: [m.place] }) : null,
+      live ? h("div", { class: "live-meta" }, `进行中 · 还剩 ${core.fmtCountdownZh(m.end - now.minutes)}`, progressBar((now.minutes - m.start) / (m.end - m.start))) : null,
+      past ? h("p", { class: "done-tag" }, "已结束") : null));
+}
+const addMineButton = (iso) =>
+  h("button", { class: "day-add", type: "button", onclick: () => planner?.openEditor("events", null, { date: iso }) }, "＋ 在这天加行程");
 
 function renderDayView(now, events) {
   const iso = core.dateInWeek(data, week, day);
@@ -829,18 +1483,31 @@ function renderDayView(now, events) {
   const diff = iso ? core.daysBetween(now.iso, iso) : null;
   const tag = diff === 0 ? "今天" : diff === 1 ? "明天" : diff === -1 ? "昨天" : "";
   const totalMinutes = events.reduce((sum, e) => sum + (e.end - e.start), 0);
+  const mine = mineOn(iso);
+  const summary = [events.length ? `${events.length} 节课 · 共 ${core.fmtDurationZh(totalMinutes)}` : "", mine.length ? `${mine.length} 项行程` : ""].filter(Boolean).join(" · ");
   const head = h("div", { class: "dayhead" },
     h("strong", null, `${core.DAY_NAMES_ZH[day]} · ${iso ? core.formatDateZh(iso) : ""}`),
     tag ? h("span", { class: "tag" }, tag) : null,
-    h("span", null, events.length ? `${events.length} 节课 · 共 ${core.fmtDurationZh(totalMinutes)}` : ""));
+    h("span", null, summary));
 
-  if (!events.length) {
-    $("day-view").replaceChildren(head, h("div", { class: "empty" }, ensoIcon(), h("strong", null, "这天没有课"), day >= 5 ? "周末愉快" : "好好休息，或者去图书馆坐坐"));
+  if (!events.length && !mine.length) {
+    $("day-view").replaceChildren(head, h("div", { class: "empty" }, ensoIcon(), h("strong", null, "这天没有课"), day >= 5 ? "周末愉快" : "好好休息，或者去图书馆坐坐", h("div", null, addMineButton(iso))));
     return;
   }
-  const gaps = new Map(core.gapsBetween(events).filter((g) => g.minutes >= 30).map((g) => [g.after, g]));
+  // classes and my events in time order; a gap is free time after everything before it has ended
+  const timeline = [...events.map((e) => ({ e, mine: false })), ...mine.map((e) => ({ e, mine: true }))]
+    .sort((a, b) => a.e.start - b.e.start || a.e.end - b.e.end);
   const items = [];
-  for (const e of events) {
+  let busyUntil = -1;
+  for (const { e, mine: isMine } of timeline) {
+    if (busyUntil >= 0 && e.start - busyUntil >= 30) {
+      items.push(h("div", { class: "gap" }, `空 ${core.fmtDurationZh(e.start - busyUntil)} · ${core.fmtTime(busyUntil)}–${core.fmtTime(e.start)}`));
+    }
+    busyUntil = Math.max(busyUntil, e.end);
+    if (isMine) {
+      items.push(mineCard(e, now, isToday));
+      continue;
+    }
     const live = isToday && now.minutes >= e.start && now.minutes < e.end;
     const past = isToday && now.minutes >= e.end;
     const unit = unitOf(e.unit);
@@ -863,9 +1530,8 @@ function renderDayView(now, events) {
         e.staff?.length ? h("p", { class: "staff" }, e.staff.join("、")) : null,
         live ? h("div", { class: "live-meta" }, `上课中 · 还剩 ${core.fmtCountdownZh(e.end - now.minutes)}`, progressBar((now.minutes - e.start) / (e.end - e.start))) : null,
         past ? h("p", { class: "done-tag" }, "已结束") : null)));
-    const gap = gaps.get(e);
-    if (gap) items.push(h("div", { class: "gap" }, `空 ${core.fmtDurationZh(gap.minutes)} · ${core.fmtTime(gap.after.end)}–${core.fmtTime(gap.before.start)}`));
   }
+  items.push(addMineButton(iso));
   $("day-view").replaceChildren(head, h("div", { class: "list" }, items));
 }
 
@@ -891,11 +1557,17 @@ function lanes(events) {
 }
 
 function renderWeekView(now, perDay) {
-  const bounds = core.timeBounds(data);
+  const minePer = Array.from({ length: 7 }, (_, i) => mineOn(core.dateInWeek(data, week, i)).map((m) => ({ ...m, mine: true })));
+  const bounds = { ...core.timeBounds(data) };
+  const allMine = minePer.flat();
+  if (allMine.length) { // grow the grid so my early / late events fit
+    bounds.start = Math.min(bounds.start, Math.floor(Math.min(...allMine.map((m) => m.start)) / 60) * 60);
+    bounds.end = Math.max(bounds.end, Math.ceil(Math.max(...allMine.map((m) => m.end)) / 60) * 60);
+  }
   const hour = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--hour")) || 56;
   const ppm = hour / 60;
   const height = (bounds.end - bounds.start) * ppm;
-  const lastDay = perDay[6].length ? 6 : perDay[5].length ? 5 : 4;
+  const lastDay = perDay[6].length || minePer[6].length ? 6 : perDay[5].length || minePer[5].length ? 5 : 4;
   const cols = Array.from({ length: lastDay + 1 }, (_, i) => i);
   const todayCol = cols.find((i) => core.dateInWeek(data, week, i) === now.iso);
   const roomy = ($("week-view").clientWidth - 30) / cols.length >= 86;
@@ -920,40 +1592,60 @@ function renderWeekView(now, perDay) {
     lines.append(line);
   }
 
+  // a block's spot in its day column (side by side when things overlap)
+  const place = (block, e, lane, count) => {
+    block.style.top = `${(e.start - bounds.start) * ppm + 1}px`;
+    block.style.height = `${Math.max(14, (e.end - e.start) * ppm - 2)}px`;
+    if (count > 1) {
+      block.style.left = `calc(${(lane / count) * 100}% + 1px)`;
+      block.style.right = "auto";
+      block.style.width = `calc(${100 / count}% - 2px)`;
+    }
+  };
+  const showCard = (i, id) => {
+    day = i;
+    setView("day", false);
+    syncFollow();
+    renderSchedule(getNow());
+    const card = document.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+    if (card) {
+      card.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+      card.classList.remove("flash");
+      void card.offsetWidth;
+      card.classList.add("flash");
+    }
+  };
+  const mineBlock = (m, i, isToday, lane, count) => {
+    const block = h("button", {
+      class: `blk mine${isToday && now.minutes >= m.end ? " past" : ""}`, type: "button", role: "listitem", dataset: { key: `blk-mine-${m.id}` },
+      "aria-label": `${core.DAY_NAMES_ZH[i]} ${fmtRange(m)} 我的行程 ${m.title}${m.place ? ` ${m.place}` : ""}`,
+      onclick: () => showCard(i, `mine-${m.id}`),
+    }, h("b", null, m.title), m.place ? h("span", null, m.place) : null);
+    place(block, m, lane, count);
+    return block;
+  };
+
   const columns = cols.map((i) => {
     const iso = core.dateInWeek(data, week, i);
     const isToday = i === todayCol;
     const col = h("div", { class: `wk-col${isToday ? " today" : ""}`, role: "list", "aria-label": `${core.DAY_NAMES_ZH[i]} ${core.formatDateZh(iso)}` });
-    for (const { event: e, lane, lanes: count } of lanes(perDay[i])) {
+    const both = [...perDay[i], ...minePer[i]].sort((a, b) => a.start - b.start || a.end - b.end);
+    for (const { event: e, lane, lanes: count } of lanes(both)) {
+      if (e.mine) {
+        col.append(mineBlock(e, i, isToday, lane, count));
+        continue;
+      }
       const tone = subjectOf(e.unit).tone;
       const unit = unitOf(e.unit);
       const live = isToday && now.minutes >= e.start && now.minutes < e.end;
       const past = isToday && now.minutes >= e.end;
       const block = h("button", {
         class: `blk${live ? " live" : ""}${past ? " past" : ""}`, type: "button", role: "listitem",
-        vars: { "--tone": tone, "--tint": tint(tone, 0.11) }, dataset: { key: `blk-${e.id}` },
+        vars: { "--tone": tone }, dataset: { key: `blk-${e.id}` },
         "aria-label": `${core.DAY_NAMES_ZH[i]} ${fmtRange(e)} ${unit.short} ${typeZh(e.type)} ${roomsOf(e).join("、")}`,
-        onclick: () => {
-          day = i;
-          setView("day", false);
-          syncFollow();
-          renderSchedule(getNow());
-          const card = document.querySelector(`.card[data-id="${CSS.escape(e.id)}"]`);
-          if (card) {
-            card.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
-            card.classList.remove("flash");
-            void card.offsetWidth;
-            card.classList.add("flash");
-          }
-        },
+        onclick: () => showCard(i, e.id),
       }, h("b", null, gridName(e.unit, roomy)), h("span", null, typeZh(e.type)), h("span", null, roomsOf(e).map(core.shortRoom).join(" / ")));
-      block.style.top = `${(e.start - bounds.start) * ppm + 1}px`;
-      block.style.height = `${(e.end - e.start) * ppm - 2}px`;
-      if (count > 1) {
-        block.style.left = `calc(${(lane / count) * 100}% + 1px)`;
-        block.style.right = "auto";
-        block.style.width = `calc(${100 / count}% - 2px)`;
-      }
+      place(block, e, lane, count);
       col.append(block);
     }
     if (isToday && now.minutes >= bounds.start && now.minutes <= bounds.end) {
@@ -967,8 +1659,12 @@ function renderWeekView(now, perDay) {
   const body = h("div", { class: "wk-body", vars: { "--cols": String(cols.length) } }, lines, axis, columns);
   body.style.height = `${height}px`;
   const total = perDay.reduce((n, list) => n + list.length, 0);
-  $("week-view").replaceChildren(h("div", { class: "wk" }, head, body),
-    h("p", { class: "wk-note" }, total ? `这周 ${total} 节课 · 点一节课看详细` : "这周没有课"));
+  const note = [total ? `这周 ${total} 节课` : "这周没有课", allMine.length ? `${allMine.length} 项行程` : "", total || allMine.length ? "点一格看详细" : ""].filter(Boolean).join(" · ");
+  const weeks = core.teachingWeeks(data);
+  const arrow = (delta, label, path) => h("button", { class: "nav-btn", type: "button", "aria-label": label, disabled: !weeks[weeks.indexOf(week) + delta], dataset: { key: `wk-${delta}` }, onclick: () => shiftWeek(delta) },
+    svg(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${path}"/></svg>`));
+  const nav = h("div", { class: "wk-nav" }, arrow(-1, "上一周", "M15 5l-7 7 7 7"), h("p", { class: "week-label num" }, h("b", null, `W${week}`), ` · ${weekRangeText(week)}`), arrow(1, "下一周", "M9 5l7 7-7 7"));
+  $("week-view").replaceChildren(nav, h("div", { class: "wk" }, head, body), h("p", { class: "wk-note" }, note));
 }
 
 // ---------- units ----------
@@ -1078,19 +1774,22 @@ function openModal(dialog, flag) {
   document.documentElement.classList.add("lock");
   try { history.pushState({ ...(history.state || {}), [flag]: true }, ""); } catch { /* ignore */ }
 }
-for (const [id, flag] of [["check", "check"], ["shot", "shot"]]) {
+const MODALS = [["check", "check"], ["shot", "shot"], ["plan-editor", "planEditor"], ["plan-settings", "planSettings"]];
+for (const [id, flag] of MODALS) {
   const dialog = $(id);
   dialog.addEventListener("close", () => {
-    if (!$("check").open && !$("shot").open) document.documentElement.classList.remove("lock");
+    if (!MODALS.some(([other]) => $(other).open)) document.documentElement.classList.remove("lock");
     if (history.state?.[flag]) history.back();
   });
   dialog.addEventListener("click", (event) => {
-    if (event.target === event.currentTarget && id === "check") event.currentTarget.close(); // tap on the backdrop
+    // tap on the backdrop (not the editor: that would throw away what was typed)
+    if (event.target === event.currentTarget && (id === "check" || id === "plan-settings")) event.currentTarget.close();
   });
 }
 window.addEventListener("popstate", () => {
-  if ($("shot").open && !history.state?.shot) $("shot").close();
-  if ($("check").open && !history.state?.check) $("check").close();
+  for (const [id, flag] of MODALS) if ($(id).open && !history.state?.[flag]) $(id).close();
+  if (detailOpen() && !history.state?.detail) closeDetail(true);
+  if (pending && !history.state?.confirm) hideConfirm(true);
 });
 
 // ---------- 核准查看: the real SWS list page, as a screenshot ----------
@@ -1260,18 +1959,29 @@ function renderFooter(now) {
 // ---------- everything ----------
 function renderAll() {
   const now = getNow();
-  renderHeader(now);
-  if (!data) return;
+  if (!data) {
+    renderHeader(now);
+    renderNow(now);
+    renderCards(now);
+    return;
+  }
   if (follow || week == null || !core.teachingWeeks(data).includes(week)) {
     week = core.defaultWeek(data, now);
     day = core.defaultDay(data, week, now);
   }
-  renderNow(now);
   renderSchedule(now);
   renderFooter(now);
 }
 
+window.addEventListener("planner:chatgpt-panel", (event) => {
+  panelMode = ["half", "full"].includes(event.detail) ? event.detail : "closed";
+  if (panelMode === "closed") delete document.documentElement.dataset.chatgptPanel;
+  else document.documentElement.dataset.chatgptPanel = panelMode;
+  renderAll();
+});
+
 function renderProblem() {
+  $("now").hidden = false;
   $("now").dataset.kind = "error";
   $("now").replaceChildren(h("div", { class: "problem" },
     h("p", { class: "now-title" }, "暂时拿不到课表"),
@@ -1309,23 +2019,314 @@ function onData(next, nextInfo) {
 }
 
 // ---------- wire up ----------
+planner = createPlanner({
+  getNow,
+  openModal,
+  toast,
+  onChange: () => {
+    applyLook();
+    if (data) renderSchedule(getNow());
+    else renderCards(getNow());
+  },
+});
+planner.showDate(getNow().iso);
 buildDays();
 setView(view, false);
+showPane("class");
 $("view-day").addEventListener("click", () => { setView("day"); renderSchedule(getNow()); });
 $("view-week").addEventListener("click", () => { setView("week"); renderSchedule(getNow()); });
-$("prev").addEventListener("click", () => {
-  const weeks = core.teachingWeeks(data);
-  const i = weeks.indexOf(week);
-  if (i > 0) { week = weeks[i - 1]; syncFollow(); renderSchedule(getNow()); }
-});
-$("next").addEventListener("click", () => {
-  const weeks = core.teachingWeeks(data);
-  const i = weeks.indexOf(week);
-  if (i >= 0 && i < weeks.length - 1) { week = weeks[i + 1]; syncFollow(); renderSchedule(getNow()); }
-});
+$("prev").addEventListener("click", () => shiftWeek(-1));
+$("next").addEventListener("click", () => shiftWeek(1));
 $("back").addEventListener("click", () => {
   follow = true;
   renderAll();
+});
+// swipe the week strip to change weeks
+let swipe = null;
+$("strip").addEventListener("touchstart", (event) => {
+  swipe = event.touches.length === 1 ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : null;
+}, { passive: true });
+$("strip").addEventListener("touchend", (event) => {
+  if (!swipe) return;
+  const t = event.changedTouches[0];
+  const dx = t.clientX - swipe.x;
+  const dy = t.clientY - swipe.y;
+  swipe = null;
+  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) shiftWeek(dx < 0 ? 1 : -1);
+}, { passive: true });
+
+$("pills").addEventListener("click", (event) => {
+  const b = event.target.closest("[data-pane]");
+  if (!b) return;
+  showPane(b.dataset.pane);
+  $("detail").scrollTop = 0;
+});
+$("detail-close").addEventListener("click", () => closeDetail());
+wide.addEventListener("change", () => {
+  closeDetail();
+  if (data) renderSchedule(getNow());
+});
+const PANE_KIND = { class: "events", event: "events", todo: "todos", habit: "habits" };
+/** The editor for a new item, on the picked day. */
+function newItem(kind) {
+  const now = getNow();
+  const iso = selectedIso(now);
+  planner.openEditor(kind, null, kind === "events" ? { date: iso } : kind === "todos" && iso !== now.iso ? { due: iso } : {});
+}
+for (const b of document.querySelectorAll("[data-new]")) b.addEventListener("click", () => newItem(b.dataset.new));
+
+// ---------- look: theme, glass colour, clarity (settings → 外观, saved and synced with the planner data) ----------
+const GLASSES = [["grey", "灰白"], ["ink", "墨色"], ["clear", "无色"], ["sky", "天蓝"], ["lavender", "薰衣草"], ["rose", "玫瑰"], ["amber", "琥珀"]];
+const lightScheme = matchMedia("(prefers-color-scheme: light)");
+const clarityFactor = (clarity) => String(Math.round((1.6 - clarity * 0.012) * 100) / 100); // 0 frosted … 100 clear
+function lookOf() {
+  const s = planner?.settings || {};
+  return {
+    theme: ["dark", "light", "auto"].includes(s.theme) ? s.theme : "dark",
+    glass: GLASSES.some(([id]) => id === s.glass) ? s.glass : "grey",
+    clarity: Number.isFinite(s.clarity) ? Math.min(100, Math.max(0, s.clarity)) : 50,
+  };
+}
+function applyLook() {
+  const look = lookOf();
+  const root = document.documentElement;
+  const light = look.theme === "light" || (look.theme === "auto" && lightScheme.matches);
+  root.dataset.theme = light ? "light" : "dark";
+  root.dataset.glass = look.glass;
+  root.style.setProperty("--gk", clarityFactor(look.clarity));
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", light ? "#e6e8ed" : "#0b0c10");
+  for (const b of $("look-theme").children) b.setAttribute("aria-pressed", String(b.dataset.themeSet === look.theme));
+  for (const b of $("look-glass").children) b.setAttribute("aria-checked", String(b.dataset.glass === look.glass));
+  $("look-clarity").value = String(look.clarity);
+  syncSystemBars();
+}
+/** In the app: light status-bar icons on the dark page, dark ones on the light page (when the page is under the bar). */
+function syncSystemBars() {
+  const cap = window.Capacitor;
+  if (!inApp || !cap.nativePromise) return;
+  let probe = syncSystemBars.probe;
+  if (!probe) {
+    // how tall the status bar is over the page: 0 when Android keeps the page below it
+    probe = syncSystemBars.probe = h("div", { "aria-hidden": "true" });
+    probe.style.cssText = "position:fixed;top:0;left:0;width:1px;height:env(safe-area-inset-top);visibility:hidden;pointer-events:none";
+    document.body.append(probe);
+    new ResizeObserver(() => syncSystemBars()).observe(probe);
+  }
+  const under = probe.getBoundingClientRect().height > 0;
+  const style = document.documentElement.dataset.theme === "light" && under ? "LIGHT" : "DARK"; // DARK = light icons
+  if (style === syncSystemBars.last) return;
+  syncSystemBars.last = style;
+  cap.nativePromise("SystemBars", "setStyle", { style }).catch(() => { syncSystemBars.last = ""; });
+}
+$("look-glass").replaceChildren(...GLASSES.map(([id, name]) =>
+  h("button", { class: "sw", type: "button", role: "radio", dataset: { glass: id }, "aria-checked": "false", onclick: () => planner.setSetting("glass", id) },
+    h("i", { "aria-hidden": "true" }), name)));
+$("look-theme").addEventListener("click", (event) => {
+  const b = event.target.closest("[data-theme-set]");
+  if (b) planner.setSetting("theme", b.dataset.themeSet);
+});
+$("look-clarity").addEventListener("input", (event) => document.documentElement.style.setProperty("--gk", clarityFactor(Number(event.target.value))));
+$("look-clarity").addEventListener("change", (event) => planner.setSetting("clarity", Number(event.target.value)));
+lightScheme.addEventListener("change", applyLook);
+applyLook();
+
+// ---------- bottom bar: things the planner understands itself, everything else to ChatGPT ----------
+const CHATGPT = "https://chatgpt.com/";
+const APP_URL = /^https?:$/.test(location.protocol) && location.hostname !== "localhost" && location.hostname !== "127.0.0.1"
+  ? `${location.origin}${location.pathname}` : "https://ningloke.github.io/ling/";
+const KIND_ZH = { events: "行程", todos: "待办", habits: "每日任务" };
+const KIND_COLOR = { events: "var(--mine)", todos: "var(--todo)", habits: "var(--accent-2)" };
+let pending = null; // { action, kind, item, source } on the confirm card
+
+function showConfirm(next) {
+  pending = next;
+  const box = $("confirm");
+  const del = next.action === "delete";
+  $("confirm-k").textContent = `${next.source === "chatgpt" ? "ChatGPT 想" : ""}${del ? "删除" : "新增"}一个${KIND_ZH[next.kind]}`;
+  $("confirm-title").textContent = next.item.title;
+  $("confirm-d").textContent = describe(next.kind, next.item);
+  box.style.setProperty("--c", KIND_COLOR[next.kind]);
+  $("confirm-ok").textContent = del ? "删除" : "确认添加";
+  $("confirm-ok").classList.toggle("danger", del);
+  $("confirm-edit").hidden = del;
+  if (box.hidden) {
+    try { history.pushState({ ...(history.state || {}), confirm: true }, ""); } catch { /* ignore */ }
+  }
+  box.hidden = false;
+  requestAnimationFrame(() => box.classList.add("show"));
+  $("confirm-ok").focus({ preventScroll: true });
+}
+/** fromHistory: back was pressed (the entry is gone already); keep: leave the entry (the editor replaces it) */
+function hideConfirm(fromHistory = false, keep = false) {
+  if (!pending) return;
+  pending = null;
+  $("confirm").classList.remove("show");
+  $("confirm").hidden = true;
+  if (fromHistory || !history.state?.confirm) return;
+  if (keep) {
+    try { history.replaceState({ ...history.state, confirm: false }, ""); } catch { /* ignore */ }
+  } else history.back();
+}
+$("confirm-cancel").addEventListener("click", () => hideConfirm());
+$("confirm-edit").addEventListener("click", () => {
+  const p = pending;
+  hideConfirm(false, true); // history.back() here would race with the editor's own history entry
+  if (p) planner.openEditor(p.kind, null, p.item);
+});
+$("confirm-ok").addEventListener("click", () => {
+  const p = pending;
+  hideConfirm();
+  if (!p) return;
+  if (p.action === "delete") {
+    planner.removeItem(p.kind, p.item.id);
+    toast(`已删除：${p.item.title}`);
+    return;
+  }
+  planner.add(p.kind, p.item);
+  toast(p.kind === "events" ? `行程已加到 ${dateZh(p.item.date)}` : p.kind === "habits" ? "每日任务已加上"
+    : p.item.due ? `待办已加上 · ${core.formatDateZh(p.item.due)}到期` : "待办已加上");
+});
+
+/** 删掉周三的小组讨论: the item it most likely means (exact title first; events: the next one first). */
+function findForDelete({ query, date }) {
+  const q = query.toLowerCase();
+  const today = getNow().iso;
+  const pools = [
+    ["events", planner.items("events").filter((e) => !date || e.date === date)
+      .sort((a, b) => Number(a.date < today) - Number(b.date < today) || a.date.localeCompare(b.date) || a.start - b.start)],
+    ["todos", planner.items("todos").filter((t) => !t.done && (!date || t.due === date))],
+    ["habits", date ? [] : planner.items("habits")],
+  ];
+  const tests = [(t) => t === q, (t) => t.includes(q) || (q.length >= 2 && q.includes(t))];
+  for (const test of tests) {
+    for (const [kind, list] of pools) {
+      const hit = list.find((x) => test(x.title.toLowerCase()));
+      if (hit) return { kind, item: hit };
+    }
+  }
+  return null;
+}
+
+$("ai").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const input = $("ai-input");
+  const text = input.value.trim();
+  const cmd = text ? parseCommand(text, getNow().iso) : null;
+  if (cmd?.action === "add") {
+    input.value = "";
+    showConfirm({ ...cmd, source: "typed" });
+    return;
+  }
+  if (cmd?.action === "delete") {
+    const hit = findForDelete(cmd);
+    if (!hit) {
+      toast(`没找到「${cmd.query}」`);
+      return;
+    }
+    input.value = "";
+    showConfirm({ action: "delete", ...hit, source: "typed" });
+    return;
+  }
+  if (await openChatGPT(text) && input.value.trim() === text) input.value = "";
+});
+$("ai-plus").addEventListener("click", () => newItem(detailOpen() || wide.matches ? PANE_KIND[pane] : "todos"));
+
+// voice typing, where the browser has it (Chrome); not in the app, whose web view has no speech service
+const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (Speech && !inApp) {
+  const mic = $("ai-mic");
+  let listening = null;
+  mic.hidden = false;
+  mic.addEventListener("click", () => {
+    if (listening) {
+      listening.stop();
+      return;
+    }
+    const rec = new Speech();
+    const before = $("ai-input").value;
+    rec.lang = "zh-CN";
+    rec.interimResults = true;
+    rec.onresult = (event) => { $("ai-input").value = before + [...event.results].map((r) => r[0].transcript).join(""); };
+    rec.onerror = (event) => {
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") toast("麦克风没有权限：在浏览器设置里允许这个网站用麦克风。");
+      else if (event.error !== "no-speech" && event.error !== "aborted") toast("语音输入暂时用不了。");
+    };
+    rec.onend = () => {
+      listening = null;
+      mic.classList.remove("on");
+      mic.setAttribute("aria-label", "语音输入");
+    };
+    try {
+      rec.start();
+      listening = rec;
+      mic.classList.add("on");
+      mic.setAttribute("aria-label", "停止语音输入");
+    } catch {
+      listening = null;
+    }
+  });
+}
+
+$("gpt-open").addEventListener("click", () => openChatGPT());
+if (inApp) {
+  $("gpt-open").textContent = "打开内置 ChatGPT";
+  $("gpt-login-hint").textContent = "ChatGPT 网页在 App 的下方面板里，可以全屏或收起。Google 登录不能在内嵌页完成。先在浏览器用 Google 登录同一账号，到 ChatGPT「设置 → 账户」查看能否添加单独的 ChatGPT 密码；若可以，回 App 用同一 Gmail 地址和这个新密码登录（不是 Google 密码）。底部提问会开启新对话；续聊请用面板里 ChatGPT 自己的输入框。";
+}
+
+// the instructions to paste into ChatGPT, so its answers carry links back here
+$("gpt-rule").textContent = [
+  "我有一个自己的课表 App，用来记行程、待办和每日任务。当我请你帮我安排、提醒或规划事情时，在回答最后为每一项附上一个链接，我点一下就能加进去（App 会先让我确认）：",
+  `行程：${APP_URL}?add=event&title=标题&date=YYYY-MM-DD&start=HH:MM&end=HH:MM&place=地点`,
+  `待办：${APP_URL}?add=todo&title=标题&due=YYYY-MM-DD（没有期限就不写 due；重要的加 &star=1）`,
+  `每日任务：${APP_URL}?add=habit&title=标题&days=0123456（0 是周一，6 是周日，只写要重复的那几天）`,
+  "链接里的中文和空格要做网址编码。链接文字写成「＋ 加到日程：10/13 周二 15:00 健身」这样。时间用马来西亚时间（UTC+8）。",
+].join("\n");
+$("gpt-copy").addEventListener("click", async (event) => {
+  const button = event.currentTarget;
+  let ok = false;
+  try {
+    await navigator.clipboard.writeText($("gpt-rule").textContent);
+    ok = true;
+  } catch {
+    const range = document.createRange();
+    range.selectNodeContents($("gpt-rule"));
+    getSelection().removeAllRanges();
+    getSelection().addRange(range);
+    try { ok = document.execCommand("copy"); } catch { ok = false; }
+  }
+  button.textContent = ok ? "已复制" : "复制不了，请手动选";
+  setTimeout(() => { button.textContent = "复制这段"; }, 1600);
+});
+
+/** A link from ChatGPT (…/?add=event&title=…): ask before adding, then tidy the address. */
+function showChatGPTAddLink(link) {
+  if (!link) return;
+  if (link.error) toast(link.error);
+  else showConfirm({ action: "add", ...link, source: "chatgpt" });
+}
+
+function importFromLink() {
+  const params = new URLSearchParams(location.search);
+  const link = parseAddLink(params);
+  if (!link) return;
+  for (const key of ["add", "title", "date", "start", "end", "place", "due", "star", "days"]) params.delete(key);
+  const rest = params.toString();
+  try { history.replaceState(history.state, "", `${location.pathname}${rest ? `?${rest}` : ""}${location.hash}`); } catch { /* ignore */ }
+  showChatGPTAddLink(link);
+}
+
+window.addEventListener("planner:chatgpt-action-link", ({ detail }) => {
+  let url;
+  try { url = new URL(detail); } catch { return; }
+  if (url.protocol !== "https:" || url.hostname !== "ningloke.github.io" || url.port
+    || !/^\/ling\/?$/.test(url.pathname)) return;
+  showChatGPTAddLink(parseAddLink(url.searchParams));
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape" || document.querySelector("dialog[open], .cm, .tt-overlay")) return;
+  if (pending) hideConfirm();
+  else if (detailOpen()) closeDetail();
 });
 // ---------- campus map (3D, GPS, walking directions), loaded on first use ----------
 const MAP_STYLE = "ink";
@@ -1355,6 +2356,11 @@ function mapClasses(now) {
 let mapLoading = false;
 async function openMap(code = null, navigate = false) {
   if (mapLoading) return;
+  // opened as a file (the stand-alone folder): browsers won't run the map's code (MapLibre) from a file
+  if (location.protocol === "file:") {
+    toast("直接打开文件时看不了地图，用网站或 App 打开就可以。");
+    return;
+  }
   mapLoading = true;
   // iPhone only lets a page ask for the compass during a tap, so ask now; the map picks up the answer
   let compassPermission = null;
@@ -1367,7 +2373,7 @@ async function openMap(code = null, navigate = false) {
     }
   }
   try {
-    const { openCampusMap } = await import("./assets/campus-map.js?v=52c6628fe1");
+    const { openCampusMap } = await import("./assets/campus-map.js?v=89c8023325");
     openCampusMap({
       maplibreUrl: "./assets/vendor/maplibre-gl-6.12.0/maplibre-gl.mjs",
       campusUrl: "data/campus/campus.geojson",
@@ -1397,19 +2403,19 @@ $("map-btn").addEventListener("click", () => openMap());
 $("egg").addEventListener("click", async () => {
   const { openTetris } = await import("./assets/tetris.js?v=a8b0e23b78");
   openTetris({
-    title: "墨块",
+    title: "方块",
     storageKey: `tt:${CLASS}:tetris-best`,
     theme: {
-      style: "ink",
-      background: "#efe9dd",
-      panel: "#f8f4ec",
-      grid: "rgba(181,65,46,.11)",
-      text: "#1d1c1a",
-      muted: "#5f5a52",
-      accent: "#b5412e",
+      style: "neon",
+      background: "#0b0c10",
+      panel: "#151722",
+      grid: "rgba(122,92,255,.12)",
+      text: "#f2f3f7",
+      muted: "#9aa0b4",
+      accent: "#9b7bff",
       font: getComputedStyle(document.body).fontFamily,
-      // traditional painting pigments: 石青 藤黄 朱砂 石绿 胭脂 墨 赭石
-      pieces: { I: "#3a6f96", O: "#d0a43c", T: "#b5412e", S: "#4f8a72", Z: "#9b3550", J: "#2b2a28", L: "#a0643f" },
+      // the page's blue → violet → pink, plus the subject colours
+      pieces: { I: "#5aa7ff", O: "#ffad5c", T: "#9b7bff", S: "#3fd0b6", Z: "#ff7aa8", J: "#2b8fff", L: "#e08bff" },
     },
   });
 });
@@ -1428,7 +2434,8 @@ refresh = core.startTimetable({
   cacheKey: `tt:${CLASS}`,
   onData,
 });
-if (!data) renderHeader(getNow()); // nothing embedded or cached: wait for the network
+if (!data) renderAll(); // nothing embedded or cached: wait for the network
+importFromLink();
 
 const doRefresh = () => {
   lastRefresh = Date.now();
@@ -1448,7 +2455,7 @@ function fitAroundHostBadge() {
     const y = height - dy;
     for (let fx = 0.06; fx < 1; fx += 0.08) {
       for (const el of document.elementsFromPoint(width * fx, y)) {
-        if (app.contains(el) || el === document.body || el === document.documentElement) break;
+        if (app.contains(el) || el.closest?.("#ai, #confirm, #toast, .bg") || el === document.body || el === document.documentElement) break;
         const box = el.getBoundingClientRect();
         const top = box.height > 0 && box.top > height / 2 ? box.top : y - 8;
         covered = Math.max(covered, height - top);
@@ -1479,7 +2486,7 @@ document.addEventListener("visibilitychange", () => {
 // a page left open for days still gets new code (fixes), not just new timetable data
 core.watchForUpdates({
   // a reload starts over on today: not while the map, the game or a dialog is open, or another week/day is shown
-  isBusy: () => !follow || mapLoading || Boolean(document.querySelector(".cm, .tt-overlay")) || $("check").open || $("shot").open,
+  isBusy: () => !follow || mapLoading || detailOpen() || !!pending || !!$("ai-input").value || Boolean(document.querySelector(".cm, .tt-overlay")) || MODALS.some(([id]) => $(id).open),
   overlays: ".cm, .tt-overlay",
 });
 </script>
