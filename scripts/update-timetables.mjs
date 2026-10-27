@@ -15,6 +15,12 @@ import { CLASSES, ALL_UNITS } from "./timetables.config.mjs";
 const DATA_DIR = path.resolve("data");
 const SHOT_DIR = path.resolve("sws"); // screenshots of each unit's SWS list page
 const SWS = process.env.SWS_URL || "http://sws.curtin.edu.my/login.aspx"; // SWS_URL: point a test run at a stand-in
+// Try HTTPS first, then fall back to the historical HTTP URL: since 2026-10-22
+// the HTTP login page has repeatedly returned an empty response in CI, while
+// the script previously only tried HTTP and gave up after 3 workflow retries.
+const SWS_URLS = process.env.SWS_URL
+  ? [process.env.SWS_URL]
+  : ["https://sws.curtin.edu.my/login.aspx", "http://sws.curtin.edu.my/login.aspx"];
 
 const args = process.argv.slice(2);
 const fixtureIndex = args.indexOf("--fixture");
@@ -54,7 +60,19 @@ async function openSession(browser, timeout) {
     await page.locator(`select[name=${name}]`).waitFor();
   };
 
-  await page.goto(SWS, { waitUntil: "domcontentloaded" });
+  let lastGotoError = null;
+  for (const url of SWS_URLS) {
+    try {
+      await page.goto(url, { waitUntil: "domcontentloaded" });
+      console.log(`SWS: opened ${url}`);
+      lastGotoError = null;
+      break;
+    } catch (error) {
+      console.log(`::warning::SWS ${url} failed: ${error.message}`);
+      lastGotoError = error;
+    }
+  }
+  if (lastGotoError) throw lastGotoError;
   await page.getByRole("button", { name: "Student - Click here", exact: true }).click();
   await page.getByRole("link", { name: "Units", exact: true }).click();
   await page.locator("select[name=dlObject]").waitFor();
