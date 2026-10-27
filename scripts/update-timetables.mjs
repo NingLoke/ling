@@ -43,8 +43,11 @@ const malaysiaDay = (iso) => new Date(new Date(iso).getTime() + 8 * 3600_000).to
 // browser? DNS, TCP connect and a plain fetch each log separately, so the
 // next log shows whether the hang is network-level (no TCP/headers) or
 // browser-specific (fetch works, browser goto does not). Never throws.
+// Returns whether any TCP path worked, so a network-level outage can be
+// distinguished from a scraping bug in main().
 async function diagnoseSWS() {
   const host = "sws.curtin.edu.my";
+  let tcpOk = false;
   try {
     const addrs = await dns.lookup(host, { all: true });
     console.log(`SWS-DIAG dns: ${addrs.map((a) => `${a.address}/${a.family}`).join(",")}`);
@@ -60,6 +63,7 @@ async function diagnoseSWS() {
         socket.once("connect", () => { clearTimeout(timer); socket.end(); resolve(); });
         socket.once("error", (error) => { clearTimeout(timer); reject(error); });
       });
+      tcpOk = true;
       console.log(`SWS-DIAG tcp ${label}: connected in ${Date.now() - start}ms`);
     } catch (error) {
       console.log(`SWS-DIAG tcp ${label} failed: ${error.message}`);
@@ -74,6 +78,7 @@ async function diagnoseSWS() {
       console.log(`SWS-DIAG fetch ${url} failed: ${error.message} in ${Date.now() - start}ms`);
     }
   }
+  return { tcpOk };
 }
 
 // One browser session on SWS: a fresh context (cookies), so every run starts the same way.
@@ -83,7 +88,7 @@ async function openSession(browser, timeout) {
   const page = await context.newPage();
   page.setDefaultTimeout(timeout);
   // Main session only (60s timeout): screenshot sessions (30s) skip this.
-  if (timeout === 60_000) await diagnoseSWS();
+  const diag = timeout === 60_000 ? await diagnoseSWS() : null;
 
   const options = async (name) => page.locator(`select[name=${name}] option`).evaluateAll((elements) =>
     elements.map((o) => ({ value: o.value, label: (o.textContent || "").replace(/\s+/g, " ").trim(), selected: o.selected }))
@@ -116,6 +121,11 @@ async function openSession(browser, timeout) {
       break;
     } catch (error) {
       console.log(`::warning::SWS ${url} failed: ${error.message}`);
+      // Network-level outage, not a scraping bug: TCP to SWS never
+      // connected at all (diagnosed above), so no browser wait or URL
+      // choice can fix this run. Mark it so main() can exit gracefully
+      // with the last known data instead of failing the whole workflow.
+      if (diag && !diag.tcpOk) error.code = "SWS_UNREACHABLE";
       lastGotoError = error;
     }
   }
@@ -283,6 +293,16 @@ async function main() {
 }
 
 main().catch((error) => {
+  if (error?.code === "SWS_UNREACHABLE") {
+    // SWS is unreachable from this runner (TCP dropped, diagnosed above).
+    // Keep the last known timetable data untouched and do NOT update
+    // status.json's checkedAt: this run did not check anything. Exiting 0
+    // stops the daily failure reports; the next scheduled run will try
+    // SWS again and update normally as soon as it becomes reachable.
+    // Any other error (TCP worked but scraping failed) still exits 1.
+    console.log("::warning::SWS unreachable from runner (TCP dropped); keeping last known timetable data, exiting 0 without touching data/status.json");
+    process.exit(0);
+  }
   console.error(error);
   process.exit(1);
 });
