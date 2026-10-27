@@ -60,11 +60,17 @@ async function openSession(browser, timeout) {
     await page.locator(`select[name=${name}]`).waitFor();
   };
 
+  // Run #100 (2026-10-27) proved both https and http time out at 60s waiting
+  // for domcontentloaded, so domcontentloaded itself may be blocked by a
+  // hanging resource even if the login page HTML arrives. Use "commit"
+  // (headers received) instead, then wait explicitly for the Student button
+  // that the scraper actually needs, with a longer timeout than the 60s default.
   let lastGotoError = null;
   for (const url of SWS_URLS) {
     try {
-      await page.goto(url, { waitUntil: "domcontentloaded" });
-      console.log(`SWS: opened ${url}`);
+      const response = await page.goto(url, { waitUntil: "commit", timeout: 90_000 });
+      console.log(`SWS: opened ${url} status=${response?.status()}`);
+      await page.getByRole("button", { name: "Student - Click here", exact: true }).waitFor({ timeout: 90_000 });
       lastGotoError = null;
       break;
     } catch (error) {
