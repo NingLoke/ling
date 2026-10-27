@@ -20,9 +20,13 @@ const SWS = process.env.SWS_URL || "http://sws.curtin.edu.my/login.aspx"; // SWS
 // Try HTTPS first, then fall back to the historical HTTP URL: since 2026-10-22
 // the HTTP login page has repeatedly returned an empty response in CI, while
 // the script previously only tried HTTP and gave up after 3 workflow retries.
+// User 2026-10-27: searching 'curtin timetable' gives default.aspx as the
+// SWS main entry; login.aspx is its redirect target. Try default.aspx
+// first, then fall back to login.aspx (same host, so this does not change
+// the runner TCP situation, it just uses the entry the user gave).
 const SWS_URLS = process.env.SWS_URL
   ? [process.env.SWS_URL]
-  : ["https://sws.curtin.edu.my/login.aspx", "http://sws.curtin.edu.my/login.aspx"];
+  : ["https://sws.curtin.edu.my/default.aspx", "http://sws.curtin.edu.my/default.aspx", "https://sws.curtin.edu.my/login.aspx", "http://sws.curtin.edu.my/login.aspx"];
 
 const args = process.argv.slice(2);
 const fixtureIndex = args.indexOf("--fixture");
