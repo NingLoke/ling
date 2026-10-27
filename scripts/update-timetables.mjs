@@ -7,6 +7,8 @@
 // data/status.json records the last successful check, rewritten at most once per
 // Malaysia day unless something changed, so the repo doesn't get a commit every run.
 import { readFile, writeFile, mkdir, stat } from "node:fs/promises";
+import net from "node:net";
+import dns from "node:dns/promises";
 import path from "node:path";
 import { buildClassTimetable, canonical, isListRow, normalise } from "./lib/timetable.mjs";
 import { measureInPage, pngSize, rowsHash, shotEntry, SHOT_SCALE, SHOT_VIEWPORT } from "./lib/sws-archive.mjs";
@@ -37,12 +39,51 @@ const writeJson = (file, value) => writeFile(file, `${JSON.stringify(value, null
 const exists = (file) => stat(file).then(() => true, () => false);
 const malaysiaDay = (iso) => new Date(new Date(iso).getTime() + 8 * 3600_000).toISOString().slice(0, 10);
 
+// Diagnostic only: from the runner, is SWS reachable at all outside the
+// browser? DNS, TCP connect and a plain fetch each log separately, so the
+// next log shows whether the hang is network-level (no TCP/headers) or
+// browser-specific (fetch works, browser goto does not). Never throws.
+async function diagnoseSWS() {
+  const host = "sws.curtin.edu.my";
+  try {
+    const addrs = await dns.lookup(host, { all: true });
+    console.log(`SWS-DIAG dns: ${addrs.map((a) => `${a.address}/${a.family}`).join(",")}`);
+  } catch (error) {
+    console.log(`SWS-DIAG dns failed: ${error.message}`);
+  }
+  for (const [label, port] of [["https", 443], ["http", 80]]) {
+    const start = Date.now();
+    try {
+      await new Promise((resolve, reject) => {
+        const socket = net.connect(port, host);
+        const timer = setTimeout(() => { socket.destroy(); reject(new Error("tcp timeout 10000ms")); }, 10_000);
+        socket.once("connect", () => { clearTimeout(timer); socket.end(); resolve(); });
+        socket.once("error", (error) => { clearTimeout(timer); reject(error); });
+      });
+      console.log(`SWS-DIAG tcp ${label}: connected in ${Date.now() - start}ms`);
+    } catch (error) {
+      console.log(`SWS-DIAG tcp ${label} failed: ${error.message}`);
+    }
+  }
+  for (const url of SWS_URLS) {
+    const start = Date.now();
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(20_000), redirect: "manual" });
+      console.log(`SWS-DIAG fetch ${url}: status=${response.status} in ${Date.now() - start}ms`);
+    } catch (error) {
+      console.log(`SWS-DIAG fetch ${url} failed: ${error.message} in ${Date.now() - start}ms`);
+    }
+  }
+}
+
 // One browser session on SWS: a fresh context (cookies), so every run starts the same way.
 async function openSession(browser, timeout) {
   // High-DPI page so the per-unit screenshots come out 3840 px wide.
   const context = await browser.newContext({ viewport: SHOT_VIEWPORT, deviceScaleFactor: SHOT_SCALE });
   const page = await context.newPage();
   page.setDefaultTimeout(timeout);
+  // Main session only (60s timeout): screenshot sessions (30s) skip this.
+  if (timeout === 60_000) await diagnoseSWS();
 
   const options = async (name) => page.locator(`select[name=${name}] option`).evaluateAll((elements) =>
     elements.map((o) => ({ value: o.value, label: (o.textContent || "").replace(/\s+/g, " ").trim(), selected: o.selected }))
