@@ -25,7 +25,11 @@ concurrency:
 
 jobs:
   update:
-    runs-on: ubuntu-latest
+    # Pinned, not ubuntu-latest: ubuntu-latest moved to Ubuntu 26.04 and
+    # Playwright 1.55.0 does not support chromium on ubuntu26.04-x64
+    # (Install browser fails fast with that error, before Fetch runs).
+    # Ubuntu 24.04 is the environment the workflow last succeeded on.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
