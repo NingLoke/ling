@@ -39,6 +39,39 @@ SWS 把选了哪一科存在服务器会话里，网址里不带科目，所以�
 
 改了 `codes.json` 或 `build-campus.mjs` 推送后，Actions 会重新下载并生成地图数据，并检查每间教室都能找到楼和路线。
 
+## 每日任务 · 行程 · 待办 · 云同步
+
+页面照 [design/v0.1](design/v0.1/README.md) 的样子（深色、毛玻璃卡片），课表原来的功能都在：
+
+- **首页 = 选中的那一天**，打开就是今天。上面一周七天的条可以点、左右滑换周。
+- **「此刻」卡**：正在上课（或 30 分钟内要上课）时才出现：教室、剩多久、「带我去」。
+- **四张卡**：课程 / 行程 / 待办 / 每日任务，各一个数字和一句话。点进去是完整清单（手机是从下面拉上来的一页，电脑是右边一栏），新建也在里面。课程那页就是原来的课表（日 / 周、核准、科目、校园地图、页脚的小游戏）。
+- **行程**：自己的事和课一起排在课表里（粉色「行」字）。地点写教室（比如 `SK3 102`）就能点开校园地图。
+- **底部输入栏**：「明天三点健身」「周五交报告」「每天背单词」「删掉周三的小组讨论」这类话由页面自己听懂（`assets/planner-parse.js`），先弹确认卡再加；其他问题在新分页打开 ChatGPT（`chatgpt.com/?q=…`，用自己的账号和记忆）。＋ 是新建，有麦克风的浏览器可以语音输入。
+- **ChatGPT 的链接**：把设置里「ChatGPT」那段贴进 ChatGPT 的自定义指令，它的回答会带 `?add=event&title=…&date=…&start=…` 这样的链接，点开一样先确认再加。
+- **设置**：点右上角的 `>_ ✦` 签名。云同步、外观（深色 / 浅色 / 跟随系统、七种玻璃颜色、透明度，跟着账号同步）、ChatGPT 指令、备份。
+- **云同步**：用邮箱密码登录，手机和电脑自动同步，离线时先存在本机。要先建一个免费的 Firebase 项目，把设置填进 `assets/firebase-config.js`，步骤见 [SYNC-SETUP.md](SYNC-SETUP.md)。没设置时资料只存在各自的浏览器里，可以在设置里导出 / 导入备份。
+
+### Android App（APK）
+
+`app/` 是 Capacitor 8 的 Android 项目，显示的就是 `dist/timetable-ling` 这一页。每次推送改到页面或 `app/`，GitHub Actions（`.github/workflows/android.yml`）就会编译 APK，放到 Releases 里的 **app-latest**：
+
+https://github.com/NingLoke/ling/releases/download/app-latest/ling.apk
+
+- 手机打开上面的链接下载，允许「安装未知来源的应用」后安装。新版直接装在旧版上面，资料不会丢（签名固定，用的是仓库里的 `app/android/app/debug.keystore`；只适合自己用）。版本号（versionCode）按编译时间往上加，所以在 GitHub 或自己电脑上编的新版都能装在旧版上面；版本名是 0.3.<Actions 第几次>，自己编的是 0.3.local。
+- App 里：返回键会先关掉打开的页面 / 对话框；设置里的「打开内置 ChatGPT」和底部提问会打开 App 自己的 WebView 对话面板，默认占下方约 2/3，可以全屏或收起。收起后保留当前网页；首次用邮箱登录同一个 ChatGPT 账号，登录状态存在 App 的 WebView 里，与手机浏览器分开。Google 登录不能在这个面板完成。底部提问开启新对话，续聊用面板里的 ChatGPT 输入框。导出备份会复制到剪贴板（App 里不能存文件）；云同步只能用邮箱密码登录。
+- 内置 ChatGPT 保留网站原来的界面；网络或网页错误会显示提示并可刷新。没有注入脚本读取对话，也没有把课表的原生桥暴露给 ChatGPT。附件选择、语音权限及外部链接暂未接入；真实账号登录需要在手机上验证。
+- ChatGPT 回答里的「加到日程」链接会打开网站，不会打开 App。要两边资料一样，就得开云同步。
+- 自己编译：`npm run build:app`，然后在 `app/` 里 `npm ci && npx cap sync android`，再在 `app/android` 里 `./gradlew assembleDebug`（要 JDK 21 和 Android SDK）。
+
+### 打包成文件夹（以后做 APK / EXE）
+
+```bash
+npm run build:app
+```
+
+生成 `dist/timetable-ling/`（和 `dist/timetable-ling.zip`）：整个页面的程序都打包进一个 `index.html`，双击就能打开（直接打开文件时浏览器不让 3D 地图运行，会提示用网站或 App 打开）。文件夹里也放了地图要用的 MapLibre 和校园资料，以后 APK / EXE 从这个文件夹打包。课表和 SWS 截图不放进去：页面自带一份课表，有网时从 GitHub 读最新的。
+
 ## 改班级 / 科目
 
 编辑 `scripts/timetables.config.mjs`，比如：
@@ -55,6 +88,8 @@ SWS 把选了哪一科存在服务器会话里，网址里不带科目，所以�
 ```bash
 node --test "scripts/**/*.test.mjs"
 ```
+
+（`scripts/lib/planner-sync.test.mjs` 用模拟的几台设备和假的云端测同步：离线、同时改同一项、时钟不准、换账号。）
 
 ```bash
 node scripts/update-timetables.mjs --fixture scripts/fixtures/sws-2026-sem2.json

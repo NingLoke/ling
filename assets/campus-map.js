@@ -1424,7 +1424,9 @@ export function openCampusMap(options) {
       setFollow(false);
       say(isIPhone()
         ? "没有定位权限。到 设置 › 隐私与安全性 › 定位服务 › Safari 网站，选「使用 App 期间」，再点一次定位。"
-        : "没有定位权限。点地址栏左边的图标 › 权限 › 位置 › 允许，再点一次定位。", 9000);
+        : window.Capacitor?.isNativePlatform?.()
+          ? "没有定位权限。到 手机设置 › 应用 › 2E3 课表 › 权限 › 位置，选「仅在使用期间允许」并打开「使用精确位置」，再点一次定位。"
+          : "没有定位权限。点地址栏左边的图标 › 权限 › 位置 › 允许，再点一次定位。", 9000);
     } else if (error.code === 3) say("还在找 GPS 信号…到空旷一点的地方会快很多。", 5000);
     else {
       // often a one-off between good fixes: only mention it when the position has gone quiet
@@ -1443,7 +1445,9 @@ export function openCampusMap(options) {
   // the phone only shares a rough position (iPhone "Precise Location" off, or Chrome's "Approximate")
   const roughHelp = () => isIPhone()
     ? "手机只给了大概位置。到 设置 › 隐私与安全性 › 定位服务 › Safari 网站，打开「精确位置」。"
-    : "手机只给了大概位置。点地址栏左边的图标 › 权限 › 位置，改成「精确」。";
+    : window.Capacitor?.isNativePlatform?.()
+      ? "手机只给了大概位置。到 手机设置 › 应用 › 2E3 课表 › 权限 › 位置，打开「使用精确位置」。"
+      : "手机只给了大概位置。点地址栏左边的图标 › 权限 › 位置，改成「精确」。";
   let roughSaid = 0;
   let locatingSaid = ""; // the "locating…" hint, cleared by the first fix
   let offCompass = 0;
