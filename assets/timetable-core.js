@@ -84,7 +84,11 @@ export function validateTimetable(data) {
   if (!data.weeks.every((w) => Number.isInteger(w.week) && /^\d{4}-\d{2}-\d{2}$/.test(w.start))) return false;
   return data.events.every((e) =>
     e && typeof e.unit === "string" && Number.isInteger(e.day) && e.day >= 0 && e.day <= 6 &&
-    Number.isFinite(e.start) && Number.isFinite(e.end) && e.end > e.start && Array.isArray(e.weeks) && Array.isArray(e.rooms)
+    Number.isFinite(e.start) && Number.isFinite(e.end) && e.end > e.start && Array.isArray(e.weeks) && Array.isArray(e.rooms) &&
+    // Optional Moodle-verified per-week room corrections (data/overrides.json):
+    // a plain object keyed by week number, each value a non-empty room list.
+    (e.roomsByWeek === undefined || (typeof e.roomsByWeek === "object" && e.roomsByWeek !== null && !Array.isArray(e.roomsByWeek) &&
+      Object.entries(e.roomsByWeek).every(([k, v]) => /^\d+$/.test(k) && Array.isArray(v) && v.length && v.every((r) => typeof r === "string" && r.trim()))))
   );
 }
 
@@ -234,6 +238,19 @@ export function shortRoom(room) {
   const code = value.match(/^([A-Z]{2,4}\d?\s?\d{2,3})\b/);
   if (code) return code[1];
   return value.replace(/\s*\([^)]*\)\s*/g, " ").replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Rooms for one event in one SWS week. Moodle-verified corrections (see
+ * data/overrides.json, applied by scripts/apply-overrides.mjs) live in the
+ * event's optional `roomsByWeek` map, keyed by week number; any week without
+ * an entry falls back to the SWS `rooms` list, and an event with no rooms
+ * at all reports "地点待定" as before.
+ */
+export function roomsForWeek(event, weekNo) {
+  const over = event?.roomsByWeek?.[String(weekNo)];
+  if (Array.isArray(over) && over.length && over.every((r) => typeof r === "string" && r.trim())) return over;
+  return Array.isArray(event?.rooms) && event.rooms.length ? event.rooms : ["地点待定"];
 }
 
 // ---------- loading with fallback ----------
