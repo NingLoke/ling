@@ -13,6 +13,8 @@ on:
       - "scripts/update-timetables.mjs"
       - "scripts/lib/timetable.mjs"
       - "scripts/timetables.config.mjs"
+      - "scripts/apply-overrides.mjs"
+      - "data/overrides.json"
       - ".github/workflows/update-timetables.yml"
 
 permissions:
@@ -54,6 +56,14 @@ jobs:
             sleep 30
           done
           exit 1
+
+      # Moodle-verified room corrections (data/overrides.json), week-scoped.
+      # Runs after the fetch — the fetch rewrites data/*.json from scratch on
+      # success — and before the snapshot is baked into index.html. The fetch
+      # exits 0 on the SWS_UNREACHABLE graceful path, so this step still runs
+      # when SWS cannot be reached and the stale snapshot needs correcting.
+      - name: Apply Moodle-verified room overrides
+        run: node scripts/apply-overrides.mjs
 
       - name: Refresh the snapshot baked into index.html
         run: |
