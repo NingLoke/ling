@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "source": "Moodle-verified room corrections. Applied by scripts/apply-overrides.mjs AFTER the SWS fetch and BEFORE the snapshot is baked into index.html, so a stale SWS snapshot (the GitHub runner cannot reach SWS since 2026-10-22) never hides them. Each entry is scoped to a single SWS week and a single event; other weeks and other events are untouched. Remove an entry (or the whole file) to revert.",
+  "overrides": [
+    {
+      "class": "2E3",
+      "event": "CMFP0051/CSM/1/3/LEC/1",
+      "week": 46,
+      "rooms": [
+        "LT201"
+      ],
+      "source": "Moodle PHY2 Week 6 announcement, 2026-11-08: Topic 6a lecture Mon 2026-11-09 10:00-12:00 in LT201 (SWS said SK3 102 Lecture 1)"
+    },
+    {
+      "class": "2E3",
+      "event": "CMFP0051/CSM/1/3/WS/06",
+      "week": 46,
+      "rooms": [
+        "SK2-102"
+      ],
+      "source": "Moodle PHY2 Week 6 announcement, 2026-11-08: 2E3 tutorial Tue 2026-11-10 14:00-17:00 in SK2-102 (SWS said SK2 101 (ME 101) Physic Lab + SK3 206 Collaborative Room 2)"
+    }
+  ]
+}
